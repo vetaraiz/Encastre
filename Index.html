@@ -256,19 +256,24 @@ function AuthScreen({onAuth}){
     try{
       if(modo==="registro"){
         if(!tipo||!nombre){setErr("Completá todos los campos");setCargando(false);return;}
-        const {user,error}=await db.signUp(email,pass);
-        if(error){setErr(error.message);setCargando(false);return;}
+        const signUpRes=await db.signUp(email,pass);
+        const user=signUpRes.user||signUpRes;
+        const error=signUpRes.error;
+        if(error){setErr(error.message||"Error al registrar");setCargando(false);return;}
+        if(!user||!user.id){setErr("Error al crear usuario");setCargando(false);return;}
         await db.insert("usuarios",{auth_id:user.id,tipo,nombre,email,ciudad});
         setOk("¡Cuenta creada! Ahora iniciá sesión.");
         setModo("login");
       }else{
-        const {access_token,error}=await db.signIn(email,pass);
-        if(error){setErr("Email o contraseña incorrectos");setCargando(false);return;}
+        const signInRes=await db.signIn(email,pass);
+        const access_token=signInRes.access_token;
+        const error=signInRes.error;
+        if(error||!access_token){setErr("Email o contraseña incorrectos");setCargando(false);return;}
         const perfiles=await db.select("usuarios",`?email=eq.${email}&limit=1`);
         if(perfiles.length===0){setErr("Perfil no encontrado");setCargando(false);return;}
         onAuth({token:access_token,usuario:perfiles[0]});
       }
-    }catch{setErr("Error de conexión.");}
+    }catch(e){setErr("Error: "+(e.message||"Revisá tu conexión"));}
     setCargando(false);
   };
 
