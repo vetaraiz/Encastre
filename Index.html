@@ -626,7 +626,6 @@ function VistaCliente({usuario,notif}){
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
         <div style={S.cardTitle}>📋 Mis pedidos</div>
-        <div style={{fontSize:10,color:C.textoSuave,marginBottom:8}}>ID usuario: {usuario?.id||"sin ID"}</div>
         <button style={S.btn("dark")} onClick={()=>setVista("nuevo")}>➕ Nuevo pedido</button>
       </div>
       {pedidos.length===0&&(
@@ -663,6 +662,8 @@ function VistaCarpinteria({usuario,notif}){
   const [pedidos,setPedidos]=useState([]);
   const [sel,setSel]=useState(null);
   const [presF,setPresF]=useState({monto:"",tiempo:"",incluye_flete:false,detalle:""});
+  const [enviando,setEnviando]=useState(false);
+  const [yaEnvio,setYaEnvio]=useState(false);
   const [convF,setConvF]=useState({valor:"",unidad:"cm"});
   const [asF,setAsF]=useState({material:"",pies:"",pulgadas:"",espesor:"",cantidad:"",descripcion:""});
   const [misPedidosAserr,setMisPedidosAserr]=useState([]);
@@ -698,13 +699,16 @@ function VistaCarpinteria({usuario,notif}){
   useEffect(()=>{cargar();cargarMisPedidosAserr();cargarMisPedidosFerreria();},[cargar,cargarMisPedidosAserr,cargarMisPedidosFerreria]);
 
   const enviarPresup=async()=>{
-    if(!presF.monto||!sel)return;
+    if(!presF.monto||!sel||enviando||yaEnvio)return;
+    setEnviando(true);
     try{
       await db.insert("presupuestos",{pedido_id:sel.id,carpinteria_id:usuario.id,monto:Number(presF.monto),tiempo_entrega:presF.tiempo,incluye_flete:presF.incluye_flete,detalle:presF.detalle});
       await db.update("pedidos",{estado:"presupuestado"},`id=eq.${sel.id}`);
-      notif("¡Presupuesto enviado!");
+      notif("¡Presupuesto enviado correctamente!");
       setPresF({monto:"",tiempo:"",incluye_flete:false,detalle:""});
+      setYaEnvio(true);
     }catch(e){alert("Error: "+e.message);}
+    setEnviando(false);
   };
 
   const aplicarIA=(s)=>{
@@ -774,7 +778,12 @@ function VistaCarpinteria({usuario,notif}){
             <label style={S.label}>Detalle (materiales, herrajes, mano de obra)</label>
             <textarea value={presF.detalle} onChange={e=>setPresF(f=>({...f,detalle:e.target.value}))} placeholder="Podés discriminar ítems o poner todo junto..." style={{...S.input,minHeight:80,resize:"vertical"}}/>
           </div>
-          <button style={{...S.btn("dark"),marginTop:12}} onClick={enviarPresup}>📤 Enviar presupuesto</button>
+          <button style={{...S.btn("dark"),marginTop:12,opacity:enviando||yaEnvio?0.6:1}} 
+              onClick={enviarPresup} 
+              disabled={enviando||yaEnvio}>
+              {enviando?"⟳ Enviando...":(yaEnvio?"✅ Presupuesto enviado":"📤 Enviar presupuesto")}
+            </button>
+            {yaEnvio&&<div style={{fontSize:12,color:C.verde,marginTop:6,fontWeight:700}}>✅ El cliente ya recibió tu presupuesto.</div>}
         </div>
 
         <div style={S.card}>
@@ -802,7 +811,7 @@ function VistaCarpinteria({usuario,notif}){
           {pedidos.map(p=>{
             const mat=MATS.find(m=>m.id===p.material);
             return(
-              <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>setSel(p)}
+              <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>{setSel(p);setYaEnvio(false);}}
                 onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
                 onMouseLeave={e=>{e.currentTarget.style.borderColor=C.borde;e.currentTarget.style.transform="none";}}>
                 <div style={{display:"flex",justifyContent:"space-between"}}>
