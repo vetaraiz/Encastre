@@ -277,6 +277,7 @@ function AuthScreen({onAuth}){
         if(error||!access_token){setErr("Email o contraseña incorrectos");setCargando(false);return;}
         const perfiles=await db.select("usuarios",`?email=eq.${email}&limit=1`);
         if(perfiles.length===0){setErr("Perfil no encontrado");setCargando(false);return;}
+        console.log("Usuario al login:",perfiles[0]);
         onAuth({token:access_token,usuario:perfiles[0]});
       }
     }catch(e){setErr("Error: "+(e.message||"Revisá tu conexión"));}
@@ -455,10 +456,12 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
 
   const guardar=async()=>{
     try{
-      await db.insert("pedidos",{cliente_id:usuario.id,descripcion:f.descripcion,alto:Number(f.alto),ancho:Number(f.ancho),profundidad:Number(f.profundidad),material:f.material,terminacion:f.terminacion,color:f.color,notas_croquis:f.notasCroquis});
+      if(!usuario||!usuario.id){alert("Error: no se encontró tu usuario. Cerrá sesión y volvé a entrar.");return;}
+      const resultado=await db.insert("pedidos",{cliente_id:usuario.id,descripcion:f.descripcion,alto:Number(f.alto),ancho:Number(f.ancho),profundidad:Number(f.profundidad),material:f.material,terminacion:f.terminacion,color:f.color,notas_croquis:f.notasCroquis});
+      console.log("Pedido guardado:",resultado);
       notif("¡Pedido enviado a todas las carpinterías!");
       onGuardar();
-    }catch(e){alert("Error: "+e.message);}
+    }catch(e){alert("Error al guardar pedido: "+e.message);}
   };
 
   return(
@@ -623,6 +626,7 @@ function VistaCliente({usuario,notif}){
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
         <div style={S.cardTitle}>📋 Mis pedidos</div>
+        <div style={{fontSize:10,color:C.textoSuave,marginBottom:8}}>ID usuario: {usuario?.id||"sin ID"}</div>
         <button style={S.btn("dark")} onClick={()=>setVista("nuevo")}>➕ Nuevo pedido</button>
       </div>
       {pedidos.length===0&&(
@@ -672,6 +676,8 @@ function VistaCarpinteria({usuario,notif}){
   const cargar=useCallback(async()=>{
     try{const d=await db.select("pedidos","?order=created_at.desc");setPedidos(d);}catch{}
   },[]);
+  // Auto-refresh cada 15 segundos para ver pedidos nuevos
+  useEffect(()=>{const t=setInterval(cargar,15000);return()=>clearInterval(t);},[cargar]);
   const cargarMisPedidosAserr=useCallback(async()=>{
     try{const d=await db.select("pedidos_aserradero",`?carpinteria_id=eq.${usuario.id}&order=created_at.desc`);setMisPedidosAserr(d);}catch{}
   },[usuario.id]);
@@ -993,7 +999,7 @@ function VistaAserradero({usuario,notif}){
   const cargar=useCallback(async()=>{
     try{const d=await db.select("pedidos_aserradero","?order=created_at.desc");setPedidos(d);}catch{}
   },[]);
-  useEffect(()=>{cargar();},[cargar]);
+  useEffect(()=>{cargar();const t=setInterval(cargar,15000);return()=>clearInterval(t);},[cargar]);
 
   const aplicarIA=(s)=>{
     const det=s.items?.map(i=>`${i.concepto}: $${Number(i.monto).toLocaleString("es-AR")} — ${i.detalle}`).join("\n")||"";
@@ -1218,7 +1224,7 @@ function VistaFerreteria({usuario,notif}){
   const cargar=useCallback(async()=>{
     try{const d=await db.select("pedidos_ferreteria","?order=created_at.desc");setPedidos(d);}catch{}
   },[]);
-  useEffect(()=>{cargar();},[cargar]);
+  useEffect(()=>{cargar();const t=setInterval(cargar,15000);return()=>clearInterval(t);},[cargar]);
 
   const aplicarIA=(s)=>{
     const det=s.items?.map(i=>`${i.concepto}: $${Number(i.monto).toLocaleString("es-AR")} — ${i.detalle}`).join("\n")||"";
