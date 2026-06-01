@@ -40,7 +40,7 @@ const db = {
 
 async function pedirIA(prompt) {
   try {
-    const r = await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
+    const r = await fetch("/.netlify/functions/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:prompt}]})});
     const d = await r.json();
     const t = d.content?.map(i=>i.text||"").join("")||"";
     return JSON.parse(t.replace(/```json|```/g,"").trim());
@@ -339,6 +339,19 @@ function AuthScreen({onAuth}){
         <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",fontSize:14,padding:"11px"}} onClick={submit} disabled={cargando}>
           {cargando?"⟳ Procesando...":(modo==="login"?"Entrar →":"Crear cuenta →")}
         </button>
+        {modo==="login"&&(
+          <div style={{textAlign:"center",marginTop:12}}>
+            <button onClick={async()=>{
+              if(!email){setErr("Escribí tu email primero");return;}
+              try{
+                await fetch(`${SUPABASE_URL}/auth/v1/recover`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({email})});
+                setOk("✅ Te enviamos un email para restablecer tu contraseña");
+              }catch{setErr("Error al enviar el email");}
+            }} style={{background:"none",border:"none",color:C.textoSuave,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
+        )}
       </div>
 
       <div style={{marginTop:20,fontSize:11,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
@@ -357,7 +370,15 @@ function Chat({pedidoId,tipoPedido,miUsuario,otroUsuario}){
   },[pedidoId,tipoPedido]);
 
   useEffect(()=>{cargar();const t=setInterval(cargar,4000);return()=>clearInterval(t);},[cargar]);
-  useEffect(()=>{endRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
+  useEffect(()=>{
+    if(endRef.current){
+      const container=endRef.current.parentElement;
+      if(container){
+        const distFromBottom=container.scrollHeight-container.scrollTop-container.clientHeight;
+        if(distFromBottom<100) endRef.current.scrollIntoView({behavior:"smooth"});
+      }
+    }
+  },[msgs]);
 
   const enviar=async()=>{
     if(!txt.trim())return;
@@ -646,12 +667,36 @@ function VistaCarpinteria({usuario,notif}){
   const [sel,setSel]=useState(null);
   const [presF,setPresF]=useState({monto:"",tiempo:"",incluye_flete:false,detalle:""});
   const [convF,setConvF]=useState({valor:"",unidad:"cm"});
-  const [asF,setAsF]=useState({material:"",pies:"",pulgadas:"",cantidad:"",descripcion:""});
+  const [asF,setAsF]=useState({material:"",pies:"",pulgadas:"",espesor:"",cantidad:"",descripcion:""});
+  const [misPedidosAserr,setMisPedidosAserr]=useState([]);
+  const [selAserr,setSelAserr]=useState(null);
+  const [cotizacionesAserr,setCotizacionesAserr]=useState([]);
+  const [ferrF,setFerrF]=useState({descripcion:"",cantidad:"",notas:""});
+  const [misPedidosFerreria,setMisPedidosFerreria]=useState([]);
+  const [selFerr,setSelFerr]=useState(null);
+  const [cotizacionesFerr,setCotizacionesFerr]=useState([]);
 
   const cargar=useCallback(async()=>{
     try{const d=await db.select("pedidos","?order=created_at.desc");setPedidos(d);}catch{}
   },[]);
-  useEffect(()=>{cargar();},[cargar]);
+  const cargarMisPedidosAserr=useCallback(async()=>{
+    try{const d=await db.select("pedidos_aserradero",`?carpinteria_id=eq.${usuario.id}&order=created_at.desc`);setMisPedidosAserr(d);}catch{}
+  },[usuario.id]);
+  const cargarMisPedidosFerreria=useCallback(async()=>{
+    try{const d=await db.select("pedidos_ferreteria",`?carpinteria_id=eq.${usuario.id}&order=created_at.desc`);setMisPedidosFerreria(d);}catch{}
+  },[usuario.id]);
+  const abrirPedidoFerr=async(p)=>{
+    setSelFerr(p);
+    try{
+      const d=await db.select("cotizaciones_ferreteria",`?pedido_id=eq.${p.id}&order=created_at.asc`);
+      const enr=await Promise.all(d.map(async ct=>{
+        const fe=await db.select("usuarios",`?id=eq.${ct.ferreteria_id}&limit=1`);
+        return{...ct,ferrNombre:fe[0]?.nombre||"Ferretería"};
+      }));
+      setCotizacionesFerr(enr);
+    }catch{}
+  };
+  useEffect(()=>{cargar();cargarMisPedidosAserr();cargarMisPedidosFerreria();},[cargar,cargarMisPedidosAserr,cargarMisPedidosFerreria]);
 
   const enviarPresup=async()=>{
     if(!presF.monto||!sel)return;
@@ -668,12 +713,23 @@ function VistaCarpinteria({usuario,notif}){
     setPresF(f=>({...f,monto:String(s.monto_total),tiempo:s.tiempo_entrega||f.tiempo,detalle:det||f.detalle}));
   };
 
+  const abrirPedidoAserr=async(p)=>{
+    setSelAserr(p);
+    try{
+      const d=await db.select("cotizaciones_aserradero",`?pedido_id=eq.${p.id}&order=created_at.asc`);
+      const enr=await Promise.all(d.map(async ct=>{
+        const as=await db.select("usuarios",`?id=eq.${ct.aserradero_id}&limit=1`);
+        return{...ct,aserraderoNombre:as[0]?.nombre||"Aserradero"};
+      }));
+      setCotizacionesAserr(enr);
+    }catch{}
+  };
   const enviarAserr=async()=>{
     if(!asF.material)return;
     try{
-      await db.insert("pedidos_aserradero",{carpinteria_id:usuario.id,material:asF.material,pies:Number(asF.pies),pulgadas:Number(asF.pulgadas),cantidad:Number(asF.cantidad),descripcion:asF.descripcion});
+      await db.insert("pedidos_aserradero",{carpinteria_id:usuario.id,material:asF.material,pies:Number(asF.pies),pulgadas:Number(asF.pulgadas),espesor:Number(asF.espesor||0),cantidad:Number(asF.cantidad),descripcion:asF.descripcion});
       notif("¡Pedido enviado a los aserraderos!");
-      setAsF({material:"",pies:"",pulgadas:"",cantidad:"",descripcion:""});
+      setAsF({material:"",pies:"",pulgadas:"",espesor:"",cantidad:"",descripcion:""});
     }catch(e){alert("Error: "+e.message);}
   };
 
@@ -735,7 +791,7 @@ function VistaCarpinteria({usuario,notif}){
   return(
     <div>
       <div style={{display:"flex",gap:7,marginBottom:18,flexWrap:"wrap"}}>
-        {[["pedidos","📋 Pedidos recibidos"],["aserradero","🪵 Pedir madera"],["conversion","📐 Conversor"]].map(([id,l])=>(
+        {[["pedidos","📋 Pedidos recibidos"],["aserradero","🪵 Pedir madera"],["ferreteria","🔩 Pedir herrajes"],["conversion","📐 Conversor"]].map(([id,l])=>(
           <button key={id} style={tabStyle(id)} onClick={()=>setTab(id)}>{l}</button>
         ))}
       </div>
@@ -768,16 +824,137 @@ function VistaCarpinteria({usuario,notif}){
           <div style={S.cardTitle}>🪵 Pedir madera al aserradero</div>
           <div style={{fontSize:11,color:C.textoSuave,marginBottom:14,fontStyle:"italic"}}>Las medidas van en pulgadas y pies (como trabaja el aserradero)</div>
           <label style={S.label}>Tipo de madera</label>
-          <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:14}}>
-            {MADERAS_A.map(m=><button key={m} style={S.tag(asF.material===m)} onClick={()=>setAsF(f=>({...f,material:m}))}>{m}</button>)}
-          </div>
+          <input value={asF.material} onChange={e=>setAsF(f=>({...f,material:e.target.value}))} placeholder="Ej: Roble, Pino, Cedro, Quebracho..." style={{...S.input,marginBottom:14}}/>
           <div style={S.row}>
             <div style={S.col()}><label style={S.label}>Largo (pies)</label><input type="number" value={asF.pies} onChange={e=>setAsF(f=>({...f,pies:e.target.value}))} placeholder="0'" style={S.input}/>{asF.pies&&<div style={{fontSize:10,color:C.textoSuave,fontFamily:"monospace"}}>= {ftToCm(asF.pies)}cm</div>}</div>
-            <div style={S.col()}><label style={S.label}>Sección (pulgadas)</label><input type="number" value={asF.pulgadas} onChange={e=>setAsF(f=>({...f,pulgadas:e.target.value}))} placeholder='0"' style={S.input}/>{asF.pulgadas&&<div style={{fontSize:10,color:C.textoSuave,fontFamily:"monospace"}}>= {inToCm(asF.pulgadas)}cm</div>}</div>
+            <div style={S.col()}><label style={S.label}>Ancho (pulgadas)</label><input type="number" value={asF.pulgadas} onChange={e=>setAsF(f=>({...f,pulgadas:e.target.value}))} placeholder='0"' style={S.input}/>{asF.pulgadas&&<div style={{fontSize:10,color:C.textoSuave,fontFamily:"monospace"}}>= {inToCm(asF.pulgadas)}cm</div>}</div>
+            <div style={S.col()}><label style={S.label}>Espesor (pulgadas)</label><input type="number" value={asF.espesor||""} onChange={e=>setAsF(f=>({...f,espesor:e.target.value}))} placeholder='0"' style={S.input}/>{asF.espesor&&<div style={{fontSize:10,color:C.textoSuave,fontFamily:"monospace"}}>= {inToCm(asF.espesor)}cm</div>}</div>
             <div style={S.col()}><label style={S.label}>Cantidad</label><input type="number" value={asF.cantidad} onChange={e=>setAsF(f=>({...f,cantidad:e.target.value}))} placeholder="0" style={S.input}/></div>
           </div>
           <div style={{marginTop:12}}><label style={S.label}>Observaciones</label><textarea value={asF.descripcion} onChange={e=>setAsF(f=>({...f,descripcion:e.target.value}))} placeholder="Calidad, secado, escuadría..." style={{...S.input,minHeight:56,resize:"vertical"}}/></div>
           <button style={{...S.btn("dark"),marginTop:12}} onClick={enviarAserr}>📤 Enviar a aserraderos</button>
+        </div>
+      )}
+
+      {tab==="aserradero"&&misPedidosAserr.length>0&&(
+        <div style={S.card}>
+          <div style={S.cardTitle}>📋 Mis pedidos enviados</div>
+          {misPedidosAserr.map(p=>(
+            <div key={p.id} style={{border:`1px solid ${C.borde}`,borderRadius:8,padding:12,marginBottom:10,cursor:"pointer",background:C.input}}
+              onClick={()=>abrirPedidoAserr(p)}
+              onMouseEnter={e=>e.currentTarget.style.borderColor=C.acento}
+              onMouseLeave={e=>e.currentTarget.style.borderColor=C.borde}>
+              <div style={{display:"flex",justifyContent:"space-between"}}>
+                <div>
+                  <div style={{fontWeight:700,color:C.marron}}>{p.material}</div>
+                  <div style={{fontSize:12,color:C.textoSuave}}>{p.pies}' largo · {p.pulgadas}" ancho · {p.espesor}" espesor · {p.cantidad} piezas</div>
+                  <div style={{fontSize:11,color:C.textoSuave}}>{new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                </div>
+                <Badge e={p.estado}/>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {selAserr&&tab==="aserradero"&&(
+        <div style={S.card}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div style={S.cardTitle}>💰 Cotizaciones recibidas</div>
+            <button style={{...S.btn("ghost"),fontSize:12,padding:"4px 10px"}} onClick={()=>setSelAserr(null)}>Cerrar</button>
+          </div>
+          {cotizacionesAserr.length===0?(
+            <div style={{color:C.textoSuave,textAlign:"center",padding:20,fontStyle:"italic"}}>⏳ Esperando cotizaciones del aserradero...</div>
+          ):(
+            cotizacionesAserr.map((ct,i)=>(
+              <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:8,padding:12,marginBottom:10,background:C.input}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                  <b style={{color:C.marron}}>{ct.aserraderoNombre}</b>
+                  <b style={{fontSize:16,color:C.verde}}>$ {Number(ct.precio_total).toLocaleString("es-AR")}</b>
+                </div>
+                <div style={S.row}>
+                  <div style={S.col()}><span style={{fontSize:11,color:C.textoSuave}}>$/pie: </span><b>$ {Number(ct.precio_por_pie).toLocaleString("es-AR")}</b></div>
+                  <div style={S.col()}><span style={{fontSize:11,color:C.textoSuave}}>Entrega: </span><b>{ct.tiempo_entrega}</b></div>
+                </div>
+                {ct.detalle&&<div style={{marginTop:6,fontSize:12,color:C.textoSuave,whiteSpace:"pre-line",fontStyle:"italic"}}>{ct.detalle}</div>}
+                <div style={S.card}>
+                  <div style={S.cardTitle}>💬 Chat con aserradero</div>
+                  <Chat pedidoId={selAserr.id} tipoPedido="aserradero" miUsuario={usuario} otroUsuario={{id:ct.aserradero_id}}/>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {tab==="ferreteria"&&(
+        <div>
+          <div style={S.card}>
+            <div style={S.cardTitle}>🔩 Pedir herrajes a ferretería</div>
+            <div style={{marginBottom:12}}>
+              <label style={S.label}>¿Qué herrajes necesitás?</label>
+              <textarea value={ferrF.descripcion} onChange={e=>setFerrF(f=>({...f,descripcion:e.target.value}))} placeholder="Ej: Bisagras de piano 180cm, rieles telescópicos 45cm, manijas negras mate..." style={{...S.input,minHeight:72,resize:"vertical"}}/>
+            </div>
+            <div style={S.row}>
+              <div style={S.col()}><label style={S.label}>Cantidad (unidades)</label><input type="number" value={ferrF.cantidad} onChange={e=>setFerrF(f=>({...f,cantidad:e.target.value}))} placeholder="0" style={S.input}/></div>
+              <div style={S.col()}><label style={S.label}>Notas adicionales</label><input value={ferrF.notas} onChange={e=>setFerrF(f=>({...f,notas:e.target.value}))} placeholder="Marca preferida, color, etc." style={S.input}/></div>
+            </div>
+            <button style={{...S.btn("dark"),marginTop:12}} onClick={async()=>{
+              if(!ferrF.descripcion)return;
+              try{
+                await db.insert("pedidos_ferreteria",{carpinteria_id:usuario.id,descripcion:ferrF.descripcion,cantidad:Number(ferrF.cantidad)||0,notas:ferrF.notas});
+                notif("¡Pedido enviado a las ferreterías!");
+                setFerrF({descripcion:"",cantidad:"",notas:""});
+                cargarMisPedidosFerreria();
+              }catch(e){alert("Error: "+e.message);}
+            }}>📤 Enviar a ferreterías</button>
+          </div>
+
+          {misPedidosFerreria.length>0&&(
+            <div style={S.card}>
+              <div style={S.cardTitle}>📋 Mis pedidos de herrajes</div>
+              {misPedidosFerreria.map(p=>(
+                <div key={p.id} style={{border:`1px solid ${C.borde}`,borderRadius:8,padding:12,marginBottom:10,cursor:"pointer",background:C.input}}
+                  onClick={()=>abrirPedidoFerr(p)}
+                  onMouseEnter={e=>e.currentTarget.style.borderColor=C.acento}
+                  onMouseLeave={e=>e.currentTarget.style.borderColor=C.borde}>
+                  <div style={{display:"flex",justifyContent:"space-between"}}>
+                    <div>
+                      <div style={{fontWeight:700,color:C.marron}}>{p.descripcion}</div>
+                      <div style={{fontSize:12,color:C.textoSuave}}>Cantidad: {p.cantidad} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                    </div>
+                    <Badge e={p.estado}/>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {selFerr&&(
+            <div style={S.card}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <div style={S.cardTitle}>💰 Cotizaciones de ferreterías</div>
+                <button style={{...S.btn("ghost"),fontSize:12,padding:"4px 10px"}} onClick={()=>setSelFerr(null)}>Cerrar</button>
+              </div>
+              {cotizacionesFerr.length===0?(
+                <div style={{color:C.textoSuave,textAlign:"center",padding:20,fontStyle:"italic"}}>⏳ Esperando cotizaciones...</div>
+              ):(
+                cotizacionesFerr.map((ct,i)=>(
+                  <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:8,padding:12,marginBottom:10,background:C.input}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                      <b style={{color:C.marron}}>{ct.ferrNombre}</b>
+                      <b style={{fontSize:16,color:C.verde}}>$ {Number(ct.precio_total).toLocaleString("es-AR")}</b>
+                    </div>
+                    <div style={S.col()}><span style={{fontSize:11,color:C.textoSuave}}>Entrega: </span><b>{ct.tiempo_entrega}</b></div>
+                    {ct.detalle&&<div style={{marginTop:6,fontSize:12,color:C.textoSuave,whiteSpace:"pre-line",fontStyle:"italic"}}>{ct.detalle}</div>}
+                    <div style={{marginTop:10}}>
+                      <Chat pedidoId={selFerr.id} tipoPedido="ferreteria" miUsuario={usuario} otroUsuario={{id:ct.ferreteria_id}}/>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -995,6 +1172,13 @@ function VistaFlete({usuario,notif}){
               <div style={{flex:.5}}><label style={S.label}>Fecha deseada</label><input type="date" value={pedF.fecha} onChange={e=>setPedF(f=>({...f,fecha:e.target.value}))} style={S.input}/></div>
             </div>
           </div>
+          {pedF.origen&&pedF.destino&&(
+            <a href={`https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${encodeURIComponent(pedF.origen)};${encodeURIComponent(pedF.destino)}`}
+               target="_blank" rel="noopener noreferrer"
+               style={{display:"inline-flex",alignItems:"center",gap:6,background:C.input,border:`1px solid ${C.borde}`,borderRadius:8,padding:"8px 14px",color:C.marron,fontSize:13,fontWeight:700,textDecoration:"none",marginTop:8}}>
+              🗺️ Ver ruta en el mapa
+            </a>
+          )}
 
           {fletes.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay fletes registrados aún</div>}
           {fletes.map(fl=>(
@@ -1031,6 +1215,84 @@ function VistaFlete({usuario,notif}){
   );
 }
 
+
+// ─── VISTA FERRETERÍA ─────────────────────────────────────────────────────────
+function VistaFerreteria({usuario,notif}){
+  const [pedidos,setPedidos]=useState([]);
+  const [sel,setSel]=useState(null);
+  const [cotF,setCotF]=useState({monto:"",tiempo:"",detalle:""});
+
+  const cargar=useCallback(async()=>{
+    try{const d=await db.select("pedidos_ferreteria","?order=created_at.desc");setPedidos(d);}catch{}
+  },[]);
+  useEffect(()=>{cargar();},[cargar]);
+
+  const aplicarIA=(s)=>{
+    const det=s.items?.map(i=>`${i.concepto}: $${Number(i.monto).toLocaleString("es-AR")} — ${i.detalle}`).join("\n")||"";
+    setCotF(f=>({...f,monto:String(s.precio_total||f.monto),tiempo:s.tiempo_entrega||f.tiempo,detalle:det||f.detalle}));
+  };
+
+  const enviarCot=async()=>{
+    if(!cotF.monto||!sel)return;
+    try{
+      await db.insert("cotizaciones_ferreteria",{pedido_id:sel.id,ferreteria_id:usuario.id,precio_total:Number(cotF.monto),tiempo_entrega:cotF.tiempo,detalle:cotF.detalle});
+      await db.update("pedidos_ferreteria",{estado:"presupuestado"},`id=eq.${sel.id}`);
+      notif("¡Cotización enviada!");
+      setCotF({monto:"",tiempo:"",detalle:""});
+    }catch(e){alert("Error: "+e.message);}
+  };
+
+  if(sel) return(
+    <div>
+      <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSel(null)}>← Volver</button>
+      <div style={S.card}>
+        <div style={S.cardTitle}>Pedido de carpintería</div>
+        <div style={{background:C.suave,borderRadius:8,padding:12,border:`1px solid ${C.borde}`}}>
+          <div style={S.label}>HERRAJES SOLICITADOS</div>
+          <div style={{fontWeight:700,fontSize:15,color:C.marron,marginTop:4}}>{sel.descripcion}</div>
+          {sel.cantidad&&<div style={{fontSize:12,color:C.textoSuave,marginTop:4}}>Cantidad: {sel.cantidad} unidades</div>}
+          {sel.notas&&<div style={{fontSize:12,color:C.textoSuave,fontStyle:"italic",marginTop:4}}>{sel.notas}</div>}
+        </div>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>💰 Tu cotización</div>
+        <div style={S.row}>
+          <div style={S.col()}><label style={S.label}>Precio total ($)</label><input type="number" value={cotF.monto} onChange={e=>setCotF(f=>({...f,monto:e.target.value}))} placeholder="0" style={S.input}/></div>
+          <div style={S.col()}><label style={S.label}>Tiempo de entrega</label><input value={cotF.tiempo} onChange={e=>setCotF(f=>({...f,tiempo:e.target.value}))} placeholder="Ej: 2 días" style={S.input}/></div>
+        </div>
+        <div style={{marginTop:10}}><label style={S.label}>Detalle / condiciones</label><textarea value={cotF.detalle} onChange={e=>setCotF(f=>({...f,detalle:e.target.value}))} placeholder="Marcas, modelos, observaciones..." style={{...S.input,minHeight:56,resize:"vertical"}}/></div>
+        <button style={{...S.btn("dark"),marginTop:12}} onClick={enviarCot}>📤 Enviar cotización</button>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>💬 Chat con carpintería</div>
+        <Chat pedidoId={sel.id} tipoPedido="ferreteria" miUsuario={usuario} otroUsuario={{id:sel.carpinteria_id}}/>
+      </div>
+    </div>
+  );
+
+  return(
+    <div>
+      <div style={S.secTitle}>Pedidos de herrajes de carpinterías</div>
+      {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
+      {pedidos.map(p=>(
+        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>setSel(p)}
+          onMouseEnter={e=>e.currentTarget.style.borderColor=C.acento}
+          onMouseLeave={e=>e.currentTarget.style.borderColor=C.borde}>
+          <div style={{display:"flex",justifyContent:"space-between"}}>
+            <div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:15}}>{p.descripcion}</div>
+              <div style={{fontSize:12,color:C.textoSuave,marginTop:3}}>Cantidad: {p.cantidad} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+            </div>
+            <Badge e={p.estado}/>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── APP ──────────────────────────────────────────────────────────────────────
 function App(){
   const [sesion,setSesion]=useState(null);
@@ -1056,7 +1318,7 @@ function App(){
   if(!sesion) return <AuthScreen onAuth={handleAuth}/>;
 
   const {usuario}=sesion;
-  const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵",flete:"🚚"};
+  const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵",flete:"🚚",ferreteria:"🔩"};
   const navPrincipal=usuario.tipo==="cliente"?"🪑 Mis pedidos":usuario.tipo==="carpinteria"?"🔨 Pedidos":usuario.tipo==="aserradero"?"🪵 Pedidos":"📅 Mi agenda";
 
   return(
@@ -1092,6 +1354,7 @@ function App(){
         {navTab==="principal"&&usuario.tipo==="carpinteria"&&<VistaCarpinteria usuario={usuario} notif={setNotifMsg}/>}
         {navTab==="principal"&&usuario.tipo==="aserradero"&&<VistaAserradero usuario={usuario} notif={setNotifMsg}/>}
         {navTab==="principal"&&usuario.tipo==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg}/>}
+        {navTab==="principal"&&usuario.tipo==="ferreteria"&&<VistaFerreteria usuario={usuario} notif={setNotifMsg}/>}
         {navTab==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg}/>}
       </div>
     </div>
