@@ -257,11 +257,16 @@ function AuthScreen({onAuth}){
       if(modo==="registro"){
         if(!tipo||!nombre){setErr("Completá todos los campos");setCargando(false);return;}
         const signUpRes=await db.signUp(email,pass);
-        const user=signUpRes.user||signUpRes;
         const error=signUpRes.error;
         if(error){setErr(error.message||"Error al registrar");setCargando(false);return;}
-        if(!user||!user.id){setErr("Error al crear usuario");setCargando(false);return;}
-        await db.insert("usuarios",{auth_id:user.id,tipo,nombre,email,ciudad});
+        const user=signUpRes.data?.user||signUpRes.user||signUpRes;
+        const userId=user?.id||signUpRes?.id;
+        if(!userId){
+          // User created but no ID returned - try to insert with email only
+          await db.insert("usuarios",{tipo,nombre,email,ciudad});
+        } else {
+          await db.insert("usuarios",{auth_id:userId,tipo,nombre,email,ciudad});
+        }
         setOk("¡Cuenta creada! Ahora iniciá sesión.");
         setModo("login");
       }else{
