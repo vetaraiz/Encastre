@@ -369,16 +369,8 @@ function Chat({pedidoId,tipoPedido,miUsuario,otroUsuario}){
     try{ const d=await db.select("mensajes",`?pedido_id=eq.${pedidoId}&tipo_pedido=eq.${tipoPedido}&order=created_at.asc`); setMsgs(d); }catch{}
   },[pedidoId,tipoPedido]);
 
-  useEffect(()=>{cargar();const t=setInterval(cargar,4000);return()=>clearInterval(t);},[cargar]);
-  useEffect(()=>{
-    if(endRef.current){
-      const container=endRef.current.parentElement;
-      if(container){
-        const distFromBottom=container.scrollHeight-container.scrollTop-container.clientHeight;
-        if(distFromBottom<100) endRef.current.scrollIntoView({behavior:"smooth"});
-      }
-    }
-  },[msgs]);
+  useEffect(()=>{cargar();const t=setInterval(cargar,10000);return()=>clearInterval(t);},[cargar]);
+  // scroll manual only
 
   const enviar=async()=>{
     if(!txt.trim())return;
