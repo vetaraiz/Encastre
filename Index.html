@@ -2,11 +2,27 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Encastre 🪵</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Encastre</title>
+
+  <!-- PWA -->
+  <meta name="application-name" content="Encastre"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Encastre"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="theme-color" content="#5C2E0A"/>
+  <meta name="description" content="Encastre — La Comunidad de la Madera"/>
+  <link rel="manifest" href="/manifest.json"/>
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Encastre"/>
+  <meta property="og:description" content="La Comunidad de la Madera"/>
+  <meta property="og:type" content="website"/>
+
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
     body { background:#F0EDD8; font-family:'Lato',sans-serif; color:#3A1A05; }
     ::-webkit-scrollbar { width:6px; }
     ::-webkit-scrollbar-track { background:#F0EDD8; }
@@ -14,10 +30,55 @@
     @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
     @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
     .fade { animation: fadeIn .3s ease; }
+
+    /* MOBILE RESPONSIVE */
+    @media (max-width: 640px) {
+      /* Inputs más grandes para touch */
+      input, textarea, select { font-size: 16px !important; }
+      
+      /* Cards con menos padding */
+      .card-mobile { padding: 12px !important; }
+
+      /* Botones con altura mínima para touch */
+      button { min-height: 38px; }
+
+      /* Ocultar subtítulo topbar en mobile */
+      .logo-sub-mobile { display: none; }
+
+      /* Imagen logo más pequeña en topbar */
+      .logo-img-mobile { width: 34px !important; height: 34px !important; }
+
+      /* Tabs con scroll horizontal */
+      .tabs-mobile { 
+        overflow-x: auto; 
+        white-space: nowrap; 
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+      }
+      .tabs-mobile button { 
+        display: inline-flex !important;
+        white-space: nowrap;
+      }
+
+      /* Row en columna en mobile */
+      .row-mobile { flex-direction: column !important; }
+    }
   </style>
 </head>
 <body>
   <div id="root"></div>
+  <script>
+    // PWA Service Worker
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    }
+    // Install prompt
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt',(e)=>{
+      deferredPrompt=e;
+      window._pwaPrompt=e;
+    });
+  </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
@@ -85,10 +146,10 @@ const ftToCm = f=>(f*30.48).toFixed(1);
 // ─── ESTILOS ──────────────────────────────────────────────────────────────────
 const S = {
   app:{ minHeight:"100vh", background:C.crema, fontFamily:"'Lato',sans-serif", color:C.texto },
-  topbar:{ background:C.marron, padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height:66, position:"sticky", top:0, zIndex:100, boxShadow:"0 2px 12px #5C2E0A44" },
-  logo:{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:800, color:C.crema, letterSpacing:1 },
-  logoSub:{ fontSize:10, color:C.acento, letterSpacing:3, textTransform:"uppercase", display:"block", lineHeight:1 },
-  main:{ maxWidth:900, margin:"0 auto", padding:"24px 14px" },
+  topbar:{ background:C.marron, padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height:"auto", minHeight:58, padding:"6px 12px", position:"sticky", top:0, zIndex:100, boxShadow:"0 2px 12px #5C2E0A44" },
+  logo:{ fontFamily:"'Playfair Display',serif", fontSize:"clamp(14px,3.5vw,22px)", fontWeight:800, color:C.crema, letterSpacing:1 },
+  logoSub:{ fontSize:10, color:C.acento, letterSpacing:3, textTransform:"uppercase", display:"block", lineHeight:1, className:"logo-sub-mobile" },
+  main:{ maxWidth:900, margin:"0 auto", padding:"16px 10px" },
   card:{ background:C.card, border:`1px solid ${C.borde}`, borderRadius:12, padding:20, marginBottom:14, boxShadow:"0 2px 8px #5C2E0A11" },
   cardTitle:{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:700, color:C.marron, marginBottom:12 },
   btn:(v="gold")=>({
@@ -102,8 +163,8 @@ const S = {
   btnAi:{ background:`linear-gradient(135deg,#3D1A6E,#1A3D6E)`, color:"#E8D5FF", border:"1px solid #6B3AAA55", borderRadius:8, padding:"9px 18px", cursor:"pointer", fontSize:13, fontWeight:700, display:"inline-flex", alignItems:"center", gap:6, boxShadow:"0 0 16px #6B3AAA22", fontFamily:"'Lato',sans-serif" },
   input:{ background:C.input, border:`1px solid ${C.borde}`, borderRadius:8, color:C.texto, padding:"9px 12px", fontSize:13, width:"100%", outline:"none", fontFamily:"'Lato',sans-serif", transition:"border .15s" },
   label:{ fontSize:11, color:C.textoSuave, marginBottom:4, display:"block", fontWeight:700, letterSpacing:.8, textTransform:"uppercase" },
-  row:{ display:"flex", gap:10, flexWrap:"wrap" },
-  col:(f=1)=>({ flex:f }),
+  row:{ display:"flex", gap:10, flexWrap:"wrap", width:"100%" },
+  col:(f=1)=>({ flex:f, minWidth:"140px" }),
   secTitle:{ fontSize:11, color:C.textoSuave, fontWeight:700, letterSpacing:1.2, textTransform:"uppercase", marginBottom:12, paddingBottom:8, borderBottom:`1px solid ${C.borde}` },
   tag:(on)=>({ background:on?C.marron:C.input, color:on?C.crema:C.textoSuave, border:`1px solid ${on?C.marron:C.borde}`, borderRadius:6, padding:"5px 12px", cursor:"pointer", fontSize:12, fontWeight:on?700:400, transition:"all .15s", fontFamily:"'Lato',sans-serif" }),
   badge:(e)=>({ background:EC[e]+"22", color:EC[e], border:`1px solid ${EC[e]}55`, borderRadius:5, padding:"3px 10px", fontSize:10, fontWeight:700, letterSpacing:.8, textTransform:"uppercase", display:"inline-block" }),
@@ -496,14 +557,26 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
       <Divider/>
       <div style={S.secTitle}>🪵 Material</div>
       <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:6}}>
-        {MATS.map(m=><button key={m.id} style={S.tag(f.material===m.id)} onClick={()=>set("material",m.id)}>{m.label}</button>)}
+        {MATS.map(m=><button key={m.id} style={S.tag(f.material===m.id)} onClick={()=>{set("material",m.id);set("terminacion","");set("color","");}}>{m.label}</button>)}
       </div>
       {MATS.find(m=>m.id===f.material)&&<div style={{fontSize:11,color:C.textoSuave,fontStyle:"italic"}}>Ej: {MATS.find(m=>m.id===f.material).ej}</div>}
 
       <Divider/>
       <div style={S.secTitle}>🎨 Terminación / Acabado</div>
       <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
-        {TERS.map(t=><button key={t.id} style={S.tag(f.terminacion===t.id)} onClick={()=>set("terminacion",t.id)}>{t.label}</button>)}
+        {TERS.filter(t=>{
+          const esMadera=["madera_dura","madera_semidura","madera_blanda"].includes(f.material);
+          const esMelamina=["aglomerado_melamina","mdf_melamina"].includes(f.material);
+          const esTablero=["aglomerado","mdf","fenolico"].includes(f.material);
+          if(esMadera) return ["crudo","pintado","lacheado","enchapado"].includes(t.id);
+          if(esMelamina) return ["melamina_color"].includes(t.id);
+          if(esTablero) return ["crudo","pintado","lacheado","enchapado","melamina_color"].includes(t.id);
+          return true;
+        }).map(t=>{
+          // Reset terminacion if not valid for current material
+          if(f.terminacion&&f.terminacion===t.id&&false) set("terminacion","");
+          return <button key={t.id} style={S.tag(f.terminacion===t.id)} onClick={()=>set("terminacion",t.id)}>{t.label}</button>;
+        })}
       </div>
       {f.terminacion==="melamina_color"&&(
         <div style={{marginTop:10}}>
