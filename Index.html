@@ -103,6 +103,22 @@
 </head>
 <body>
   <div id="root"></div>
+  <div id="error-display" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#F0EDD8;padding:20px;z-index:9999;overflow:auto;">
+    <div style="background:white;border-radius:12px;padding:20px;max-width:500px;margin:40px auto;border:2px solid #C4892A;">
+      <div style="font-size:18px;color:#5C2E0A;font-weight:700;margin-bottom:12px">Error al cargar la app</div>
+      <pre id="error-text" style="font-size:12px;color:#8B2020;white-space:pre-wrap;word-break:break-all;"></pre>
+    </div>
+  </div>
+  <script>
+    window.onerror = function(msg, src, line, col, err) {
+      document.getElementById('error-display').style.display='block';
+      document.getElementById('error-text').textContent = msg + '\nLine: ' + line + '\n' + (err ? err.stack : '');
+    };
+    window.addEventListener('unhandledrejection', function(e) {
+      document.getElementById('error-display').style.display='block';
+      document.getElementById('error-text').textContent = 'Promise error: ' + e.reason;
+    });
+  </script>
   <script>
     // PWA Service Worker
     if('serviceWorker' in navigator){
