@@ -1745,47 +1745,63 @@ function PantallaBienvenida({onEntrar}){
 // ─── MODAL DE AYUDA ───────────────────────────────────────────────────────────
 function ModalAyuda({usuario, onCerrar}){
   const tipo=usuario?.tipo||"cliente";
-  const contenidos={
-    cliente: <div><div style={S.cardTitle}>🪑 Manual del Consumidor Final</div>
-            <p style={{fontSize:14,color:C.texto,lineHeight:1.7,marginBottom:10}}>Bienvenido a Encastre. Desde acá podés pedir presupuestos para muebles o trabajos en madera.</p>
-            <b style={{color:C.marron}}>¿Cómo pedir un presupuesto?</b>
-            <ol style={{marginTop:6,marginBottom:10,paddingLeft:20,fontSize:13,lineHeight:2,color:C.texto}}>
-              <li>Tocá <b>"➕ Nuevo pedido"</b></li>
-              <li>Describí qué necesitás</li>
-              <li>Ingresá las medidas en centímetros</li>
-              <li>Elegí el material y terminación</li>
-              <li>Indicá si lleva cajones</li>
-              <li>Tocá <b>"📤 Enviar pedido"</b></li>
-            </ol>
-            <b style={{color:C.marron}}>¿Dónde veo los presupuestos?</b>
-            <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4}}>En tu pantalla principal. Tocá el pedido para ver todos los presupuestos recibidos. Podés aceptar o rechazar cada uno. El chat es con la carpintería que te presupuestó.</p></div>,
-    carpinteria: <div><div style={S.cardTitle}>🔨 Manual de Carpintería</div>
-            <b style={{color:C.marron}}>Recibir pedidos</b>
-            <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4,marginBottom:10}}>Los pedidos de clientes aparecen en la pestaña <b>"📋 Pedidos recibidos"</b>. Tocá cualquiera para ver todos los detalles.</p>
-            <b style={{color:C.marron}}>Enviar presupuesto</b>
-            <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4,marginBottom:10}}>Usá el botón <b>"✨ Sugerir con IA"</b> para obtener una sugerencia de precio. Ajustá los valores y tocá <b>"📤 Enviar presupuesto"</b>. El cliente no sabe que usaste IA.</p>
-            <b style={{color:C.marron}}>Pedir madera y herrajes</b>
-            <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4}}>Desde las pestañas <b>"🪵 Pedir madera"</b> y <b>"🔩 Pedir herrajes"</b> podés hacer pedidos a aserraderos y ferreterías. Las cotizaciones que lleguen las verás en "Mis pedidos enviados".</p></div>,
-    aserradero: <div><div style={S.cardTitle}>🪵 Manual del Aserradero</div>
-            <b style={{color:C.marron}}>Ver pedidos de madera</b>
-            <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4,marginBottom:10}}>Los pedidos de carpinterías aparecen en tu pantalla principal con todas las medidas (pies, pulgadas y equivalencia en cm).</p>
-            <b style={{color:C.marron}}>Cotizar</b>
-            <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4,marginBottom:10}}>Tocá un pedido, usá <b>"✨ Sugerir cotización con IA"</b> si lo necesitás, ajustá los valores y enviá tu cotización.</p>
-            <b style={{color:C.marron}}>Chat</b>
-            <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4}}>Cada pedido tiene un chat directo con la carpintería para coordinar detalles.</p></div>,
-    ferreteria: <div><div style={S.cardTitle}>🔩 Manual de Ferretería</div>
-            <b style={{color:C.marron}}>Ver pedidos de herrajes</b>
-            <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4,marginBottom:10}}>Los pedidos de carpinterías aparecen en tu pantalla con la descripción detallada de los herrajes necesarios.</p>
-            <b style={{color:C.marron}}>Cotizar</b>
-            <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4,marginBottom:10}}>Tocá el pedido, completá precio, tiempo de entrega y detalles, y enviá tu cotización.</p>
-            <b style={{color:C.marron}}>Chat</b>
-            <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4}}>Usá el chat para consultar especificaciones técnicas o coordinar la entrega.</p></div>,
-    flete: <div><div style={S.cardTitle}>🚚 Manual de Flete</div>
-            <b style={{color:C.marron}}>Tu agenda</b>
-            <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4,marginBottom:10}}>Marcá tu disponibilidad para los próximos 7 días: <b>Disponible</b>, <b>En viaje</b> u <b>Ocupado</b>. Mantenerla actualizada ayuda a que te elijan.</p>
-            <b style={{color:C.marron}}>Ver solicitudes</b>
-            <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4}}>En <b>"Ver todos"</b> aparecen las solicitudes de traslado con origen, destino y descripción de la carga.</p></div>,
+  
+  const getContenido=()=>{
+    if(tipo==="carpinteria") return(
+      <div>
+        <div style={S.cardTitle}>🔨 Manual de Carpintería</div>
+        <b style={{color:C.marron}}>Recibir pedidos</b>
+        <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4,marginBottom:10}}>Los pedidos de clientes aparecen en la pestaña <b>"📋 Pedidos recibidos"</b>. Tocá cualquiera para ver todos los detalles.</p>
+        <b style={{color:C.marron}}>Enviar presupuesto</b>
+        <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4,marginBottom:10}}>Usá el botón <b>"✨ Sugerir con IA"</b> para obtener una sugerencia de precio. Ajustá los valores y tocá <b>"📤 Enviar presupuesto"</b>. El cliente no sabe que usaste IA.</p>
+        <b style={{color:C.marron}}>Pedir madera y herrajes</b>
+        <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4}}>Desde las pestañas <b>"🪵 Pedir madera"</b> y <b>"🔩 Pedir herrajes"</b> podés hacer pedidos a proveedores.</p>
+      </div>
+    );
+    if(tipo==="aserradero") return(
+      <div>
+        <div style={S.cardTitle}>🪵 Manual del Aserradero</div>
+        <b style={{color:C.marron}}>Ver pedidos de madera</b>
+        <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4,marginBottom:10}}>Los pedidos de carpinterías aparecen en tu pantalla con todas las medidas en pies, pulgadas y centímetros.</p>
+        <b style={{color:C.marron}}>Cotizar</b>
+        <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4}}>Tocá un pedido, usá <b>"✨ Sugerir cotización con IA"</b>, ajustá los valores y enviá tu cotización.</p>
+      </div>
+    );
+    if(tipo==="ferreteria") return(
+      <div>
+        <div style={S.cardTitle}>🔩 Manual de Ferretería</div>
+        <b style={{color:C.marron}}>Ver pedidos de herrajes</b>
+        <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4,marginBottom:10}}>Los pedidos de carpinterías aparecen con descripción detallada de los herrajes necesarios.</p>
+        <b style={{color:C.marron}}>Cotizar</b>
+        <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4}}>Tocá el pedido, completá precio y tiempo de entrega, y enviá tu cotización.</p>
+      </div>
+    );
+    if(tipo==="flete") return(
+      <div>
+        <div style={S.cardTitle}>🚚 Manual de Flete</div>
+        <b style={{color:C.marron}}>Tu agenda</b>
+        <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4,marginBottom:10}}>Marcá tu disponibilidad para los próximos 7 días. Mantenerla actualizada ayuda a que te elijan.</p>
+        <b style={{color:C.marron}}>Ver solicitudes</b>
+        <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4}}>En <b>"Ver todos"</b> aparecen las solicitudes de traslado con origen, destino y descripción de la carga.</p>
+      </div>
+    );
+    // cliente por default
+    return(
+      <div>
+        <div style={S.cardTitle}>🪑 Manual del Consumidor Final</div>
+        <b style={{color:C.marron}}>¿Cómo pedir un presupuesto?</b>
+        <ol style={{marginTop:6,marginBottom:10,paddingLeft:20,fontSize:13,lineHeight:2,color:C.texto}}>
+          <li>Tocá <b>"➕ Nuevo pedido"</b></li>
+          <li>Describí qué necesitás y cargá las medidas</li>
+          <li>Elegí el material y terminación</li>
+          <li>Tocá <b>"📤 Enviar pedido"</b></li>
+        </ol>
+        <b style={{color:C.marron}}>¿Dónde veo los presupuestos?</b>
+        <p style={{fontSize:13,color:C.texto,lineHeight:1.7,marginTop:4}}>En tu pantalla principal. Tocá el pedido para ver los presupuestos recibidos. El chat es con la carpintería que te presupuestó.</p>
+      </div>
+    );
   };
+
   return(
     <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"#00000066",zIndex:1000,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"20px 16px",overflowY:"auto"}}>
       <div style={{background:C.fondo,borderRadius:14,padding:24,maxWidth:520,width:"100%",boxShadow:"0 8px 32px #00000033",marginTop:20}}>
@@ -1793,12 +1809,13 @@ function ModalAyuda({usuario, onCerrar}){
           <div style={{fontSize:13,color:C.textoSuave}}>Ayuda rápida</div>
           <button onClick={onCerrar} style={{background:"transparent",border:"none",fontSize:20,cursor:"pointer",color:C.textoSuave}}>✕</button>
         </div>
-        {contenidos[tipo]||contenidos.cliente}
+        {getContenido()}
         <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",marginTop:16}} onClick={onCerrar}>Entendido ✓</button>
       </div>
     </div>
   );
 }
+
 
 // ─── APP ──────────────────────────────────────────────────────────────────────
 function App(){
