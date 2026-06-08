@@ -335,6 +335,7 @@ function AuthScreen({onAuth}){
   const [modo,setModo]=useState("login");
   const [email,setEmail]=useState("");
   const [pass,setPass]=useState("");
+  const [verPass,setVerPass]=useState(false);
   const [nombre,setNombre]=useState("");
   const [tipo,setTipo]=useState("");
   const [ciudad,setCiudad]=useState("");
@@ -430,7 +431,10 @@ function AuthScreen({onAuth}){
         </div>
         <div style={{marginBottom:16}}>
           <label style={S.label}>Contraseña</label>
-          <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Mínimo 6 caracteres" style={S.input} onKeyDown={e=>{if(e.key==="Enter")submit();}}/>
+          <div style={{position:"relative"}}>
+            <input type={verPass?"text":"password"} value={pass} onChange={e=>setPass(e.target.value)} placeholder="Mínimo 6 caracteres" style={{...S.input,paddingRight:46}} onKeyDown={e=>{if(e.key==="Enter")submit();}}/>
+            <button type="button" onClick={()=>setVerPass(v=>!v)} aria-label="Mostrar u ocultar contraseña" style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",minHeight:"auto",background:"none",border:"none",cursor:"pointer",fontSize:20,padding:6,lineHeight:1}}>{verPass?"🙈":"👁️"}</button>
+          </div>
         </div>
 
         {err&&<div style={{fontSize:17,color:C.rojo,background:C.rojo+"11",border:`1px solid ${C.rojo}33`,borderRadius:7,padding:"8px 12px",marginBottom:12}}>{err}</div>}
@@ -1480,22 +1484,51 @@ function VistaFerreteria({usuario,notif}){
 
 function PantallaBienvenida({onEntrar}){
   const [vista,setVista]=useState("inicio");
+
+  const compartirApp=async()=>{
+    const datos={title:"Encastre — La Comunidad de la Madera",text:"Te invito a sumarte a Encastre, la comunidad de la madera 🌳",url:"https://encastre.netlify.app"};
+    try{
+      if(navigator.share){ await navigator.share(datos); }
+      else { await navigator.clipboard.writeText(datos.url); alert("¡Link copiado! Ya lo podés pegar en WhatsApp o donde quieras."); }
+    }catch(e){ /* el usuario cerró el menú de compartir, no hacemos nada */ }
+  };
   if(vista==="manual") return(
     <div style={{maxWidth:640,margin:"0 auto",padding:20}}>
       <button style={{...S.btn("ghost"),marginBottom:16}} onClick={()=>setVista("inicio")}>← Volver</button>
       <div style={{background:C.card,borderRadius:14,padding:24,border:`1px solid ${C.borde}`}}>
         <div style={{fontFamily:"'Playfair Display',serif",fontSize:23,fontWeight:700,color:C.marron,marginBottom:16}}>📖 Manual de Usuario</div>
-        <p style={{fontSize:17,color:C.texto,lineHeight:1.7,marginBottom:14}}><b>Encastre</b> conecta a todos los actores del rubro de la madera en un solo lugar.</p>
+        <p style={{fontSize:17,color:C.texto,lineHeight:1.7,marginBottom:14}}><b>Encastre — La Comunidad de la Madera</b> reúne en un mismo lugar a todos los actores del rubro: el consumidor final, la carpintería, el aserradero, la ferretería y el flete. La idea es simple: pedir, presupuestar y coordinar trabajos en madera de forma rápida, clara y ordenada.</p>
+
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:C.marron,margin:"6px 0 10px"}}>¿Quién es quién?</div>
         {[
-          {e:"🪑",t:"Consumidor Final",d:"Pedí presupuestos a múltiples carpinterías. Comparás y elegís."},
-          {e:"🔨",t:"Carpintería",d:"Recibís pedidos, presupuestás con IA, pedís madera y herrajes."},
-          {e:"🪵",t:"Aserradero",d:"Recibís pedidos de madera y cotizás con ayuda de IA."},
-          {e:"🔩",t:"Ferretería",d:"Recibís pedidos de herrajes y cotizás fácilmente."},
-          {e:"🚚",t:"Flete",d:"Gestionás tu agenda y recibís solicitudes de traslado."},
+          {e:"🪑",t:"Consumidor Final",d:"Creás un pedido describiendo lo que necesitás, con medidas y hasta una foto de tu croquis. Lo reciben las carpinterías, te mandan presupuestos y vos comparás y elegís el que más te convenga."},
+          {e:"🔨",t:"Carpintería",d:"Recibís los pedidos de los clientes y enviás tu presupuesto. Si necesitás materiales, pedís madera a aserraderos y herrajes a ferreterías desde la misma app."},
+          {e:"🪵",t:"Aserradero",d:"Recibís pedidos de madera de las carpinterías y respondés con tu cotización."},
+          {e:"🔩",t:"Ferretería",d:"Recibís pedidos de herrajes y materiales, y cotizás de forma simple y rápida."},
+          {e:"🚚",t:"Flete",d:"Gestionás tu agenda de traslados y recibís solicitudes para mover los trabajos."},
         ].map(u=>(<div key={u.t} style={{borderLeft:`3px solid ${C.acento}`,paddingLeft:12,marginBottom:14}}>
           <div style={{fontWeight:700,color:C.marron,fontSize:17}}>{u.e} {u.t}</div>
           <div style={{fontSize:16,color:C.textoSuave,marginTop:3,lineHeight:1.6}}>{u.d}</div>
         </div>))}
+
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:C.marron,margin:"18px 0 10px"}}>¿Cómo funciona?</div>
+        {[
+          "Registrate y elegí tu tipo de usuario.",
+          "El cliente crea un pedido con medidas, materiales y, si quiere, una foto del croquis.",
+          "Las carpinterías envían sus presupuestos y el cliente acepta el que prefiere.",
+          "Coordinan los detalles por el chat interno y, si hace falta, suman aserradero, ferretería y flete.",
+        ].map((p,i)=>(<div key={i} style={{display:"flex",gap:10,marginBottom:10,alignItems:"flex-start"}}>
+          <div style={{minWidth:26,height:26,borderRadius:"50%",background:C.marron,color:C.crema,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:15}}>{i+1}</div>
+          <div style={{fontSize:16,color:C.texto,lineHeight:1.6}}>{p}</div>
+        </div>))}
+
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:C.marron,margin:"18px 0 10px"}}>Herramientas que vas a encontrar</div>
+        {[
+          "✏️ Pedidos con medidas, cajones y croquis con foto.",
+          "💬 Chat interno entre los usuarios de cada operación.",
+          "📐 Conversor de medidas (centímetros, milímetros y pulgadas).",
+          "🚚 Agenda de fletes para coordinar los traslados.",
+        ].map((p,i)=>(<div key={i} style={{fontSize:16,color:C.textoSuave,lineHeight:1.7,marginBottom:6}}>{p}</div>))}
         <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",marginTop:8}} onClick={onEntrar}>Registrarme / Ingresar →</button>
       </div>
     </div>
@@ -1506,12 +1539,20 @@ function PantallaBienvenida({onEntrar}){
       <div style={{background:C.card,borderRadius:14,padding:24,border:`1px solid ${C.borde}`}}>
         <div style={{fontFamily:"'Playfair Display',serif",fontSize:23,fontWeight:700,color:C.marron,marginBottom:16}}>📋 Términos y Condiciones</div>
         {[
-          {t:"1. Aceptación",d:"Al registrarse en Encastre, el usuario acepta estos términos. Si no está de acuerdo, no debe usar la plataforma."},
-          {t:"2. Servicio",d:"Encastre conecta usuarios del rubro maderero. Actúa como intermediario y no es responsable de los trabajos contratados."},
-          {t:"3. Responsabilidad",d:"Cada usuario es responsable de la veracidad de su información y de los compromisos que asume."},
-          {t:"4. Prohibiciones",d:"Está prohibido publicar información falsa, usar la plataforma para actividades ilegales o acosar a otros usuarios."},
-          {t:"5. Modificaciones",d:"Encastre puede modificar estos términos en cualquier momento, notificando los cambios."},
-          {t:"6. Jurisdicción",d:"Rigen las leyes de la República Argentina. Disputas en tribunales de CABA."},
+          {t:"1. Aceptación de los términos",d:"Al registrarse o utilizar Encastre, el usuario declara haber leído, comprendido y aceptado estos Términos y Condiciones, así como la Política de Privacidad. Si no está de acuerdo, debe abstenerse de usar la plataforma."},
+          {t:"2. Descripción del servicio",d:"Encastre es una plataforma digital que conecta a consumidores finales, carpinterías, aserraderos, ferreterías y servicios de flete del rubro maderero, facilitando el contacto, la solicitud de presupuestos y la comunicación entre las partes."},
+          {t:"3. Rol de Encastre (intermediación)",d:"Encastre actúa únicamente como punto de encuentro entre usuarios. No fabrica, vende, transporta ni garantiza los productos o trabajos ofrecidos. La negociación, el presupuesto, el pago y la entrega se acuerdan en forma directa y exclusiva entre los usuarios involucrados."},
+          {t:"4. Registro y cuenta",d:"El usuario debe brindar información veraz, completa y actualizada. Es responsable de mantener la confidencialidad de su contraseña y de toda actividad realizada desde su cuenta, que es personal e intransferible."},
+          {t:"5. Obligaciones del usuario",d:"El usuario se compromete a utilizar la plataforma de buena fe, a cumplir los compromisos que asuma con otros usuarios y a respetar la legislación vigente."},
+          {t:"6. Presupuestos y contrataciones",d:"Los presupuestos, plazos y condiciones son responsabilidad de quien los emite. La aceptación de un presupuesto genera un acuerdo directo entre las partes, ajeno a Encastre."},
+          {t:"7. Pagos",d:"Encastre no procesa pagos ni cobra comisiones sobre las operaciones. Cualquier pago se realiza por fuera de la plataforma, bajo exclusiva responsabilidad de las partes."},
+          {t:"8. Contenido publicado",d:"El usuario es el único responsable de la información, imágenes y croquis que publica, y garantiza contar con los derechos para hacerlo. Encastre podrá remover contenido que infrinja estos términos o la ley."},
+          {t:"9. Conductas prohibidas",d:"Está prohibido publicar información falsa o engañosa, suplantar identidades, acosar, discriminar o amenazar a otros usuarios, difundir contenido ilegal u ofensivo, y utilizar la plataforma con fines fraudulentos."},
+          {t:"10. Limitación de responsabilidad",d:"Encastre no será responsable por daños, pérdidas, incumplimientos o conflictos derivados de los acuerdos entre usuarios, ni por la calidad, seguridad o legalidad de los productos y servicios ofrecidos."},
+          {t:"11. Suspensión o baja de cuentas",d:"Encastre podrá suspender o eliminar cuentas que incumplan estos términos, sin perjuicio de las acciones legales que correspondan."},
+          {t:"12. Modificaciones",d:"Encastre podrá actualizar estos términos cuando lo considere necesario. Los cambios se informarán dentro de la plataforma y el uso continuado implica la aceptación de la versión vigente."},
+          {t:"13. Ley aplicable y jurisdicción",d:"Estos términos se rigen por las leyes de la República Argentina. Ante cualquier controversia, las partes se someten a los tribunales ordinarios de la Ciudad Autónoma de Buenos Aires, salvo las normas de orden público que correspondan, en especial en materia de defensa del consumidor (Ley 24.240)."},
+          {t:"14. Contacto",d:"Ante dudas o reclamos sobre estos términos, escribinos a carpinteriavetaraiz@gmail.com."},
         ].map(t=>(<div key={t.t} style={{marginBottom:14}}>
           <div style={{fontWeight:700,color:C.marron,fontSize:17,marginBottom:3}}>{t.t}</div>
           <div style={{fontSize:16,color:C.texto,lineHeight:1.7}}>{t.d}</div>
@@ -1526,11 +1567,18 @@ function PantallaBienvenida({onEntrar}){
       <div style={{background:C.card,borderRadius:14,padding:24,border:`1px solid ${C.borde}`}}>
         <div style={{fontFamily:"'Playfair Display',serif",fontSize:23,fontWeight:700,color:C.marron,marginBottom:16}}>🔒 Política de Privacidad</div>
         {[
-          {t:"Datos que recopilamos",d:"Nombre, email, ciudad y tipo de usuario. No recopilamos datos financieros."},
-          {t:"Uso",d:"Solo para el funcionamiento de la plataforma: perfil, pedidos y comunicaciones."},
-          {t:"Compartir",d:"No vendemos datos. Otros usuarios ven solo nombre, ciudad y calificación."},
-          {t:"Seguridad",d:"Usamos Supabase con encriptación. Las contraseñas nunca se almacenan en texto plano."},
-          {t:"Tus derechos",d:"Podés solicitar la eliminación de tu cuenta escribiendo a carpinteriavetaraiz@gmail.com"},
+          {t:"1. Responsable del tratamiento",d:"El responsable de los datos personales recopilados en Encastre es Veta Raíz. Para cualquier consulta sobre tus datos podés escribir a carpinteriavetaraiz@gmail.com."},
+          {t:"2. Datos que recopilamos",d:"Los datos que ingresás al registrarte y usar la app: nombre, correo electrónico, ciudad y tipo de usuario, y el contenido de tus pedidos, presupuestos, mensajes y croquis (incluidas las fotos que adjuntes). No solicitamos ni almacenamos datos de tarjetas ni información bancaria."},
+          {t:"3. Finalidad del uso",d:"Usamos tus datos exclusivamente para el funcionamiento de la plataforma: crear y mostrar tu perfil, gestionar pedidos y presupuestos, permitir la comunicación entre usuarios y mejorar el servicio."},
+          {t:"4. Base del tratamiento",d:"Tratamos tus datos sobre la base del consentimiento que otorgás al registrarte y de la necesidad de prestar el servicio que solicitás."},
+          {t:"5. Con quién se comparte",d:"No vendemos ni cedemos tus datos a terceros con fines comerciales. Otros usuarios solo ven la información necesaria para operar (por ejemplo, nombre, ciudad, tipo de usuario y el contenido de los pedidos o presupuestos que compartís con ellos)."},
+          {t:"6. Proveedores tecnológicos",d:"La información se almacena en servidores de Supabase, proveedor de infraestructura que aplica medidas de seguridad estándar de la industria. Las contraseñas se guardan cifradas y nunca en texto plano."},
+          {t:"7. Conservación de los datos",d:"Conservamos tus datos mientras tu cuenta esté activa. Si solicitás la baja, los eliminamos, salvo aquellos que debamos conservar por obligaciones legales."},
+          {t:"8. Tus derechos",d:"Como titular de los datos tenés derecho a acceder, rectificar, actualizar y solicitar la supresión de tu información. Para ejercerlos, escribinos a carpinteriavetaraiz@gmail.com."},
+          {t:"9. Normativa y autoridad de control",d:"El tratamiento se realiza conforme a la Ley 25.326 de Protección de los Datos Personales de la República Argentina. La Agencia de Acceso a la Información Pública (AAIP) es el organismo de control ante quien podés presentar denuncias si considerás afectados tus derechos."},
+          {t:"10. Datos de menores",d:"Encastre está dirigida a personas mayores de edad. No recopilamos intencionalmente datos de menores sin autorización de sus responsables."},
+          {t:"11. Almacenamiento en tu dispositivo",d:"La app puede guardar información en tu dispositivo para funcionar como aplicación instalada (PWA) y mantener tu sesión iniciada."},
+          {t:"12. Cambios en esta política",d:"Podemos actualizar esta Política de Privacidad. Te avisaremos dentro de la plataforma y el uso continuado implicará la aceptación de la versión vigente."},
         ].map(t=>(<div key={t.t} style={{marginBottom:14}}>
           <div style={{fontWeight:700,color:C.marron,fontSize:17,marginBottom:3}}>{t.t}</div>
           <div style={{fontSize:16,color:C.texto,lineHeight:1.7}}>{t.d}</div>
@@ -1550,10 +1598,11 @@ function PantallaBienvenida({onEntrar}){
       <div style={{maxWidth:400,width:"100%",display:"flex",flexDirection:"column",gap:12}}>
         <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",fontSize:17,padding:"14px"}} onClick={onEntrar}>Ingresar / Registrarme →</button>
         <div style={{display:"flex",gap:8}}>
-          <button style={{...S.btn("ghost"),flex:1,justifyContent:"center",fontSize:16}} onClick={()=>setVista("manual")}>📖 Manual</button>
-          <button style={{...S.btn("ghost"),flex:1,justifyContent:"center",fontSize:16}} onClick={()=>setVista("terminos")}>📋 Términos</button>
-          <button style={{...S.btn("ghost"),flex:1,justifyContent:"center",fontSize:16}} onClick={()=>setVista("privacidad")}>🔒 Privacidad</button>
+          <button style={{...S.btn("ghost"),flex:1,flexDirection:"column",gap:2,justifyContent:"center",fontSize:15,padding:"10px 6px"}} onClick={()=>setVista("manual")}><span style={{fontSize:20}}>📖</span><span>Manual</span></button>
+          <button style={{...S.btn("ghost"),flex:1,flexDirection:"column",gap:2,justifyContent:"center",fontSize:15,padding:"10px 6px"}} onClick={()=>setVista("terminos")}><span style={{fontSize:20}}>📋</span><span>Términos</span></button>
+          <button style={{...S.btn("ghost"),flex:1,flexDirection:"column",gap:2,justifyContent:"center",fontSize:15,padding:"10px 6px"}} onClick={()=>setVista("privacidad")}><span style={{fontSize:20}}>🔒</span><span>Privacidad</span></button>
         </div>
+        <button style={{...S.btn("ghost"),width:"100%",justifyContent:"center",fontSize:16}} onClick={compartirApp}>📤 Compartir aplicación</button>
       </div>
     </div>
   );
