@@ -24,7 +24,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    body { background:#F0EDD8; font-size:16px !important; font-family:'Lato',sans-serif; color:#3A1A05; }
+    body { background:#F0EDD8; font-size:17px !important; font-family:'Lato',sans-serif; color:#3A1A05; }
     ::-webkit-scrollbar { width:6px; }
 
     /* FORZAR TAMAÑOS - NO CACHEAR */
@@ -189,7 +189,7 @@ const S = {
   logoSub:{ fontSize:10, color:C.acento, letterSpacing:3, textTransform:"uppercase", display:"block", lineHeight:1, className:"logo-sub-mobile" },
   main:{ maxWidth:900, margin:"0 auto", padding:"16px 10px" },
   card:{ background:C.card, border:`1px solid ${C.borde}`, borderRadius:12, padding:22, marginBottom:16, boxShadow:"0 2px 8px #5C2E0A11" },
-  cardTitle:{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:C.marron, marginBottom:14 },
+  cardTitle:{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:700, color:C.marron, marginBottom:14 },
   btn:(v="gold")=>({
     background:v==="gold"?C.acento:v==="dark"?C.marron:v==="red"?C.rojo:"transparent",
     color:v==="ghost"?C.marron:C.crema,
@@ -199,8 +199,8 @@ const S = {
     fontFamily:"'Lato',sans-serif",
   }),
   btnAi:{ background:`linear-gradient(135deg,#3D1A6E,#1A3D6E)`, color:"#E8D5FF", border:"1px solid #6B3AAA55", borderRadius:8, padding:"9px 18px", cursor:"pointer", fontSize:13, fontWeight:700, display:"inline-flex", alignItems:"center", gap:6, boxShadow:"0 0 16px #6B3AAA22", fontFamily:"'Lato',sans-serif" },
-  input:{ background:C.input, border:`1px solid ${C.borde}`, borderRadius:8, color:C.texto, padding:"10px 13px", fontSize:15, width:"100%", outline:"none", fontFamily:"'Lato',sans-serif", transition:"border .15s" },
-  label:{ fontSize:"15px", color:C.marron, marginBottom:7, display:"block", fontWeight:700, letterSpacing:.3 },
+  input:{ background:C.input, border:`1px solid ${C.borde}`, borderRadius:8, color:C.texto, padding:"11px 14px", fontSize:16, width:"100%", outline:"none", fontFamily:"'Lato',sans-serif", transition:"border .15s" },
+  label:{ fontSize:"16px", color:C.marron, marginBottom:8, display:"block", fontWeight:700, letterSpacing:.3 },
   row:{ display:"flex", gap:10, flexWrap:"wrap", width:"100%" },
   col:(f=1)=>({ flex:f, minWidth:"140px" }),
   secTitle:{ fontSize:"18px", color:C.marron, fontWeight:700, letterSpacing:.3, marginBottom:14, paddingBottom:8, borderBottom:`2px solid ${C.acento}`, fontFamily:"'Playfair Display',serif" },
