@@ -349,6 +349,7 @@ function AuthScreen({onAuth}){
     {id:"aserradero",emoji:"🪵",label:"Aserradero",desc:"Vendo madera a carpinterías y negocios"},
     {id:"flete",emoji:"🚚",label:"Flete / Transporte",desc:"Traslado muebles y materiales"},
     {id:"ferreteria",emoji:"🔩",label:"Ferretería / Herrajes",desc:"Vendo herrajes, bisagras y materiales a carpinterías"},
+    {id:"pintureria",emoji:"🎨",label:"Pinturería",desc:"Vendo pinturas, barnices, lacas y esmaltes a carpinterías"},
   ];
 
   const submit=async()=>{
@@ -833,6 +834,10 @@ function VistaCarpinteria({usuario,notif}){
   const [misPedidosFerreria,setMisPedidosFerreria]=useState([]);
   const [selFerr,setSelFerr]=useState(null);
   const [cotizacionesFerr,setCotizacionesFerr]=useState([]);
+  const [pintF,setPintF]=useState({descripcion:"",cantidad:"",notas:""});
+  const [misPedidosPint,setMisPedidosPint]=useState([]);
+  const [selPint,setSelPint]=useState(null);
+  const [cotizacionesPint,setCotizacionesPint]=useState([]);
 
   const cargar=useCallback(async()=>{
     try{const d=await db.select("pedidos","?order=created_at.desc");setPedidos(d);}catch{}
@@ -856,7 +861,21 @@ function VistaCarpinteria({usuario,notif}){
       setCotizacionesFerr(enr);
     }catch{}
   };
-  useEffect(()=>{cargar();cargarMisPedidosAserr();cargarMisPedidosFerreria();},[cargar,cargarMisPedidosAserr,cargarMisPedidosFerreria]);
+  const cargarMisPedidosPint=useCallback(async()=>{
+    try{const d=await db.select("pedidos_pintureria",`?carpinteria_id=eq.${usuario.id}&order=created_at.desc`);setMisPedidosPint(d);}catch{}
+  },[usuario.id]);
+  const abrirPedidoPint=async(p)=>{
+    setSelPint(p);
+    try{
+      const d=await db.select("cotizaciones_pintureria",`?pedido_id=eq.${p.id}&order=created_at.asc`);
+      const enr=await Promise.all(d.map(async ct=>{
+        const pe=await db.select("usuarios",`?id=eq.${ct.pintureria_id}&limit=1`);
+        return{...ct,pintNombre:pe[0]?.nombre||"Pinturería"};
+      }));
+      setCotizacionesPint(enr);
+    }catch{}
+  };
+  useEffect(()=>{cargar();cargarMisPedidosAserr();cargarMisPedidosFerreria();cargarMisPedidosPint();},[cargar,cargarMisPedidosAserr,cargarMisPedidosFerreria,cargarMisPedidosPint]);
 
   const enviarPresup=async()=>{
     if(!presF.monto||!sel||enviando||yaEnvio)return;
@@ -967,7 +986,7 @@ function VistaCarpinteria({usuario,notif}){
   return(
     <div>
       <div style={{display:"flex",gap:7,marginBottom:18,flexWrap:"wrap"}}>
-        {[["pedidos","📋 Pedidos recibidos"],["aserradero","🪵 Pedir madera"],["ferreteria","🔩 Pedir herrajes"],["conversion","📐 Conversor"]].map(([id,l])=>(
+        {[["pedidos","📋 Pedidos recibidos"],["aserradero","🪵 Pedir madera"],["ferreteria","🔩 Pedir herrajes"],["pintureria","🎨 Pedir pinturas"],["conversion","📐 Conversor"]].map(([id,l])=>(
           <button key={id} style={tabStyle(id)} onClick={()=>setTab(id)}>{l}</button>
         ))}
       </div>
@@ -1125,6 +1144,77 @@ function VistaCarpinteria({usuario,notif}){
                     {ct.detalle&&<div style={{marginTop:6,fontSize:17,color:C.textoSuave,whiteSpace:"pre-line",fontStyle:"italic"}}>{ct.detalle}</div>}
                     <div style={{marginTop:10}}>
                       <Chat pedidoId={selFerr.id} tipoPedido="ferreteria" miUsuario={usuario} otroUsuario={{id:ct.ferreteria_id}}/>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab==="pintureria"&&(
+        <div>
+          <div style={S.card}>
+            <div style={S.cardTitle}>🎨 Pedir pinturas a pinturería</div>
+            <div style={{marginBottom:12}}>
+              <label style={S.label}>¿Qué pinturas o materiales necesitás?</label>
+              <textarea value={pintF.descripcion} onChange={e=>setPintF(f=>({...f,descripcion:e.target.value}))} placeholder="Ej: Laca poliuretánica mate 4L, barniz marino, tinta al agua color nogal, esmalte blanco..." style={{...S.input,minHeight:72,resize:"vertical"}}/>
+            </div>
+            <div style={S.row}>
+              <div style={S.col()}><label style={S.label}>Cantidad</label><input type="number" value={pintF.cantidad} onChange={e=>setPintF(f=>({...f,cantidad:e.target.value}))} placeholder="0" style={S.input}/></div>
+              <div style={S.col()}><label style={S.label}>Notas adicionales</label><input value={pintF.notas} onChange={e=>setPintF(f=>({...f,notas:e.target.value}))} placeholder="Marca, color, acabado, etc." style={S.input}/></div>
+            </div>
+            <button style={{...S.btn("dark"),marginTop:12}} onClick={async()=>{
+              if(!pintF.descripcion)return;
+              try{
+                await db.insert("pedidos_pintureria",{carpinteria_id:usuario.id,descripcion:pintF.descripcion,cantidad:Number(pintF.cantidad)||0,notas:pintF.notas});
+                notif("¡Pedido enviado a las pinturerías!");
+                setPintF({descripcion:"",cantidad:"",notas:""});
+                cargarMisPedidosPint();
+              }catch(e){alert("Error: "+e.message);}
+            }}>📤 Enviar a pinturerías</button>
+          </div>
+
+          {misPedidosPint.length>0&&(
+            <div style={S.card}>
+              <div style={S.cardTitle}>📋 Mis pedidos de pinturas</div>
+              {misPedidosPint.map(p=>(
+                <div key={p.id} style={{border:`1px solid ${C.borde}`,borderRadius:8,padding:12,marginBottom:10,cursor:"pointer",background:C.input}}
+                  onClick={()=>abrirPedidoPint(p)}
+                  onMouseEnter={e=>e.currentTarget.style.borderColor=C.acento}
+                  onMouseLeave={e=>e.currentTarget.style.borderColor=C.borde}>
+                  <div style={{display:"flex",justifyContent:"space-between"}}>
+                    <div>
+                      <div style={{fontWeight:700,fontSize:18,color:C.marron}}>{p.descripcion}</div>
+                      <div style={{fontSize:17,color:C.textoSuave}}>Cantidad: {p.cantidad} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                    </div>
+                    <Badge e={p.estado}/>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {selPint&&(
+            <div style={S.card}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <div style={S.cardTitle}>💰 Cotizaciones de pinturerías</div>
+                <button style={{...S.btn("ghost"),fontSize:17,padding:"4px 10px"}} onClick={()=>setSelPint(null)}>Cerrar</button>
+              </div>
+              {cotizacionesPint.length===0?(
+                <div style={{color:C.textoSuave,textAlign:"center",padding:20,fontStyle:"italic"}}>⏳ Esperando cotizaciones...</div>
+              ):(
+                cotizacionesPint.map((ct,i)=>(
+                  <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:8,padding:12,marginBottom:10,background:C.input}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                      <b style={{color:C.marron}}>{ct.pintNombre}</b>
+                      <b style={{fontSize:17,color:C.verde}}>$ {Number(ct.precio_total).toLocaleString("es-AR")}</b>
+                    </div>
+                    <div style={S.col()}><span style={{fontSize:17,color:C.textoSuave}}>Entrega: </span><b>{ct.tiempo_entrega}</b></div>
+                    {ct.detalle&&<div style={{marginTop:6,fontSize:17,color:C.textoSuave,whiteSpace:"pre-line",fontStyle:"italic"}}>{ct.detalle}</div>}
+                    <div style={{marginTop:10}}>
+                      <Chat pedidoId={selPint.id} tipoPedido="pintureria" miUsuario={usuario} otroUsuario={{id:ct.pintureria_id}}/>
                     </div>
                   </div>
                 ))
@@ -1480,6 +1570,78 @@ function VistaFerreteria({usuario,notif}){
   );
 }
 
+// ─── VISTA PINTURERÍA ─────────────────────────────────────────────────────────
+function VistaPintureria({usuario,notif}){
+  const [pedidos,setPedidos]=useState([]);
+  const [sel,setSel]=useState(null);
+  const [cotF,setCotF]=useState({monto:"",tiempo:"",detalle:""});
+
+  const cargar=useCallback(async()=>{
+    try{const d=await db.select("pedidos_pintureria","?order=created_at.desc");setPedidos(d);}catch{}
+  },[]);
+  useEffect(()=>{cargar();const t=setInterval(cargar,15000);return()=>clearInterval(t);},[cargar]);
+
+  const enviarCot=async()=>{
+    if(!cotF.monto||!sel)return;
+    try{
+      await db.insert("cotizaciones_pintureria",{pedido_id:sel.id,pintureria_id:usuario.id,precio_total:Number(cotF.monto),tiempo_entrega:cotF.tiempo,detalle:cotF.detalle});
+      await db.update("pedidos_pintureria",{estado:"presupuestado"},`id=eq.${sel.id}`);
+      notif("¡Cotización enviada!");
+      setCotF({monto:"",tiempo:"",detalle:""});
+    }catch(e){alert("Error: "+e.message);}
+  };
+
+  if(sel) return(
+    <div>
+      <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSel(null)}>← Volver</button>
+      <div style={S.card}>
+        <div style={S.cardTitle}>Pedido de carpintería</div>
+        <div style={{background:C.suave,borderRadius:8,padding:12,border:`1px solid ${C.borde}`}}>
+          <div style={S.label}>PINTURAS SOLICITADAS</div>
+          <div style={{fontWeight:700,fontSize:21,color:C.marron,marginTop:4}}>{sel.descripcion}</div>
+          {sel.cantidad&&<div style={{fontSize:17,color:C.textoSuave,marginTop:4}}>Cantidad: {sel.cantidad}</div>}
+          {sel.notas&&<div style={{fontSize:17,color:C.textoSuave,fontStyle:"italic",marginTop:4}}>{sel.notas}</div>}
+        </div>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>💰 Tu cotización</div>
+        <div style={S.row}>
+          <div style={S.col()}><label style={S.label}>Precio total ($)</label><input type="number" value={cotF.monto} onChange={e=>setCotF(f=>({...f,monto:e.target.value}))} placeholder="0" style={S.input}/></div>
+          <div style={S.col()}><label style={S.label}>Tiempo de entrega</label><input value={cotF.tiempo} onChange={e=>setCotF(f=>({...f,tiempo:e.target.value}))} placeholder="Ej: 2 días" style={S.input}/></div>
+        </div>
+        <div style={{marginTop:10}}><label style={S.label}>Detalle / condiciones</label><textarea value={cotF.detalle} onChange={e=>setCotF(f=>({...f,detalle:e.target.value}))} placeholder="Marcas, colores, acabados, observaciones..." style={{...S.input,minHeight:56,resize:"vertical"}}/></div>
+        <button style={{...S.btn("dark"),marginTop:12}} onClick={enviarCot}>📤 Enviar cotización</button>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>💬 Chat con carpintería</div>
+        <Chat pedidoId={sel.id} tipoPedido="pintureria" miUsuario={usuario} otroUsuario={{id:sel.carpinteria_id}}/>
+      </div>
+    </div>
+  );
+
+  return(
+    <div>
+      <div style={S.secTitle}>Pedidos de pinturas de carpinterías</div>
+      {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
+      {pedidos.map(p=>(
+        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>setSel(p)}
+          onMouseEnter={e=>e.currentTarget.style.borderColor=C.acento}
+          onMouseLeave={e=>e.currentTarget.style.borderColor=C.borde}>
+          <div style={{display:"flex",justifyContent:"space-between"}}>
+            <div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:21}}>{p.descripcion}</div>
+              <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>Cantidad: {p.cantidad} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+            </div>
+            <Badge e={p.estado}/>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── APP ──────────────────────────────────────────────────────────────────────
 
 function PantallaBienvenida({onEntrar}){
@@ -1502,9 +1664,10 @@ function PantallaBienvenida({onEntrar}){
         <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:C.marron,margin:"6px 0 10px"}}>¿Quién es quién?</div>
         {[
           {e:"🪑",t:"Consumidor Final",d:"Creás un pedido describiendo lo que necesitás, con medidas y hasta una foto de tu croquis. Lo reciben las carpinterías, te mandan presupuestos y vos comparás y elegís el que más te convenga."},
-          {e:"🔨",t:"Carpintería",d:"Recibís los pedidos de los clientes y enviás tu presupuesto. Si necesitás materiales, pedís madera a aserraderos y herrajes a ferreterías desde la misma app."},
+          {e:"🔨",t:"Carpintería",d:"Recibís los pedidos de los clientes y enviás tu presupuesto. Si necesitás materiales, pedís madera a aserraderos, herrajes a ferreterías y pinturas a pinturerías desde la misma app."},
           {e:"🪵",t:"Aserradero",d:"Recibís pedidos de madera de las carpinterías y respondés con tu cotización."},
           {e:"🔩",t:"Ferretería",d:"Recibís pedidos de herrajes y materiales, y cotizás de forma simple y rápida."},
+          {e:"🎨",t:"Pinturería",d:"Recibís pedidos de pinturas, barnices, lacas y esmaltes de las carpinterías, y respondés con tu cotización."},
           {e:"🚚",t:"Flete",d:"Gestionás tu agenda de traslados y recibís solicitudes para mover los trabajos."},
         ].map(u=>(<div key={u.t} style={{borderLeft:`3px solid ${C.acento}`,paddingLeft:12,marginBottom:14}}>
           <div style={{fontWeight:700,color:C.marron,fontSize:17}}>{u.e} {u.t}</div>
@@ -1634,8 +1797,8 @@ function App(){
   if(!sesion) return <AuthScreen onAuth={handleAuth}/>;
 
   const {usuario}=sesion;
-  const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵",flete:"🚚",ferreteria:"🔩"};
-  const navPrincipal=usuario.tipo==="cliente"?"🪑 Mis pedidos":usuario.tipo==="carpinteria"?"🔨 Pedidos":usuario.tipo==="aserradero"?"🪵 Pedidos":"📅 Mi agenda";
+  const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🎨"};
+  const navPrincipal=usuario.tipo==="cliente"?"🪑 Mis pedidos":usuario.tipo==="carpinteria"?"🔨 Pedidos":usuario.tipo==="aserradero"?"🪵 Pedidos":usuario.tipo==="ferreteria"?"🔩 Pedidos":usuario.tipo==="pintureria"?"🎨 Pedidos":"📅 Mi agenda";
 
   return(
     <div style={S.app}>
@@ -1671,6 +1834,7 @@ function App(){
         {navTab==="principal"&&usuario.tipo==="aserradero"&&<VistaAserradero usuario={usuario} notif={setNotifMsg}/>}
         {navTab==="principal"&&usuario.tipo==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg}/>}
         {navTab==="principal"&&usuario.tipo==="ferreteria"&&<VistaFerreteria usuario={usuario} notif={setNotifMsg}/>}
+        {navTab==="principal"&&usuario.tipo==="pintureria"&&<VistaPintureria usuario={usuario} notif={setNotifMsg}/>}
         {navTab==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg}/>}
       </div>
     </div>
