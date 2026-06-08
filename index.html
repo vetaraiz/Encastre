@@ -342,6 +342,20 @@ function AuthScreen({onAuth}){
   const [err,setErr]=useState("");
   const [ok,setOk]=useState("");
   const [cargando,setCargando]=useState(false);
+  const [entidad,setEntidad]=useState("");
+  const [documento,setDocumento]=useState("");
+
+  const soloDigitos=s=>(s||"").replace(/\D/g,"");
+  const validarCUIT=(raw)=>{
+    const c=soloDigitos(raw);
+    if(c.length!==11) return false;
+    const mult=[5,4,3,2,7,6,5,4,3,2];
+    let suma=0; for(let i=0;i<10;i++) suma+=parseInt(c[i],10)*mult[i];
+    let ver=11-(suma%11); if(ver===11) ver=0;
+    if(ver===10) return false;
+    return ver===parseInt(c[10],10);
+  };
+  const validarDNI=(raw)=>{ const d=soloDigitos(raw); return d.length>=7&&d.length<=8; };
 
   const tipos=[
     {id:"cliente",emoji:"🪑",label:"Consumidor Final",desc:"Quiero encargar muebles o construcciones en madera"},
@@ -357,6 +371,11 @@ function AuthScreen({onAuth}){
     try{
       if(modo==="registro"){
         if(!tipo||!nombre){setErr("Completá todos los campos");setCargando(false);return;}
+        if(!entidad){setErr("Elegí si sos empresa o persona");setCargando(false);return;}
+        if(entidad==="empresa"&&!validarCUIT(documento)){setErr("El CUIT no parece válido. Revisá que tenga los 11 números correctos.");setCargando(false);return;}
+        if(entidad==="persona"&&!validarDNI(documento)){setErr("El DNI no parece válido. Debe tener 7 u 8 números, sin puntos.");setCargando(false);return;}
+        const tipoDoc=entidad==="empresa"?"CUIT":"DNI";
+        const docLimpio=soloDigitos(documento);
         const signUpRes=await db.signUp(email,pass);
         const error=signUpRes.error;
         if(error){setErr(error.message||"Error al registrar");setCargando(false);return;}
@@ -364,9 +383,9 @@ function AuthScreen({onAuth}){
         const userId=user?.id||signUpRes?.id;
         if(!userId){
           // User created but no ID returned - try to insert with email only
-          await db.insert("usuarios",{tipo,nombre,email,ciudad});
+          await db.insert("usuarios",{tipo,nombre,email,ciudad,tipo_documento:tipoDoc,documento:docLimpio});
         } else {
-          await db.insert("usuarios",{auth_id:userId,tipo,nombre,email,ciudad});
+          await db.insert("usuarios",{auth_id:userId,tipo,nombre,email,ciudad,tipo_documento:tipoDoc,documento:docLimpio});
         }
         setOk("¡Cuenta creada! Ahora iniciá sesión.");
         setModo("login");
@@ -423,6 +442,20 @@ function AuthScreen({onAuth}){
               <label style={S.label}>Ciudad</label>
               <input value={ciudad} onChange={e=>setCiudad(e.target.value)} placeholder="Ej: Buenos Aires" style={S.input}/>
             </div>
+            <div style={{marginBottom:12}}>
+              <label style={S.label}>¿Empresa o persona?</label>
+              <div style={{display:"flex",gap:8}}>
+                <button type="button" style={{...S.tag(entidad==="empresa"),flex:1,justifyContent:"center",padding:"10px"}} onClick={()=>{setEntidad("empresa");setDocumento("");}}>🏢 Empresa</button>
+                <button type="button" style={{...S.tag(entidad==="persona"),flex:1,justifyContent:"center",padding:"10px"}} onClick={()=>{setEntidad("persona");setDocumento("");}}>🧑 Persona</button>
+              </div>
+            </div>
+            {entidad&&(
+              <div style={{marginBottom:12}}>
+                <label style={S.label}>{entidad==="empresa"?"CUIT (11 números)":"DNI (sin puntos)"}</label>
+                <input type="tel" inputMode="numeric" value={documento} onChange={e=>setDocumento(e.target.value)} placeholder={entidad==="empresa"?"Ej: 30712345678":"Ej: 28123456"} style={S.input}/>
+                <div style={{fontSize:14,color:C.textoSuave,marginTop:4}}>🔒 Tu documento es privado: solo lo ve la administración, nunca otros usuarios.</div>
+              </div>
+            )}
           </>
         )}
 
@@ -1731,7 +1764,7 @@ function PantallaBienvenida({onEntrar}){
         <div style={{fontFamily:"'Playfair Display',serif",fontSize:23,fontWeight:700,color:C.marron,marginBottom:16}}>🔒 Política de Privacidad</div>
         {[
           {t:"1. Responsable del tratamiento",d:"El responsable de los datos personales recopilados en Encastre es Veta Raíz. Para cualquier consulta sobre tus datos podés escribir a carpinteriavetaraiz@gmail.com."},
-          {t:"2. Datos que recopilamos",d:"Los datos que ingresás al registrarte y usar la app: nombre, correo electrónico, ciudad y tipo de usuario, y el contenido de tus pedidos, presupuestos, mensajes y croquis (incluidas las fotos que adjuntes). No solicitamos ni almacenamos datos de tarjetas ni información bancaria."},
+          {t:"2. Datos que recopilamos",d:"Los datos que ingresás al registrarte y usar la app: nombre o razón social, correo electrónico, ciudad, tipo de usuario, número de documento (CUIT en el caso de empresas o DNI en el caso de personas) y el contenido de tus pedidos, presupuestos, mensajes y croquis (incluidas las fotos que adjuntes). El número de documento se solicita a fines de identificación y es de uso interno: solo accede a él la administración y nunca se muestra a otros usuarios. No solicitamos ni almacenamos datos de tarjetas ni información bancaria."},
           {t:"3. Finalidad del uso",d:"Usamos tus datos exclusivamente para el funcionamiento de la plataforma: crear y mostrar tu perfil, gestionar pedidos y presupuestos, permitir la comunicación entre usuarios y mejorar el servicio."},
           {t:"4. Base del tratamiento",d:"Tratamos tus datos sobre la base del consentimiento que otorgás al registrarte y de la necesidad de prestar el servicio que solicitás."},
           {t:"5. Con quién se comparte",d:"No vendemos ni cedemos tus datos a terceros con fines comerciales. Otros usuarios solo ven la información necesaria para operar (por ejemplo, nombre, ciudad, tipo de usuario y el contenido de los pedidos o presupuestos que compartís con ellos)."},
