@@ -24,7 +24,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    body { background:#F0EDD8; font-size:18px !important; font-family:'Lato',sans-serif; color:#3A1A05; }
+    body { background:#F0EDD8; font-size:16px !important; font-family:'Lato',sans-serif; color:#3A1A05; }
     ::-webkit-scrollbar { width:6px; }
 
     /* FORZAR TAMAÑOS - NO CACHEAR */
@@ -186,28 +186,28 @@ const S = {
   app:{ minHeight:"100vh", background:C.crema, fontFamily:"'Lato',sans-serif", color:C.texto },
   topbar:{ background:C.marron, padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height:"auto", minHeight:58, padding:"6px 12px", position:"sticky", top:0, zIndex:100, boxShadow:"0 2px 12px #5C2E0A44" },
   logo:{ fontFamily:"'Playfair Display',serif", fontSize:"clamp(14px,3.5vw,22px)", fontWeight:800, color:C.crema, letterSpacing:1 },
-  logoSub:{ fontSize:19, color:C.acento, letterSpacing:3, textTransform:"uppercase", display:"block", lineHeight:1, className:"logo-sub-mobile" },
+  logoSub:{ fontSize:16, color:C.acento, letterSpacing:3, textTransform:"uppercase", display:"block", lineHeight:1, className:"logo-sub-mobile" },
   main:{ maxWidth:900, margin:"0 auto", padding:"16px 10px" },
   card:{ background:C.card, border:`1px solid ${C.borde}`, borderRadius:12, padding:22, marginBottom:16, boxShadow:"0 2px 8px #5C2E0A11" },
-  cardTitle:{ fontFamily:"'Playfair Display',serif", fontSize:24, fontWeight:700, color:C.marron, marginBottom:14 },
+  cardTitle:{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:C.marron, marginBottom:14 },
   btn:(v="gold")=>({
     background:v==="gold"?C.acento:v==="dark"?C.marron:v==="red"?C.rojo:"transparent",
     color:v==="ghost"?C.marron:C.crema,
     border:v==="ghost"?`2px solid ${C.marron}`:"none",
-    borderRadius:8, padding:"9px 18px", cursor:"pointer", fontSize:19, fontWeight:700,
+    borderRadius:8, padding:"9px 18px", cursor:"pointer", fontSize:16, fontWeight:700,
     transition:"all .15s", display:"inline-flex", alignItems:"center", gap:6,
     fontFamily:"'Lato',sans-serif",
   }),
-  btnAi:{ background:`linear-gradient(135deg,#3D1A6E,#1A3D6E)`, color:"#E8D5FF", border:"1px solid #6B3AAA55", borderRadius:8, padding:"9px 18px", cursor:"pointer", fontSize:19, fontWeight:700, display:"inline-flex", alignItems:"center", gap:6, boxShadow:"0 0 16px #6B3AAA22", fontFamily:"'Lato',sans-serif" },
-  input:{ background:C.input, border:`1px solid ${C.borde}`, borderRadius:8, color:C.texto, padding:"11px 14px", fontSize:24, width:"100%", outline:"none", fontFamily:"'Lato',sans-serif", transition:"border .15s" },
-  label:{ fontSize:"16px", color:C.marron, marginBottom:8, display:"block", fontWeight:700, letterSpacing:.3 },
+  btnAi:{ background:`linear-gradient(135deg,#3D1A6E,#1A3D6E)`, color:"#E8D5FF", border:"1px solid #6B3AAA55", borderRadius:8, padding:"9px 18px", cursor:"pointer", fontSize:16, fontWeight:700, display:"inline-flex", alignItems:"center", gap:6, boxShadow:"0 0 16px #6B3AAA22", fontFamily:"'Lato',sans-serif" },
+  input:{ background:C.input, border:`1px solid ${C.borde}`, borderRadius:8, color:C.texto, padding:"10px 13px", fontSize:16, width:"100%", outline:"none", fontFamily:"'Lato',sans-serif", transition:"border .15s" },
+  label:{ fontSize:"15px", color:C.marron, marginBottom:7, display:"block", fontWeight:700, letterSpacing:.3 },
   row:{ display:"flex", gap:10, flexWrap:"wrap", width:"100%" },
   col:(f=1)=>({ flex:f, minWidth:"140px" }),
   secTitle:{ fontSize:"18px", color:C.marron, fontWeight:700, letterSpacing:.3, marginBottom:14, paddingBottom:8, borderBottom:`2px solid ${C.acento}`, fontFamily:"'Playfair Display',serif" },
   tag:(on)=>({ background:on?C.marron:C.input, color:on?C.crema:C.textoSuave, border:`1px solid ${on?C.marron:C.borde}`, borderRadius:6, padding:"8px 16px", cursor:"pointer", fontSize:"14px", fontWeight:on?700:400, transition:"all .15s", fontFamily:"'Lato',sans-serif" }),
-  badge:(e)=>({ background:EC[e]+"22", color:EC[e], border:`1px solid ${EC[e]}55`, borderRadius:5, padding:"3px 10px", fontSize:19, fontWeight:700, letterSpacing:.8, textTransform:"uppercase", display:"inline-block" }),
+  badge:(e)=>({ background:EC[e]+"22", color:EC[e], border:`1px solid ${EC[e]}55`, borderRadius:5, padding:"3px 10px", fontSize:16, fontWeight:700, letterSpacing:.8, textTransform:"uppercase", display:"inline-block" }),
   aiPanel:{ background:"linear-gradient(135deg,#1E0A3C,#0A1E3C)", border:"1px solid #6B3AAA44", borderRadius:12, padding:18, marginBottom:14, boxShadow:"0 0 20px #6B3AAA22" },
-  notif:{ position:"fixed", top:68, right:16, background:C.marron, border:`2px solid ${C.acento}`, borderRadius:10, padding:"12px 18px", fontSize:19, color:C.crema, zIndex:999, boxShadow:"0 4px 20px #5C2E0A44", maxWidth:280, fontFamily:"'Lato',sans-serif" },
+  notif:{ position:"fixed", top:68, right:16, background:C.marron, border:`2px solid ${C.acento}`, borderRadius:10, padding:"12px 18px", fontSize:16, color:C.crema, zIndex:999, boxShadow:"0 4px 20px #5C2E0A44", maxWidth:280, fontFamily:"'Lato',sans-serif" },
   divider:{ height:1, background:`linear-gradient(90deg,transparent,${C.borde},transparent)`, margin:"16px 0" },
 };
 
@@ -251,7 +251,7 @@ Respondé SOLO con JSON válido, sin texto adicional:
   if(fase==="idle") return(
     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
       <button style={S.btnAi} onClick={pedir}>✨ Sugerir presupuesto con IA</button>
-      <span style={{fontSize:24,color:C.textoSuave,fontStyle:"italic"}}>Solo visible para vos</span>
+      <span style={{fontSize:16,color:C.textoSuave,fontStyle:"italic"}}>Solo visible para vos</span>
     </div>
   );
   if(fase==="cargando") return(
@@ -267,21 +267,21 @@ Respondé SOLO con JSON válido, sin texto adicional:
   );
   return(
     <div style={S.aiPanel} className="fade">
-      <div style={{fontSize:19,fontWeight:700,color:"#C4B5FD",display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+      <div style={{fontSize:16,fontWeight:700,color:"#C4B5FD",display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
         ✨ Sugerencia IA
-        <span style={{background:"#6B3AAA22",color:"#C4B5FD",border:"1px solid #6B3AAA44",borderRadius:4,padding:"1px 7px",fontSize:19,fontWeight:700,letterSpacing:1}}>PRIVADO</span>
+        <span style={{background:"#6B3AAA22",color:"#C4B5FD",border:"1px solid #6B3AAA44",borderRadius:4,padding:"1px 7px",fontSize:16,fontWeight:700,letterSpacing:1}}>PRIVADO</span>
       </div>
       <div style={{display:"flex",gap:20,marginBottom:14,flexWrap:"wrap"}}>
-        <div><div style={{fontSize:19,color:"#9B7ED4",marginBottom:2}}>MONTO SUGERIDO</div><div style={{fontSize:26,fontWeight:800,color:"#C4B5FD",fontFamily:"'Playfair Display',serif"}}>$ {Number(sug.monto_total).toLocaleString("es-AR")}</div></div>
-        <div><div style={{fontSize:19,color:"#9B7ED4",marginBottom:2}}>TIEMPO</div><div style={{fontSize:24,fontWeight:700,color:"#E9D5FF"}}>{sug.tiempo_entrega}</div></div>
+        <div><div style={{fontSize:16,color:"#9B7ED4",marginBottom:2}}>MONTO SUGERIDO</div><div style={{fontSize:26,fontWeight:800,color:"#C4B5FD",fontFamily:"'Playfair Display',serif"}}>$ {Number(sug.monto_total).toLocaleString("es-AR")}</div></div>
+        <div><div style={{fontSize:16,color:"#9B7ED4",marginBottom:2}}>TIEMPO</div><div style={{fontSize:18,fontWeight:700,color:"#E9D5FF"}}>{sug.tiempo_entrega}</div></div>
       </div>
       {sug.items?.map((it,i)=>(
         <div key={i} style={{background:"#0D0A1A",border:"1px solid #2D1F5A",borderRadius:8,padding:"8px 12px",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div><span style={{fontWeight:700,color:"#C4B5FD",fontSize:12}}>{it.concepto}</span><span style={{color:"#7B68AA",fontSize:24,marginLeft:8}}>{it.detalle}</span></div>
+          <div><span style={{fontWeight:700,color:"#C4B5FD",fontSize:12}}>{it.concepto}</span><span style={{color:"#7B68AA",fontSize:16,marginLeft:8}}>{it.detalle}</span></div>
           <span style={{fontWeight:700,color:"#A78BFA",fontSize:13}}>$ {Number(it.monto).toLocaleString("es-AR")}</span>
         </div>
       ))}
-      {sug.nota&&<div style={{background:"#080612",border:"1px dashed #4C1D9555",borderRadius:8,padding:"8px 12px",marginTop:10,fontSize:19,color:"#9D8EC4",fontStyle:"italic"}}>💡 {sug.nota}</div>}
+      {sug.nota&&<div style={{background:"#080612",border:"1px dashed #4C1D9555",borderRadius:8,padding:"8px 12px",marginTop:10,fontSize:16,color:"#9D8EC4",fontStyle:"italic"}}>💡 {sug.nota}</div>}
       <div style={{display:"flex",gap:8,marginTop:14}}>
         <button style={S.btnAi} onClick={()=>onAplicar(sug)}>↙ Aplicar al formulario</button>
         <button style={{...S.btn("ghost"),color:"#9B7ED4",borderColor:"#6B3AAA44"}} onClick={()=>setFase("idle")}>Descartar</button>
@@ -307,7 +307,7 @@ Respondé SOLO con JSON válido:
   if(fase==="idle") return(
     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
       <button style={S.btnAi} onClick={pedir}>✨ Sugerir cotización con IA</button>
-      <span style={{fontSize:24,color:C.textoSuave,fontStyle:"italic"}}>Solo visible para vos</span>
+      <span style={{fontSize:16,color:C.textoSuave,fontStyle:"italic"}}>Solo visible para vos</span>
     </div>
   );
   if(fase==="cargando") return(<div style={{...S.aiPanel,display:"flex",alignItems:"center",gap:12}}><span style={{display:"inline-block",animation:"spin 1s linear infinite",fontSize:18}}>⟳</span><span style={{color:"#C4B5FD",fontSize:13}}>Calculando...</span></div>);
@@ -315,14 +315,14 @@ Respondé SOLO con JSON válido:
 
   return(
     <div style={S.aiPanel} className="fade">
-      <div style={{fontSize:19,fontWeight:700,color:"#C4B5FD",marginBottom:12}}>✨ Cotización IA <span style={{background:"#6B3AAA22",color:"#C4B5FD",border:"1px solid #6B3AAA44",borderRadius:4,padding:"1px 7px",fontSize:10}}>PRIVADO</span></div>
+      <div style={{fontSize:16,fontWeight:700,color:"#C4B5FD",marginBottom:12}}>✨ Cotización IA <span style={{background:"#6B3AAA22",color:"#C4B5FD",border:"1px solid #6B3AAA44",borderRadius:4,padding:"1px 7px",fontSize:10}}>PRIVADO</span></div>
       <div style={{display:"flex",gap:20,marginBottom:12,flexWrap:"wrap"}}>
-        <div><div style={{fontSize:19,color:"#9B7ED4"}}>$/PIE</div><div style={{fontSize:24,fontWeight:800,color:"#C4B5FD",fontFamily:"'Playfair Display',serif"}}>$ {Number(sug.precio_por_pie).toLocaleString("es-AR")}</div></div>
-        <div><div style={{fontSize:19,color:"#9B7ED4"}}>TOTAL</div><div style={{fontSize:24,fontWeight:800,color:"#C4B5FD",fontFamily:"'Playfair Display',serif"}}>$ {Number(sug.precio_total).toLocaleString("es-AR")}</div></div>
-        <div><div style={{fontSize:19,color:"#9B7ED4"}}>ENTREGA</div><div style={{fontSize:24,fontWeight:700,color:"#E9D5FF"}}>{sug.tiempo_entrega}</div></div>
+        <div><div style={{fontSize:16,color:"#9B7ED4"}}>$/PIE</div><div style={{fontSize:20,fontWeight:800,color:"#C4B5FD",fontFamily:"'Playfair Display',serif"}}>$ {Number(sug.precio_por_pie).toLocaleString("es-AR")}</div></div>
+        <div><div style={{fontSize:16,color:"#9B7ED4"}}>TOTAL</div><div style={{fontSize:20,fontWeight:800,color:"#C4B5FD",fontFamily:"'Playfair Display',serif"}}>$ {Number(sug.precio_total).toLocaleString("es-AR")}</div></div>
+        <div><div style={{fontSize:16,color:"#9B7ED4"}}>ENTREGA</div><div style={{fontSize:16,fontWeight:700,color:"#E9D5FF"}}>{sug.tiempo_entrega}</div></div>
       </div>
-      {sug.items?.map((it,i)=>(<div key={i} style={{background:"#0D0A1A",border:"1px solid #2D1F5A",borderRadius:8,padding:"8px 12px",marginBottom:6,display:"flex",justifyContent:"space-between"}}><span style={{color:"#C4B5FD",fontSize:19,fontWeight:700}}>{it.concepto}</span><span style={{color:"#A78BFA",fontSize:19,fontWeight:700}}>$ {Number(it.monto).toLocaleString("es-AR")}</span></div>))}
-      {sug.nota&&<div style={{background:"#080612",border:"1px dashed #4C1D9555",borderRadius:8,padding:"8px 12px",marginTop:8,fontSize:24,color:"#9D8EC4",fontStyle:"italic"}}>💡 {sug.nota}</div>}
+      {sug.items?.map((it,i)=>(<div key={i} style={{background:"#0D0A1A",border:"1px solid #2D1F5A",borderRadius:8,padding:"8px 12px",marginBottom:6,display:"flex",justifyContent:"space-between"}}><span style={{color:"#C4B5FD",fontSize:16,fontWeight:700}}>{it.concepto}</span><span style={{color:"#A78BFA",fontSize:16,fontWeight:700}}>$ {Number(it.monto).toLocaleString("es-AR")}</span></div>))}
+      {sug.nota&&<div style={{background:"#080612",border:"1px dashed #4C1D9555",borderRadius:8,padding:"8px 12px",marginTop:8,fontSize:16,color:"#9D8EC4",fontStyle:"italic"}}>💡 {sug.nota}</div>}
       <div style={{display:"flex",gap:8,marginTop:12}}>
         <button style={S.btnAi} onClick={()=>onAplicar(sug)}>↙ Aplicar</button>
         <button style={{...S.btn("ghost"),color:"#9B7ED4",borderColor:"#6B3AAA44"}} onClick={()=>setFase("idle")}>Descartar</button>
@@ -389,7 +389,7 @@ function AuthScreen({onAuth}){
       <div style={{textAlign:"center",marginBottom:32}}>
         <img src={LOGO_B64} alt="Encastre" style={{width:260,height:164,objectFit:"contain",marginBottom:4}}/>
         <div style={{fontFamily:"'Playfair Display',serif",fontSize:38,fontWeight:800,color:C.marron,letterSpacing:3,textTransform:"uppercase"}}>ENCASTRE</div>
-        <div style={{fontSize:19,color:C.textoSuave,letterSpacing:3,textTransform:"uppercase",marginTop:1}}>La Comunidad de la Madera</div>
+        <div style={{fontSize:16,color:C.textoSuave,letterSpacing:3,textTransform:"uppercase",marginTop:1}}>La Comunidad de la Madera</div>
         <div style={{width:60,height:3,background:`linear-gradient(90deg,${C.acento},${C.marron})`,borderRadius:2,margin:"12px auto 0"}}/>
       </div>
 
@@ -408,9 +408,9 @@ function AuthScreen({onAuth}){
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
               {tipos.map(t=>(
                 <button key={t.id} style={{...S.tag(tipo===t.id),padding:"10px 8px",textAlign:"center",lineHeight:1.4,height:"auto"}} onClick={()=>setTipo(t.id)}>
-                  <div style={{fontSize:24,marginBottom:4}}>{t.emoji}</div>
+                  <div style={{fontSize:20,marginBottom:4}}>{t.emoji}</div>
                   <div style={{fontWeight:700,fontSize:12}}>{t.label}</div>
-                  <div style={{fontSize:19,opacity:.7,marginTop:2}}>{t.desc}</div>
+                  <div style={{fontSize:16,opacity:.7,marginTop:2}}>{t.desc}</div>
                 </button>
               ))}
             </div>
@@ -434,10 +434,10 @@ function AuthScreen({onAuth}){
           <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Mínimo 6 caracteres" style={S.input} onKeyDown={e=>{if(e.key==="Enter")submit();}}/>
         </div>
 
-        {err&&<div style={{fontSize:19,color:C.rojo,background:C.rojo+"11",border:`1px solid ${C.rojo}33`,borderRadius:7,padding:"8px 12px",marginBottom:12}}>{err}</div>}
-        {ok&&<div style={{fontSize:19,color:C.verde,background:C.verde+"11",border:`1px solid ${C.verde}33`,borderRadius:7,padding:"8px 12px",marginBottom:12}}>✅ {ok}</div>}
+        {err&&<div style={{fontSize:16,color:C.rojo,background:C.rojo+"11",border:`1px solid ${C.rojo}33`,borderRadius:7,padding:"8px 12px",marginBottom:12}}>{err}</div>}
+        {ok&&<div style={{fontSize:16,color:C.verde,background:C.verde+"11",border:`1px solid ${C.verde}33`,borderRadius:7,padding:"8px 12px",marginBottom:12}}>✅ {ok}</div>}
 
-        <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",fontSize:24,padding:"11px"}} onClick={submit} disabled={cargando}>
+        <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",fontSize:16,padding:"11px"}} onClick={submit} disabled={cargando}>
           {cargando?"⟳ Procesando...":(modo==="login"?"Entrar →":"Crear cuenta →")}
         </button>
         {modo==="login"&&(
@@ -448,14 +448,14 @@ function AuthScreen({onAuth}){
                 await fetch(`${SUPABASE_URL}/auth/v1/recover`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({email})});
                 setOk("✅ Te enviamos un email para restablecer tu contraseña");
               }catch{setErr("Error al enviar el email");}
-            }} style={{background:"none",border:"none",color:C.textoSuave,fontSize:19,cursor:"pointer",textDecoration:"underline"}}>
+            }} style={{background:"none",border:"none",color:C.textoSuave,fontSize:16,cursor:"pointer",textDecoration:"underline"}}>
               ¿Olvidaste tu contraseña?
             </button>
           </div>
         )}
       </div>
 
-      <div style={{marginTop:20,fontSize:24,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
+      <div style={{marginTop:20,fontSize:16,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
     </div>
   );
 }
@@ -482,16 +482,16 @@ function Chat({pedidoId,tipoPedido,miUsuario,otroUsuario}){
 
   return(
     <div style={{background:C.input,border:`1px solid ${C.borde}`,borderRadius:10,overflow:"hidden"}}>
-      <div style={{padding:"9px 14px",background:C.suave,fontSize:24,color:C.textoSuave,fontWeight:700,letterSpacing:.8,textTransform:"uppercase",borderBottom:`1px solid ${C.borde}`}}>💬 Chat directo</div>
+      <div style={{padding:"9px 14px",background:C.suave,fontSize:16,color:C.textoSuave,fontWeight:700,letterSpacing:.8,textTransform:"uppercase",borderBottom:`1px solid ${C.borde}`}}>💬 Chat directo</div>
       <div style={{maxHeight:180,overflowY:"auto",padding:"10px 14px"}}>
-        {msgs.length===0&&<div style={{color:C.textoSuave,fontSize:19,textAlign:"center",padding:16,fontStyle:"italic"}}>Sin mensajes aún...</div>}
+        {msgs.length===0&&<div style={{color:C.textoSuave,fontSize:16,textAlign:"center",padding:16,fontStyle:"italic"}}>Sin mensajes aún...</div>}
         {msgs.map((m,i)=>{
           const propio=m.de_usuario_id===miUsuario.id;
           return(
             <div key={i} style={{marginBottom:8,display:"flex",flexDirection:propio?"row-reverse":"row",gap:6}}>
               <div style={{background:propio?C.marron:C.card,border:`1px solid ${propio?C.marron:C.borde}`,borderRadius:8,padding:"6px 11px",maxWidth:"78%"}}>
-                <div style={{fontSize:19,color:propio?C.acento:C.textoSuave,marginBottom:2}}>{new Date(m.created_at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</div>
-                <div style={{fontSize:19,color:propio?C.crema:C.texto}}>{m.texto}</div>
+                <div style={{fontSize:16,color:propio?C.acento:C.textoSuave,marginBottom:2}}>{new Date(m.created_at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</div>
+                <div style={{fontSize:16,color:propio?C.crema:C.texto}}>{m.texto}</div>
               </div>
             </div>
           );
@@ -524,14 +524,14 @@ function Calificar({deUsuario,paraUsuario,pedidoId,califs=[]}){
   return(
     <div style={{marginTop:12}}>
       {califs.map((c,i)=>(
-        <div key={i} style={{fontSize:19,color:C.textoSuave,marginBottom:4}}>
+        <div key={i} style={{fontSize:16,color:C.textoSuave,marginBottom:4}}>
           <Stars v={c.estrellas}/> — {c.comentario}
-          {c.respuesta&&<div style={{fontSize:24,color:C.textoSuave,marginLeft:12,marginTop:2,fontStyle:"italic"}}>↩ {c.respuesta}</div>}
+          {c.respuesta&&<div style={{fontSize:16,color:C.textoSuave,marginLeft:12,marginTop:2,fontStyle:"italic"}}>↩ {c.respuesta}</div>}
         </div>
       ))}
       {!enviado&&(
         <div>
-          <button style={{...S.btn("ghost"),fontSize:19,padding:"5px 12px"}} onClick={()=>setOpen(!open)}>{open?"Cerrar":"⭐ Calificar"}</button>
+          <button style={{...S.btn("ghost"),fontSize:16,padding:"5px 12px"}} onClick={()=>setOpen(!open)}>{open?"Cerrar":"⭐ Calificar"}</button>
           {open&&(
             <div style={{marginTop:10,background:C.input,borderRadius:8,padding:12,border:`1px solid ${C.borde}`}} className="fade">
               <div style={{display:"flex",gap:4,marginBottom:8}}>
@@ -584,43 +584,25 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
           <div key={k} style={S.col()}>
             <label style={S.label}>{l}</label>
             <input type="number" value={f[k]} onChange={e=>set(k,e.target.value)} placeholder="0" style={S.input}/>
-            {f[k]&&<div style={{fontSize:19,color:C.textoSuave,marginTop:3,fontFamily:"monospace"}}>= {cmToMm(f[k])}mm · {cmToIn(f[k])}"</div>}
+            {f[k]&&<div style={{fontSize:16,color:C.textoSuave,marginTop:3,fontFamily:"monospace"}}>= {cmToMm(f[k])}mm · {cmToIn(f[k])}"</div>}
           </div>
         ))}
       </div>
 
       <div style={{marginTop:12}}>
-        <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:19,color:C.textoSuave}}>
+        <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:16,color:C.textoSuave}}>
           <input type="checkbox" checked={f.usaCroquis} onChange={e=>set("usaCroquis",e.target.checked)}/>
           Quiero adjuntar descripción de un croquis con medidas aproximadas
         </label>
         {f.usaCroquis&&<textarea value={f.notasCroquis} onChange={e=>set("notasCroquis",e.target.value)} placeholder="Describí el croquis..." style={{...S.input,minHeight:56,resize:"vertical",marginTop:8}}/>}
       </div>
-      <Divider/>
-      <div style={S.secTitle}>🗃️ Cajones (opcional)</div>
-      <div style={S.row}>
-        <div style={S.col()}>
-          <label style={S.label}>¿Lleva cajones?</label>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {["Sí","No"].map(op=>(<button key={op} style={S.tag(f.tieneCajones===op)} onClick={()=>set("tieneCajones",op)}>{op}</button>))}
-          </div>
-        </div>
-        {f.tieneCajones==="Sí"&&(<div style={S.col()}>
-          <label style={S.label}>Cantidad</label>
-          <input type="number" value={f.cantidadCajones||""} onChange={e=>set("cantidadCajones",e.target.value)} placeholder="0" style={S.input}/>
-        </div>)}
-      </div>
-      {f.tieneCajones==="Sí"&&(<div style={{marginTop:10}}>
-        <label style={S.label}>Medidas aproximadas (opcional)</label>
-        <input value={f.medidasCajones||""} onChange={e=>set("medidasCajones",e.target.value)} placeholder="Ej: 40cm ancho × 30cm prof × 15cm alto" style={S.input}/>
-      </div>)}
 
       <Divider/>
       <div style={S.secTitle}>🪵 Material</div>
       <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:6}}>
         {MATS.map(m=><button key={m.id} style={S.tag(f.material===m.id)} onClick={()=>{set("material",m.id);set("terminacion","");set("color","");}}>{m.label}</button>)}
       </div>
-      {MATS.find(m=>m.id===f.material)&&<div style={{fontSize:24,color:C.textoSuave,fontStyle:"italic"}}>Ej: {MATS.find(m=>m.id===f.material).ej}</div>}
+      {MATS.find(m=>m.id===f.material)&&<div style={{fontSize:16,color:C.textoSuave,fontStyle:"italic"}}>Ej: {MATS.find(m=>m.id===f.material).ej}</div>}
 
       <Divider/>
       <div style={S.secTitle}>🎨 Terminación / Acabado</div>
@@ -712,7 +694,7 @@ function VistaCliente({usuario,notif}){
             <Badge e={sel.estado}/>
           </div>
           <div style={S.row}>
-            <div style={S.col()}><div style={{...S.label}}>Medidas</div><div style={{fontSize:19,fontFamily:"monospace",color:C.marron}}>Alto {sel.alto}cm · Ancho {sel.ancho}cm · Prof {sel.profundidad}cm</div></div>
+            <div style={S.col()}><div style={{...S.label}}>Medidas</div><div style={{fontSize:16,fontFamily:"monospace",color:C.marron}}>Alto {sel.alto}cm · Ancho {sel.ancho}cm · Prof {sel.profundidad}cm</div></div>
             <div style={S.col()}><div style={S.label}>Material</div><div>{mat?.label}</div></div>
             <div style={S.col()}><div style={S.label}>Terminación</div><div>{ter?.label}{sel.color?` · ${sel.color}`:""}</div></div>
           </div>
@@ -722,7 +704,7 @@ function VistaCliente({usuario,notif}){
           <div style={{...S.card,textAlign:"center",color:C.textoSuave,padding:32}}>
             <div style={{fontSize:32,marginBottom:8}}>⏳</div>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:16}}>Esperando presupuestos...</div>
-            <div style={{fontSize:19,marginTop:4}}>Las carpinterías recibirán tu pedido y te responderán pronto</div>
+            <div style={{fontSize:16,marginTop:4}}>Las carpinterías recibirán tu pedido y te responderán pronto</div>
           </div>
         ):(
           <div style={S.card}>
@@ -731,13 +713,13 @@ function VistaCliente({usuario,notif}){
               <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:14,marginBottom:12,background:C.input}}>
                 <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
                   <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:16}}>{pr.carpNombre}</div>
-                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:800,color:C.verde}}>$ {Number(pr.monto).toLocaleString("es-AR")}</div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:800,color:C.verde}}>$ {Number(pr.monto).toLocaleString("es-AR")}</div>
                 </div>
                 <div style={S.row}>
-                  <div style={S.col()}><span style={{fontSize:24,color:C.textoSuave}}>Tiempo: </span><b>{pr.tiempo_entrega}</b></div>
-                  <div style={S.col()}><span style={{fontSize:24,color:C.textoSuave}}>Flete: </span><b>{pr.incluye_flete?"✅ Incluido":"❌ No incluido"}</b></div>
+                  <div style={S.col()}><span style={{fontSize:16,color:C.textoSuave}}>Tiempo: </span><b>{pr.tiempo_entrega}</b></div>
+                  <div style={S.col()}><span style={{fontSize:16,color:C.textoSuave}}>Flete: </span><b>{pr.incluye_flete?"✅ Incluido":"❌ No incluido"}</b></div>
                 </div>
-                {pr.detalle&&<div style={{marginTop:8,fontSize:19,color:C.textoSuave,whiteSpace:"pre-line",fontStyle:"italic",borderLeft:`3px solid ${C.acento}`,paddingLeft:10,marginLeft:4}}>{pr.detalle}</div>}
+                {pr.detalle&&<div style={{marginTop:8,fontSize:16,color:C.textoSuave,whiteSpace:"pre-line",fontStyle:"italic",borderLeft:`3px solid ${C.acento}`,paddingLeft:10,marginLeft:4}}>{pr.detalle}</div>}
                 <div style={{marginTop:8}}><Badge e={pr.estado}/></div>
                 {pr.estado==="enviado"&&(
                   <div style={{display:"flex",gap:8,marginTop:10}}>
@@ -768,8 +750,8 @@ function VistaCliente({usuario,notif}){
       {pedidos.length===0&&(
         <div style={{...S.card,textAlign:"center",padding:40}}>
           <div style={{fontSize:40,marginBottom:12}}>🪑</div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,color:C.marron,marginBottom:8}}>¡Bienvenido a Encastre!</div>
-          <div style={{fontSize:19,color:C.textoSuave,marginBottom:16}}>Creá tu primer pedido y recibí presupuestos de carpinterías</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:C.marron,marginBottom:8}}>¡Bienvenido a Encastre!</div>
+          <div style={{fontSize:16,color:C.textoSuave,marginBottom:16}}>Creá tu primer pedido y recibí presupuestos de carpinterías</div>
           <button style={S.btn("dark")} onClick={()=>setVista("nuevo")}>➕ Crear primer pedido</button>
         </div>
       )}
@@ -781,8 +763,8 @@ function VistaCliente({usuario,notif}){
             onMouseLeave={e=>{e.currentTarget.style.borderColor=C.borde;e.currentTarget.style.transform="none";}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
               <div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:24,color:C.marron,marginBottom:4}}>{p.descripcion}</div>
-                <div style={{fontSize:19,color:C.textoSuave}}>{p.alto}×{p.ancho}×{p.profundidad} cm · {mat?.label} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:16,color:C.marron,marginBottom:4}}>{p.descripcion}</div>
+                <div style={{fontSize:16,color:C.textoSuave}}>{p.alto}×{p.ancho}×{p.profundidad} cm · {mat?.label} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
               </div>
               <Badge e={p.estado}/>
             </div>
@@ -881,7 +863,7 @@ function VistaCarpinteria({usuario,notif}){
         <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSel(null)}>← Volver</button>
         <div style={S.card}>
           <div style={S.cardTitle}>Pedido recibido</div>
-          <div style={{fontSize:19,color:C.textoSuave,marginBottom:10}}>{sel.descripcion} · {new Date(sel.created_at).toLocaleDateString("es-AR")}</div>
+          <div style={{fontSize:16,color:C.textoSuave,marginBottom:10}}>{sel.descripcion} · {new Date(sel.created_at).toLocaleDateString("es-AR")}</div>
           <div style={{background:C.suave,borderRadius:8,padding:12,border:`1px solid ${C.borde}`}}>
             <div style={{...S.label,marginBottom:8}}>Medidas del cliente (en cm) con equivalencias</div>
             {[["Alto",sel.alto],["Ancho",sel.ancho],["Profundidad",sel.profundidad]].map(([n,v])=>(
@@ -906,7 +888,7 @@ function VistaCarpinteria({usuario,notif}){
             <div style={S.col()}><label style={S.label}>Tiempo de entrega</label><input value={presF.tiempo} onChange={e=>setPresF(f=>({...f,tiempo:e.target.value}))} placeholder="Ej: 2 semanas" style={S.input}/></div>
           </div>
           <div style={{marginTop:10}}>
-            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:19,color:C.textoSuave}}>
+            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:16,color:C.textoSuave}}>
               <input type="checkbox" checked={presF.incluye_flete} onChange={e=>setPresF(f=>({...f,incluye_flete:e.target.checked}))}/>
               Incluir flete propio en el presupuesto
             </label>
@@ -920,7 +902,7 @@ function VistaCarpinteria({usuario,notif}){
               disabled={enviando||yaEnvio}>
               {enviando?"⟳ Enviando...":(yaEnvio?"✅ Presupuesto enviado":"📤 Enviar presupuesto")}
             </button>
-            {yaEnvio&&<div style={{fontSize:19,color:C.verde,marginTop:6,fontWeight:700}}>✅ El cliente ya recibió tu presupuesto.</div>}
+            {yaEnvio&&<div style={{fontSize:16,color:C.verde,marginTop:6,fontWeight:700}}>✅ El cliente ya recibió tu presupuesto.</div>}
         </div>
 
         <div style={S.card}>
@@ -931,7 +913,7 @@ function VistaCarpinteria({usuario,notif}){
     );
   }
 
-  const tabStyle=(id)=>({background:tab===id?C.marron:"transparent",color:tab===id?C.crema:C.textoSuave,border:tab===id?"none":`1px solid ${C.borde}`,borderRadius:8,padding:"7px 14px",cursor:"pointer",fontSize:19,fontWeight:700,fontFamily:"'Lato',sans-serif"});
+  const tabStyle=(id)=>({background:tab===id?C.marron:"transparent",color:tab===id?C.crema:C.textoSuave,border:tab===id?"none":`1px solid ${C.borde}`,borderRadius:8,padding:"7px 14px",cursor:"pointer",fontSize:16,fontWeight:700,fontFamily:"'Lato',sans-serif"});
 
   return(
     <div>
@@ -954,7 +936,7 @@ function VistaCarpinteria({usuario,notif}){
                 <div style={{display:"flex",justifyContent:"space-between"}}>
                   <div>
                     <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:15}}>{p.descripcion}</div>
-                    <div style={{fontSize:19,color:C.textoSuave,marginTop:3}}>{p.alto}×{p.ancho}×{p.profundidad}cm · {mat?.label} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                    <div style={{fontSize:16,color:C.textoSuave,marginTop:3}}>{p.alto}×{p.ancho}×{p.profundidad}cm · {mat?.label} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
                   </div>
                   <Badge e={p.estado}/>
                 </div>
@@ -967,13 +949,13 @@ function VistaCarpinteria({usuario,notif}){
       {tab==="aserradero"&&(
         <div style={S.card}>
           <div style={S.cardTitle}>🪵 Pedir madera al aserradero</div>
-          <div style={{fontSize:24,color:C.textoSuave,marginBottom:14,fontStyle:"italic"}}>Las medidas van en pulgadas y pies (como trabaja el aserradero)</div>
+          <div style={{fontSize:16,color:C.textoSuave,marginBottom:14,fontStyle:"italic"}}>Las medidas van en pulgadas y pies (como trabaja el aserradero)</div>
           <label style={S.label}>Tipo de madera</label>
           <input value={asF.material} onChange={e=>setAsF(f=>({...f,material:e.target.value}))} placeholder="Ej: Roble, Pino, Cedro, Quebracho..." style={{...S.input,marginBottom:14}}/>
           <div style={S.row}>
-            <div style={S.col()}><label style={S.label}>Largo (pies)</label><input type="number" value={asF.pies} onChange={e=>setAsF(f=>({...f,pies:e.target.value}))} placeholder="0'" style={S.input}/>{asF.pies&&<div style={{fontSize:19,color:C.textoSuave,fontFamily:"monospace"}}>= {ftToCm(asF.pies)}cm</div>}</div>
-            <div style={S.col()}><label style={S.label}>Ancho (pulgadas)</label><input type="number" value={asF.pulgadas} onChange={e=>setAsF(f=>({...f,pulgadas:e.target.value}))} placeholder='0"' style={S.input}/>{asF.pulgadas&&<div style={{fontSize:19,color:C.textoSuave,fontFamily:"monospace"}}>= {inToCm(asF.pulgadas)}cm</div>}</div>
-            <div style={S.col()}><label style={S.label}>Espesor (pulgadas)</label><input type="number" value={asF.espesor||""} onChange={e=>setAsF(f=>({...f,espesor:e.target.value}))} placeholder='0"' style={S.input}/>{asF.espesor&&<div style={{fontSize:19,color:C.textoSuave,fontFamily:"monospace"}}>= {inToCm(asF.espesor)}cm</div>}</div>
+            <div style={S.col()}><label style={S.label}>Largo (pies)</label><input type="number" value={asF.pies} onChange={e=>setAsF(f=>({...f,pies:e.target.value}))} placeholder="0'" style={S.input}/>{asF.pies&&<div style={{fontSize:16,color:C.textoSuave,fontFamily:"monospace"}}>= {ftToCm(asF.pies)}cm</div>}</div>
+            <div style={S.col()}><label style={S.label}>Ancho (pulgadas)</label><input type="number" value={asF.pulgadas} onChange={e=>setAsF(f=>({...f,pulgadas:e.target.value}))} placeholder='0"' style={S.input}/>{asF.pulgadas&&<div style={{fontSize:16,color:C.textoSuave,fontFamily:"monospace"}}>= {inToCm(asF.pulgadas)}cm</div>}</div>
+            <div style={S.col()}><label style={S.label}>Espesor (pulgadas)</label><input type="number" value={asF.espesor||""} onChange={e=>setAsF(f=>({...f,espesor:e.target.value}))} placeholder='0"' style={S.input}/>{asF.espesor&&<div style={{fontSize:16,color:C.textoSuave,fontFamily:"monospace"}}>= {inToCm(asF.espesor)}cm</div>}</div>
             <div style={S.col()}><label style={S.label}>Cantidad</label><input type="number" value={asF.cantidad} onChange={e=>setAsF(f=>({...f,cantidad:e.target.value}))} placeholder="0" style={S.input}/></div>
           </div>
           <div style={{marginTop:12}}><label style={S.label}>Observaciones</label><textarea value={asF.descripcion} onChange={e=>setAsF(f=>({...f,descripcion:e.target.value}))} placeholder="Calidad, secado, escuadría..." style={{...S.input,minHeight:56,resize:"vertical"}}/></div>
@@ -992,8 +974,8 @@ function VistaCarpinteria({usuario,notif}){
               <div style={{display:"flex",justifyContent:"space-between"}}>
                 <div>
                   <div style={{fontWeight:700,color:C.marron}}>{p.material}</div>
-                  <div style={{fontSize:19,color:C.textoSuave}}>{p.pies}' largo · {p.pulgadas}" ancho · {p.espesor}" espesor · {p.cantidad} piezas</div>
-                  <div style={{fontSize:24,color:C.textoSuave}}>{new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                  <div style={{fontSize:16,color:C.textoSuave}}>{p.pies}' largo · {p.pulgadas}" ancho · {p.espesor}" espesor · {p.cantidad} piezas</div>
+                  <div style={{fontSize:16,color:C.textoSuave}}>{new Date(p.created_at).toLocaleDateString("es-AR")}</div>
                 </div>
                 <Badge e={p.estado}/>
               </div>
@@ -1006,7 +988,7 @@ function VistaCarpinteria({usuario,notif}){
         <div style={S.card}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
             <div style={S.cardTitle}>💰 Cotizaciones recibidas</div>
-            <button style={{...S.btn("ghost"),fontSize:19,padding:"4px 10px"}} onClick={()=>setSelAserr(null)}>Cerrar</button>
+            <button style={{...S.btn("ghost"),fontSize:16,padding:"4px 10px"}} onClick={()=>setSelAserr(null)}>Cerrar</button>
           </div>
           {cotizacionesAserr.length===0?(
             <div style={{color:C.textoSuave,textAlign:"center",padding:20,fontStyle:"italic"}}>⏳ Esperando cotizaciones del aserradero...</div>
@@ -1015,13 +997,13 @@ function VistaCarpinteria({usuario,notif}){
               <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:8,padding:12,marginBottom:10,background:C.input}}>
                 <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
                   <b style={{color:C.marron}}>{ct.aserraderoNombre}</b>
-                  <b style={{fontSize:24,color:C.verde}}>$ {Number(ct.precio_total).toLocaleString("es-AR")}</b>
+                  <b style={{fontSize:16,color:C.verde}}>$ {Number(ct.precio_total).toLocaleString("es-AR")}</b>
                 </div>
                 <div style={S.row}>
-                  <div style={S.col()}><span style={{fontSize:24,color:C.textoSuave}}>$/pie: </span><b>$ {Number(ct.precio_por_pie).toLocaleString("es-AR")}</b></div>
-                  <div style={S.col()}><span style={{fontSize:24,color:C.textoSuave}}>Entrega: </span><b>{ct.tiempo_entrega}</b></div>
+                  <div style={S.col()}><span style={{fontSize:16,color:C.textoSuave}}>$/pie: </span><b>$ {Number(ct.precio_por_pie).toLocaleString("es-AR")}</b></div>
+                  <div style={S.col()}><span style={{fontSize:16,color:C.textoSuave}}>Entrega: </span><b>{ct.tiempo_entrega}</b></div>
                 </div>
-                {ct.detalle&&<div style={{marginTop:6,fontSize:19,color:C.textoSuave,whiteSpace:"pre-line",fontStyle:"italic"}}>{ct.detalle}</div>}
+                {ct.detalle&&<div style={{marginTop:6,fontSize:16,color:C.textoSuave,whiteSpace:"pre-line",fontStyle:"italic"}}>{ct.detalle}</div>}
                 <div style={S.card}>
                   <div style={S.cardTitle}>💬 Chat con aserradero</div>
                   <Chat pedidoId={selAserr.id} tipoPedido="aserradero" miUsuario={usuario} otroUsuario={{id:ct.aserradero_id}}/>
@@ -1066,7 +1048,7 @@ function VistaCarpinteria({usuario,notif}){
                   <div style={{display:"flex",justifyContent:"space-between"}}>
                     <div>
                       <div style={{fontWeight:700,color:C.marron}}>{p.descripcion}</div>
-                      <div style={{fontSize:19,color:C.textoSuave}}>Cantidad: {p.cantidad} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                      <div style={{fontSize:16,color:C.textoSuave}}>Cantidad: {p.cantidad} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
                     </div>
                     <Badge e={p.estado}/>
                   </div>
@@ -1079,7 +1061,7 @@ function VistaCarpinteria({usuario,notif}){
             <div style={S.card}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                 <div style={S.cardTitle}>💰 Cotizaciones de ferreterías</div>
-                <button style={{...S.btn("ghost"),fontSize:19,padding:"4px 10px"}} onClick={()=>setSelFerr(null)}>Cerrar</button>
+                <button style={{...S.btn("ghost"),fontSize:16,padding:"4px 10px"}} onClick={()=>setSelFerr(null)}>Cerrar</button>
               </div>
               {cotizacionesFerr.length===0?(
                 <div style={{color:C.textoSuave,textAlign:"center",padding:20,fontStyle:"italic"}}>⏳ Esperando cotizaciones...</div>
@@ -1088,10 +1070,10 @@ function VistaCarpinteria({usuario,notif}){
                   <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:8,padding:12,marginBottom:10,background:C.input}}>
                     <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
                       <b style={{color:C.marron}}>{ct.ferrNombre}</b>
-                      <b style={{fontSize:24,color:C.verde}}>$ {Number(ct.precio_total).toLocaleString("es-AR")}</b>
+                      <b style={{fontSize:16,color:C.verde}}>$ {Number(ct.precio_total).toLocaleString("es-AR")}</b>
                     </div>
-                    <div style={S.col()}><span style={{fontSize:24,color:C.textoSuave}}>Entrega: </span><b>{ct.tiempo_entrega}</b></div>
-                    {ct.detalle&&<div style={{marginTop:6,fontSize:19,color:C.textoSuave,whiteSpace:"pre-line",fontStyle:"italic"}}>{ct.detalle}</div>}
+                    <div style={S.col()}><span style={{fontSize:16,color:C.textoSuave}}>Entrega: </span><b>{ct.tiempo_entrega}</b></div>
+                    {ct.detalle&&<div style={{marginTop:6,fontSize:16,color:C.textoSuave,whiteSpace:"pre-line",fontStyle:"italic"}}>{ct.detalle}</div>}
                     <div style={{marginTop:10}}>
                       <Chat pedidoId={selFerr.id} tipoPedido="ferreteria" miUsuario={usuario} otroUsuario={{id:ct.ferreteria_id}}/>
                     </div>
@@ -1122,8 +1104,8 @@ function VistaCarpinteria({usuario,notif}){
                 <div style={S.row}>
                   {[["cm",cm.toFixed(2)],["mm",(cm*10).toFixed(0)],["pulgadas",(cm/2.54).toFixed(3)],["pies",(cm/30.48).toFixed(3)]].map(([u,val])=>(
                     <div key={u} style={{flex:1,textAlign:"center",padding:"10px 0",borderRight:`1px solid ${C.borde}`}}>
-                      <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:800,color:C.marron}}>{val}</div>
-                      <div style={{fontSize:19,color:C.textoSuave,textTransform:"uppercase",letterSpacing:.8}}>{u}</div>
+                      <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:800,color:C.marron}}>{val}</div>
+                      <div style={{fontSize:16,color:C.textoSuave,textTransform:"uppercase",letterSpacing:.8}}>{u}</div>
                     </div>
                   ))}
                 </div>
@@ -1169,15 +1151,15 @@ function VistaAserradero({usuario,notif}){
         <div style={S.cardTitle}>Pedido de carpintería</div>
         <div style={{background:C.suave,borderRadius:8,padding:12,border:`1px solid ${C.borde}`}}>
           <div style={S.row}>
-            <div style={S.col()}><div style={S.label}>Material</div><div style={{fontWeight:700,fontSize:19,color:C.marron}}>{sel.material}</div></div>
+            <div style={S.col()}><div style={S.label}>Material</div><div style={{fontWeight:700,fontSize:16,color:C.marron}}>{sel.material}</div></div>
             <div style={S.col()}>
               <div style={S.label}>Medidas</div>
               <div style={{fontFamily:"monospace",color:C.marron}}>{sel.pies}' largo · {sel.pulgadas}" sección</div>
-              <div style={{fontSize:19,color:C.textoSuave}}>= {ftToCm(sel.pies)}cm · {inToCm(sel.pulgadas)}cm</div>
+              <div style={{fontSize:16,color:C.textoSuave}}>= {ftToCm(sel.pies)}cm · {inToCm(sel.pulgadas)}cm</div>
             </div>
-            <div style={S.col()}><div style={S.label}>Cantidad</div><div style={{fontWeight:700,fontSize:19,color:C.marron}}>{sel.cantidad} piezas</div></div>
+            <div style={S.col()}><div style={S.label}>Cantidad</div><div style={{fontWeight:700,fontSize:16,color:C.marron}}>{sel.cantidad} piezas</div></div>
           </div>
-          {sel.descripcion&&<div style={{fontSize:19,color:C.textoSuave,marginTop:8,fontStyle:"italic"}}>{sel.descripcion}</div>}
+          {sel.descripcion&&<div style={{fontSize:16,color:C.textoSuave,marginTop:8,fontStyle:"italic"}}>{sel.descripcion}</div>}
         </div>
       </div>
 
@@ -1203,7 +1185,7 @@ function VistaAserradero({usuario,notif}){
   return(
     <div>
       <div style={S.secTitle}>Pedidos de madera de carpinterías</div>
-      <div style={{fontSize:24,color:C.textoSuave,marginBottom:14,fontStyle:"italic"}}>Medidas en pulgadas y pies con equivalencia en cm</div>
+      <div style={{fontSize:16,color:C.textoSuave,marginBottom:14,fontStyle:"italic"}}>Medidas en pulgadas y pies con equivalencia en cm</div>
       {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
       {pedidos.map(p=>(
         <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>setSel(p)}
@@ -1212,7 +1194,7 @@ function VistaAserradero({usuario,notif}){
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div>
               <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:15}}>{p.material}</div>
-              <div style={{fontSize:19,color:C.textoSuave,marginTop:3,fontFamily:"monospace"}}>{p.pies}' × {p.pulgadas}" · {p.cantidad} piezas · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+              <div style={{fontSize:16,color:C.textoSuave,marginTop:3,fontFamily:"monospace"}}>{p.pies}' × {p.pulgadas}" · {p.cantidad} piezas · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
             </div>
             <Badge e={p.estado}/>
           </div>
@@ -1270,7 +1252,7 @@ function VistaFlete({usuario,notif}){
     }catch{}
   };
 
-  const tabStyle=(id)=>({background:tab===id?C.marron:"transparent",color:tab===id?C.crema:C.textoSuave,border:tab===id?"none":`1px solid ${C.borde}`,borderRadius:8,padding:"7px 14px",cursor:"pointer",fontSize:19,fontWeight:700,fontFamily:"'Lato',sans-serif"});
+  const tabStyle=(id)=>({background:tab===id?C.marron:"transparent",color:tab===id?C.crema:C.textoSuave,border:tab===id?"none":`1px solid ${C.borde}`,borderRadius:8,padding:"7px 14px",cursor:"pointer",fontSize:16,fontWeight:700,fontFamily:"'Lato',sans-serif"});
 
   return(
     <div>
@@ -1288,7 +1270,7 @@ function VistaFlete({usuario,notif}){
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(120px,1fr))",gap:10}}>
             {agenda.map((d,i)=>(
               <div key={i} style={{background:C.input,border:`2px solid ${EC[d.estado||"disponible"]}44`,borderRadius:10,padding:10,textAlign:"center"}}>
-                <div style={{fontSize:24,color:C.textoSuave,marginBottom:6,fontWeight:700}}>{new Date(d.fecha+"T12:00").toLocaleDateString("es-AR",{weekday:"short",day:"numeric",month:"short"})}</div>
+                <div style={{fontSize:16,color:C.textoSuave,marginBottom:6,fontWeight:700}}>{new Date(d.fecha+"T12:00").toLocaleDateString("es-AR",{weekday:"short",day:"numeric",month:"short"})}</div>
                 <Badge e={d.estado||"disponible"}/>
                 <div style={{display:"flex",gap:4,justifyContent:"center",marginTop:8}}>
                   {["disponible","en_viaje","ocupado"].map(e=>(
@@ -1320,7 +1302,7 @@ function VistaFlete({usuario,notif}){
           {pedF.origen&&pedF.destino&&(
             <a href={`https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${encodeURIComponent(pedF.origen)};${encodeURIComponent(pedF.destino)}`}
                target="_blank" rel="noopener noreferrer"
-               style={{display:"inline-flex",alignItems:"center",gap:6,background:C.input,border:`1px solid ${C.borde}`,borderRadius:8,padding:"8px 14px",color:C.marron,fontSize:19,fontWeight:700,textDecoration:"none",marginTop:8}}>
+               style={{display:"inline-flex",alignItems:"center",gap:6,background:C.input,border:`1px solid ${C.borde}`,borderRadius:8,padding:"8px 14px",color:C.marron,fontSize:16,fontWeight:700,textDecoration:"none",marginTop:8}}>
               🗺️ Ver ruta en el mapa
             </a>
           )}
@@ -1341,10 +1323,10 @@ function VistaFlete({usuario,notif}){
             <div key={fl.id} style={S.card}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
                 <div>
-                  <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:24,color:C.marron}}>{fl.nombre}</div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:16,color:C.marron}}>{fl.nombre}</div>
                   <Stars v={fl.calificacion_promedio}/>
-                  {fl.zonas&&<div style={{fontSize:24,color:C.textoSuave,marginTop:3}}>📍 {fl.zonas}</div>}
-                  {fl.capacidad&&<div style={{fontSize:24,color:C.textoSuave}}>⚖️ {fl.capacidad}</div>}
+                  {fl.zonas&&<div style={{fontSize:16,color:C.textoSuave,marginTop:3}}>📍 {fl.zonas}</div>}
+                  {fl.capacidad&&<div style={{fontSize:16,color:C.textoSuave}}>⚖️ {fl.capacidad}</div>}
                 </div>
                 <Badge e={fl.estado_flete||"disponible"}/>
               </div>
@@ -1354,7 +1336,7 @@ function VistaFlete({usuario,notif}){
                   <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
                     {fl.agenda.map((d,i)=>(
                       <div key={i} style={{background:C.input,border:`1px solid ${EC[d.estado]||C.borde}44`,borderRadius:6,padding:"5px 9px",textAlign:"center"}}>
-                        <div style={{fontSize:19,color:C.textoSuave}}>{new Date(d.fecha+"T12:00").toLocaleDateString("es-AR",{weekday:"short",day:"numeric"})}</div>
+                        <div style={{fontSize:16,color:C.textoSuave}}>{new Date(d.fecha+"T12:00").toLocaleDateString("es-AR",{weekday:"short",day:"numeric"})}</div>
                         <Badge e={d.estado}/>
                       </div>
                     ))}
@@ -1405,9 +1387,9 @@ function VistaFerreteria({usuario,notif}){
         <div style={S.cardTitle}>Pedido de carpintería</div>
         <div style={{background:C.suave,borderRadius:8,padding:12,border:`1px solid ${C.borde}`}}>
           <div style={S.label}>HERRAJES SOLICITADOS</div>
-          <div style={{fontWeight:700,fontSize:19,color:C.marron,marginTop:4}}>{sel.descripcion}</div>
-          {sel.cantidad&&<div style={{fontSize:19,color:C.textoSuave,marginTop:4}}>Cantidad: {sel.cantidad} unidades</div>}
-          {sel.notas&&<div style={{fontSize:19,color:C.textoSuave,fontStyle:"italic",marginTop:4}}>{sel.notas}</div>}
+          <div style={{fontWeight:700,fontSize:16,color:C.marron,marginTop:4}}>{sel.descripcion}</div>
+          {sel.cantidad&&<div style={{fontSize:16,color:C.textoSuave,marginTop:4}}>Cantidad: {sel.cantidad} unidades</div>}
+          {sel.notas&&<div style={{fontSize:16,color:C.textoSuave,fontStyle:"italic",marginTop:4}}>{sel.notas}</div>}
         </div>
       </div>
 
@@ -1439,7 +1421,7 @@ function VistaFerreteria({usuario,notif}){
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div>
               <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:15}}>{p.descripcion}</div>
-              <div style={{fontSize:19,color:C.textoSuave,marginTop:3}}>Cantidad: {p.cantidad} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+              <div style={{fontSize:16,color:C.textoSuave,marginTop:3}}>Cantidad: {p.cantidad} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
             </div>
             <Badge e={p.estado}/>
           </div>
@@ -1451,94 +1433,81 @@ function VistaFerreteria({usuario,notif}){
 
 // ─── APP ──────────────────────────────────────────────────────────────────────
 
-// ─── PANTALLA BIENVENIDA ──────────────────────────────────────────────────────
 function PantallaBienvenida({onEntrar}){
   const [vista,setVista]=useState("inicio");
-
   if(vista==="manual") return(
     <div style={{maxWidth:640,margin:"0 auto",padding:20}}>
       <button style={{...S.btn("ghost"),marginBottom:16}} onClick={()=>setVista("inicio")}>← Volver</button>
       <div style={{background:C.card,borderRadius:14,padding:24,border:`1px solid ${C.borde}`}}>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:C.marron,marginBottom:16}}>📖 Manual de Usuario</div>
-        <p style={{fontSize:24,color:C.texto,lineHeight:1.7,marginBottom:14}}><b>Encastre</b> conecta a todos los actores del rubro de la madera en un solo lugar.</p>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:C.marron,marginBottom:16}}>📖 Manual de Usuario</div>
+        <p style={{fontSize:15,color:C.texto,lineHeight:1.7,marginBottom:14}}><b>Encastre</b> conecta a todos los actores del rubro de la madera en un solo lugar.</p>
         {[
-          {e:"🪑",t:"Consumidor Final",d:"Pedí presupuestos para muebles a múltiples carpinterías. Comparás y elegís el que más te conviene."},
-          {e:"🔨",t:"Carpintería",d:"Recibís pedidos, armás presupuestos con IA, pedís madera y herrajes a proveedores."},
-          {e:"🪵",t:"Aserradero",d:"Recibís pedidos de madera de carpinterías y cotizás con ayuda de IA."},
-          {e:"🔩",t:"Ferretería",d:"Recibís pedidos de herrajes de carpinterías y cotizás fácilmente."},
-          {e:"🚚",t:"Flete",d:"Gestionás tu agenda y recibís solicitudes de traslado de muebles y materiales."},
-        ].map(u=>(
-          <div key={u.t} style={{borderLeft:`3px solid ${C.acento}`,paddingLeft:12,marginBottom:14}}>
-            <div style={{fontWeight:700,color:C.marron,fontSize:15}}>{u.e} {u.t}</div>
-            <div style={{fontSize:19,color:C.textoSuave,marginTop:3,lineHeight:1.6}}>{u.d}</div>
-          </div>
-        ))}
+          {e:"🪑",t:"Consumidor Final",d:"Pedí presupuestos a múltiples carpinterías. Comparás y elegís."},
+          {e:"🔨",t:"Carpintería",d:"Recibís pedidos, presupuestás con IA, pedís madera y herrajes."},
+          {e:"🪵",t:"Aserradero",d:"Recibís pedidos de madera y cotizás con ayuda de IA."},
+          {e:"🔩",t:"Ferretería",d:"Recibís pedidos de herrajes y cotizás fácilmente."},
+          {e:"🚚",t:"Flete",d:"Gestionás tu agenda y recibís solicitudes de traslado."},
+        ].map(u=>(<div key={u.t} style={{borderLeft:`3px solid ${C.acento}`,paddingLeft:12,marginBottom:14}}>
+          <div style={{fontWeight:700,color:C.marron,fontSize:16}}>{u.e} {u.t}</div>
+          <div style={{fontSize:14,color:C.textoSuave,marginTop:3,lineHeight:1.6}}>{u.d}</div>
+        </div>))}
         <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",marginTop:8}} onClick={onEntrar}>Registrarme / Ingresar →</button>
       </div>
     </div>
   );
-
   if(vista==="terminos") return(
     <div style={{maxWidth:640,margin:"0 auto",padding:20}}>
       <button style={{...S.btn("ghost"),marginBottom:16}} onClick={()=>setVista("inicio")}>← Volver</button>
       <div style={{background:C.card,borderRadius:14,padding:24,border:`1px solid ${C.borde}`}}>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:C.marron,marginBottom:16}}>📋 Términos y Condiciones</div>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:C.marron,marginBottom:16}}>📋 Términos y Condiciones</div>
         {[
           {t:"1. Aceptación",d:"Al registrarse en Encastre, el usuario acepta estos términos. Si no está de acuerdo, no debe usar la plataforma."},
-          {t:"2. Descripción del servicio",d:"Encastre conecta consumidores finales con carpinterías, aserraderos, ferreterías y fletes. Actúa como intermediario y no es responsable de los trabajos o servicios contratados entre usuarios."},
-          {t:"3. Responsabilidad",d:"Cada usuario es responsable de la veracidad de su información. Los profesionales son responsables de los presupuestos que envían y los trabajos que realizan."},
-          {t:"4. Prohibiciones",d:"Está prohibido publicar información falsa, usar la plataforma para actividades ilegales, o acosar a otros usuarios."},
-          {t:"5. Modificaciones",d:"Encastre puede modificar estos términos en cualquier momento, notificando los cambios a través de la plataforma."},
-          {t:"6. Jurisdicción",d:"Estos términos se rigen por las leyes de la República Argentina. Cualquier disputa se resolverá en los tribunales de CABA."},
-        ].map(t=>(
-          <div key={t.t} style={{marginBottom:14}}>
-            <div style={{fontWeight:700,color:C.marron,fontSize:24,marginBottom:3}}>{t.t}</div>
-            <div style={{fontSize:19,color:C.texto,lineHeight:1.7}}>{t.d}</div>
-          </div>
-        ))}
+          {t:"2. Servicio",d:"Encastre conecta usuarios del rubro maderero. Actúa como intermediario y no es responsable de los trabajos contratados."},
+          {t:"3. Responsabilidad",d:"Cada usuario es responsable de la veracidad de su información y de los compromisos que asume."},
+          {t:"4. Prohibiciones",d:"Está prohibido publicar información falsa, usar la plataforma para actividades ilegales o acosar a otros usuarios."},
+          {t:"5. Modificaciones",d:"Encastre puede modificar estos términos en cualquier momento, notificando los cambios."},
+          {t:"6. Jurisdicción",d:"Rigen las leyes de la República Argentina. Disputas en tribunales de CABA."},
+        ].map(t=>(<div key={t.t} style={{marginBottom:14}}>
+          <div style={{fontWeight:700,color:C.marron,fontSize:15,marginBottom:3}}>{t.t}</div>
+          <div style={{fontSize:14,color:C.texto,lineHeight:1.7}}>{t.d}</div>
+        </div>))}
         <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",marginTop:8}} onClick={onEntrar}>Aceptar y continuar →</button>
       </div>
     </div>
   );
-
   if(vista==="privacidad") return(
     <div style={{maxWidth:640,margin:"0 auto",padding:20}}>
       <button style={{...S.btn("ghost"),marginBottom:16}} onClick={()=>setVista("inicio")}>← Volver</button>
       <div style={{background:C.card,borderRadius:14,padding:24,border:`1px solid ${C.borde}`}}>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:C.marron,marginBottom:16}}>🔒 Política de Privacidad</div>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:C.marron,marginBottom:16}}>🔒 Política de Privacidad</div>
         {[
-          {t:"Datos que recopilamos",d:"Nombre, email, ciudad y tipo de usuario. No recopilamos datos financieros sensibles."},
-          {t:"Uso de los datos",d:"Solo para el funcionamiento de la plataforma: mostrar tu perfil, gestionar pedidos y comunicaciones."},
-          {t:"Compartir datos",d:"No vendemos datos. Otros usuarios ven solo tu nombre, ciudad y calificación en el contexto de una transacción."},
-          {t:"Seguridad",d:"Usamos Supabase con encriptación y autenticación segura. Las contraseñas nunca se almacenan en texto plano."},
+          {t:"Datos que recopilamos",d:"Nombre, email, ciudad y tipo de usuario. No recopilamos datos financieros."},
+          {t:"Uso",d:"Solo para el funcionamiento de la plataforma: perfil, pedidos y comunicaciones."},
+          {t:"Compartir",d:"No vendemos datos. Otros usuarios ven solo nombre, ciudad y calificación."},
+          {t:"Seguridad",d:"Usamos Supabase con encriptación. Las contraseñas nunca se almacenan en texto plano."},
           {t:"Tus derechos",d:"Podés solicitar la eliminación de tu cuenta escribiendo a carpinteriavetaraiz@gmail.com"},
-        ].map(t=>(
-          <div key={t.t} style={{marginBottom:14}}>
-            <div style={{fontWeight:700,color:C.marron,fontSize:24,marginBottom:3}}>{t.t}</div>
-            <div style={{fontSize:19,color:C.texto,lineHeight:1.7}}>{t.d}</div>
-          </div>
-        ))}
+        ].map(t=>(<div key={t.t} style={{marginBottom:14}}>
+          <div style={{fontWeight:700,color:C.marron,fontSize:15,marginBottom:3}}>{t.t}</div>
+          <div style={{fontSize:14,color:C.texto,lineHeight:1.7}}>{t.d}</div>
+        </div>))}
         <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",marginTop:8}} onClick={onEntrar}>Entendido, continuar →</button>
       </div>
     </div>
   );
-
   return(
     <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${C.crema} 0%,#E8D5A8 100%)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20}}>
       <div style={{textAlign:"center",marginBottom:32}}>
         <img src={LOGO_B64} alt="Encastre" style={{width:160,height:160,objectFit:"contain",marginBottom:4}}/>
         <div style={{fontFamily:"'Playfair Display',serif",fontSize:38,fontWeight:800,color:C.marron,letterSpacing:2,textTransform:"uppercase"}}>ENCASTRE</div>
-        <div style={{fontSize:19,color:C.textoSuave,letterSpacing:3,textTransform:"uppercase",marginTop:4}}>La Comunidad de la Madera</div>
+        <div style={{fontSize:14,color:C.textoSuave,letterSpacing:3,textTransform:"uppercase",marginTop:4}}>La Comunidad de la Madera</div>
         <div style={{width:60,height:3,background:`linear-gradient(90deg,${C.acento},${C.marron})`,borderRadius:2,margin:"12px auto 0"}}/>
       </div>
       <div style={{maxWidth:400,width:"100%",display:"flex",flexDirection:"column",gap:12}}>
-        <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",fontSize:24,padding:"14px"}} onClick={onEntrar}>
-          Ingresar / Registrarme →
-        </button>
+        <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",fontSize:17,padding:"14px"}} onClick={onEntrar}>Ingresar / Registrarme →</button>
         <div style={{display:"flex",gap:8}}>
-          <button style={{...S.btn("ghost"),flex:1,justifyContent:"center",fontSize:13}} onClick={()=>setVista("manual")}>📖 Manual</button>
-          <button style={{...S.btn("ghost"),flex:1,justifyContent:"center",fontSize:13}} onClick={()=>setVista("terminos")}>📋 Términos</button>
-          <button style={{...S.btn("ghost"),flex:1,justifyContent:"center",fontSize:13}} onClick={()=>setVista("privacidad")}>🔒 Privacidad</button>
+          <button style={{...S.btn("ghost"),flex:1,justifyContent:"center",fontSize:14}} onClick={()=>setVista("manual")}>📖 Manual</button>
+          <button style={{...S.btn("ghost"),flex:1,justifyContent:"center",fontSize:14}} onClick={()=>setVista("terminos")}>📋 Términos</button>
+          <button style={{...S.btn("ghost"),flex:1,justifyContent:"center",fontSize:14}} onClick={()=>setVista("privacidad")}>🔒 Privacidad</button>
         </div>
       </div>
     </div>
@@ -1568,7 +1537,6 @@ function App(){
   };
 
   if(mostrarBienvenida&&!sesion) return <PantallaBienvenida onEntrar={()=>setMostrarBienvenida(false)}/>;
-
   if(!sesion) return <AuthScreen onAuth={handleAuth}/>;
 
   const {usuario}=sesion;
@@ -1590,15 +1558,15 @@ function App(){
         </div>
         <nav style={{display:"flex",gap:6}}>
           {[["principal",navPrincipal],["flete","🚚 Fletes"]].map(([id,l])=>(
-            <button key={id} style={{background:navTab===id?C.acento:"transparent",color:navTab===id?C.marron:C.suave,border:navTab===id?"none":`1px solid ${C.acento}44`,borderRadius:7,padding:"5px 14px",cursor:"pointer",fontSize:19,fontWeight:700,fontFamily:"'Lato',sans-serif",transition:"all .15s"}} onClick={()=>setNavTab(id)}>{l}</button>
+            <button key={id} style={{background:navTab===id?C.acento:"transparent",color:navTab===id?C.marron:C.suave,border:navTab===id?"none":`1px solid ${C.acento}44`,borderRadius:7,padding:"5px 14px",cursor:"pointer",fontSize:16,fontWeight:700,fontFamily:"'Lato',sans-serif",transition:"all .15s"}} onClick={()=>setNavTab(id)}>{l}</button>
           ))}
         </nav>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <div style={{textAlign:"right"}}>
-            <div style={{fontSize:19,color:C.crema,fontWeight:700}}>{EMOJIS[usuario.tipo]} {usuario.nombre}</div>
-            <div style={{fontSize:19,color:C.acento,textTransform:"uppercase",letterSpacing:.5}}>{usuario.tipo}</div>
+            <div style={{fontSize:16,color:C.crema,fontWeight:700}}>{EMOJIS[usuario.tipo]} {usuario.nombre}</div>
+            <div style={{fontSize:16,color:C.acento,textTransform:"uppercase",letterSpacing:.5}}>{usuario.tipo}</div>
           </div>
-          <button style={{background:"transparent",color:C.suave,border:`1px solid ${C.suave}44`,borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:24,fontFamily:"'Lato',sans-serif"}} onClick={()=>{cerrar();setMostrarBienvenida(true);}}>Salir</button>
+          <button style={{background:"transparent",color:C.suave,border:`1px solid ${C.suave}44`,borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:16,fontFamily:"'Lato',sans-serif"}} onClick={()=>{cerrar();setMostrarBienvenida(true);}}>Salir</button>
         </div>
       </div>
 
