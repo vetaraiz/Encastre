@@ -1567,13 +1567,13 @@ function App(){
     try{localStorage.removeItem("encastre_sesion");}catch{}
   };
 
+  if(mostrarBienvenida&&!sesion) return <PantallaBienvenida onEntrar={()=>setMostrarBienvenida(false)}/>;
+
   if(!sesion) return <AuthScreen onAuth={handleAuth}/>;
 
   const {usuario}=sesion;
   const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵",flete:"🚚",ferreteria:"🔩"};
   const navPrincipal=usuario.tipo==="cliente"?"🪑 Mis pedidos":usuario.tipo==="carpinteria"?"🔨 Pedidos":usuario.tipo==="aserradero"?"🪵 Pedidos":"📅 Mi agenda";
-
-  if(mostrarBienvenida&&!sesion) return <PantallaBienvenida onEntrar={()=>setMostrarBienvenida(false)}/>;
 
   return(
     <div style={S.app}>
