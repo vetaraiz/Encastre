@@ -793,7 +793,7 @@ function VistaCliente({usuario,notif}){
                 </div>
                 <div style={S.row}>
                   <div style={S.col()}><span style={{fontSize:17,color:C.textoSuave}}>Tiempo: </span><b>{pr.tiempo_entrega}</b></div>
-                  <div style={S.col()}><span style={{fontSize:17,color:C.textoSuave}}>Flete: </span><b>{pr.incluye_flete?"✅ Incluido":"❌ No incluido"}</b></div>
+                  <div style={S.col()}><span style={{fontSize:17,color:C.textoSuave}}>Flete: </span><b>{pr.incluye_flete?(pr.monto_flete>0?`✅ Incluido ($ ${Number(pr.monto_flete).toLocaleString("es-AR")})`:"✅ Incluido"):"❌ No incluido"}</b></div>
                 </div>
                 {pr.detalle&&<div style={{marginTop:8,fontSize:17,color:C.textoSuave,whiteSpace:"pre-line",fontStyle:"italic",borderLeft:`3px solid ${C.acento}`,paddingLeft:10,marginLeft:4}}>{pr.detalle}</div>}
                 <div style={{marginTop:8}}><Badge e={pr.estado}/></div>
@@ -856,7 +856,8 @@ function VistaCarpinteria({usuario,notif}){
   const [tab,setTab]=useState("pedidos");
   const [pedidos,setPedidos]=useState([]);
   const [sel,setSel]=useState(null);
-  const [presF,setPresF]=useState({monto:"",tiempo:"",incluye_flete:false,detalle:""});
+  const [presF,setPresF]=useState({monto:"",tiempo:"",incluye_flete:false,montoFlete:"",detalle:""});
+  const [miPresupuesto,setMiPresupuesto]=useState(null);
   const [enviando,setEnviando]=useState(false);
   const [yaEnvio,setYaEnvio]=useState(false);
   const [convF,setConvF]=useState({valor:"",unidad:"cm"});
@@ -924,13 +925,23 @@ function VistaCarpinteria({usuario,notif}){
     if(!presF.monto||!sel||enviando||yaEnvio)return;
     setEnviando(true);
     try{
-      await db.insert("presupuestos",{pedido_id:sel.id,carpinteria_id:usuario.id,monto:Number(presF.monto),tiempo_entrega:presF.tiempo,incluye_flete:presF.incluye_flete,detalle:presF.detalle});
+      const datos={pedido_id:sel.id,carpinteria_id:usuario.id,monto:Number(presF.monto),tiempo_entrega:presF.tiempo,incluye_flete:presF.incluye_flete,monto_flete:presF.incluye_flete?(Number(presF.montoFlete)||0):0,detalle:presF.detalle};
+      await db.insert("presupuestos",datos);
       await db.update("pedidos",{estado:"presupuestado"},`id=eq.${sel.id}`);
       notif("¡Presupuesto enviado correctamente!");
-      setPresF({monto:"",tiempo:"",incluye_flete:false,detalle:""});
+      setPresF({monto:"",tiempo:"",incluye_flete:false,montoFlete:"",detalle:""});
       setYaEnvio(true);
+      setMiPresupuesto({...datos,created_at:new Date().toISOString()});
     }catch(e){alert("Error: "+e.message);}
     setEnviando(false);
+  };
+
+  const abrirPedidoCliente=async(p)=>{
+    setSel(p); setYaEnvio(false); setMiPresupuesto(null);
+    try{
+      const d=await db.select("presupuestos",`?pedido_id=eq.${p.id}&carpinteria_id=eq.${usuario.id}&limit=1`);
+      if(d&&d.length>0) setMiPresupuesto(d[0]);
+    }catch{}
   };
 
   const aplicarIA=(s)=>{
@@ -990,8 +1001,24 @@ function VistaCarpinteria({usuario,notif}){
           </div>}
         </div>
 
-        <IAcarpinteria pedido={sel} onAplicar={aplicarIA}/>
+        {/* IA de sugerencia desactivada temporalmente — reponer cuando esté el puente serverless de Netlify */}
 
+        {miPresupuesto?(
+        <div style={S.card}>
+          <div style={S.cardTitle}>✅ Presupuesto enviado</div>
+          <div style={{fontSize:15,color:C.textoSuave,marginBottom:10}}>Ya le enviaste un presupuesto a este cliente. Queda registrado acá:</div>
+          <div style={{background:C.suave,borderRadius:8,padding:12,border:`1px solid ${C.borde}`}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+              <span style={{color:C.textoSuave}}>Monto total</span>
+              <b style={{fontSize:19,color:C.verde}}>$ {Number(miPresupuesto.monto).toLocaleString("es-AR")}</b>
+            </div>
+            {miPresupuesto.tiempo_entrega&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{color:C.textoSuave}}>Entrega</span><b>{miPresupuesto.tiempo_entrega}</b></div>}
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{color:C.textoSuave}}>Flete</span><b>{miPresupuesto.incluye_flete?(miPresupuesto.monto_flete>0?`✅ Incluido ($ ${Number(miPresupuesto.monto_flete).toLocaleString("es-AR")})`:"✅ Incluido"):"❌ No incluido"}</b></div>
+            {miPresupuesto.detalle&&<div style={{marginTop:8}}><div style={S.label}>Detalle</div><div style={{fontSize:16,color:C.marron,whiteSpace:"pre-wrap"}}>{miPresupuesto.detalle}</div></div>}
+            {miPresupuesto.created_at&&<div style={{fontSize:14,color:C.textoSuave,marginTop:8}}>Enviado el {new Date(miPresupuesto.created_at).toLocaleDateString("es-AR")}</div>}
+          </div>
+        </div>
+        ):(
         <div style={S.card}>
           <div style={S.cardTitle}>💰 Tu presupuesto</div>
           <div style={S.row}>
@@ -1004,6 +1031,11 @@ function VistaCarpinteria({usuario,notif}){
               Incluir flete propio en el presupuesto
             </label>
           </div>
+          {presF.incluye_flete&&<div style={{marginTop:10}}>
+            <label style={S.label}>Importe del flete ($)</label>
+            <input type="number" value={presF.montoFlete} onChange={e=>setPresF(f=>({...f,montoFlete:e.target.value}))} placeholder="0" style={S.input}/>
+            <div style={{fontSize:14,color:C.textoSuave,marginTop:4}}>Lo que cobrás por el envío. El cliente lo verá detallado.</div>
+          </div>}
           <div style={{marginTop:10}}>
             <label style={S.label}>Detalle (materiales, herrajes, mano de obra)</label>
             <textarea value={presF.detalle} onChange={e=>setPresF(f=>({...f,detalle:e.target.value}))} placeholder="Podés discriminar ítems o poner todo junto..." style={{...S.input,minHeight:80,resize:"vertical"}}/>
@@ -1015,6 +1047,7 @@ function VistaCarpinteria({usuario,notif}){
             </button>
             {yaEnvio&&<div style={{fontSize:17,color:C.verde,marginTop:6,fontWeight:700}}>✅ El cliente ya recibió tu presupuesto.</div>}
         </div>
+        )}
 
         <div style={S.card}>
           <div style={S.cardTitle}>💬 Chat con cliente</div>
@@ -1049,7 +1082,7 @@ function VistaCarpinteria({usuario,notif}){
             return lista.map(p=>{
             const mat=MATS.find(m=>m.id===p.material);
             return(
-              <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>{setSel(p);setYaEnvio(false);}}
+              <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>abrirPedidoCliente(p)}
                 onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
                 onMouseLeave={e=>{e.currentTarget.style.borderColor=C.borde;e.currentTarget.style.transform="none";}}>
                 <div style={{display:"flex",justifyContent:"space-between"}}>
@@ -1368,7 +1401,7 @@ function VistaAserradero({usuario,notif}){
         </div>
       </div>
 
-      <IAaserradero pedido={sel} onAplicar={aplicarIA}/>
+      {/* IA de sugerencia desactivada temporalmente — reponer cuando esté el puente serverless de Netlify */}
 
       <div style={S.card}>
         <div style={S.cardTitle}>💰 Tu cotización</div>
