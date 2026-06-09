@@ -396,6 +396,7 @@ function AuthScreen({onAuth}){
         if(error||!access_token){setErr("Email o contraseña incorrectos");setCargando(false);return;}
         const perfiles=await db.select("usuarios",`?email=eq.${email}&limit=1`);
         if(perfiles.length===0){setErr("Perfil no encontrado");setCargando(false);return;}
+        if(perfiles[0].activo===false){setErr("Esta cuenta fue dada de baja. Escribí a carpinteriavetaraiz@gmail.com si querés reactivarla.");setCargando(false);return;}
         console.log("Usuario al login:",perfiles[0]);
         onAuth({token:access_token,usuario:perfiles[0]});
       }
@@ -867,13 +868,22 @@ function VistaCarpinteria({usuario,notif}){
   const [misPedidosFerreria,setMisPedidosFerreria]=useState([]);
   const [selFerr,setSelFerr]=useState(null);
   const [cotizacionesFerr,setCotizacionesFerr]=useState([]);
-  const [pintF,setPintF]=useState({descripcion:"",cantidad:"",notas:""});
+  const [pintF,setPintF]=useState({descripcion:"",color:"",tono:"",litros:"",notas:""});
+  const [buscarPedido,setBuscarPedido]=useState("");
   const [misPedidosPint,setMisPedidosPint]=useState([]);
   const [selPint,setSelPint]=useState(null);
   const [cotizacionesPint,setCotizacionesPint]=useState([]);
 
   const cargar=useCallback(async()=>{
-    try{const d=await db.select("pedidos","?order=created_at.desc");setPedidos(d);}catch{}
+    try{
+      const d=await db.select("pedidos","?order=created_at.desc");
+      const ids=[...new Set(d.map(p=>p.cliente_id).filter(Boolean))];
+      let mapa={};
+      if(ids.length){
+        try{const us=await db.select("usuarios",`?id=in.(${ids.join(",")})`);us.forEach(u=>{mapa[u.id]=u.nombre;});}catch{}
+      }
+      setPedidos(d.map(p=>({...p,_clienteNombre:mapa[p.cliente_id]||""})));
+    }catch{}
   },[]);
   // Auto-refresh cada 15 segundos para ver pedidos nuevos
   useEffect(()=>{const t=setInterval(cargar,15000);return()=>clearInterval(t);},[cargar]);
@@ -1027,8 +1037,16 @@ function VistaCarpinteria({usuario,notif}){
       {tab==="pedidos"&&(
         <div>
           <div style={S.secTitle}>Pedidos de presupuesto de clientes</div>
+          <div style={{position:"relative",marginBottom:14}}>
+            <input value={buscarPedido} onChange={e=>setBuscarPedido(e.target.value)} placeholder="🔍 Buscar por cliente o por encargo..." style={{...S.input,paddingRight:buscarPedido?40:15}}/>
+            {buscarPedido&&<button type="button" onClick={()=>setBuscarPedido("")} aria-label="Borrar búsqueda" style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",minHeight:"auto",background:"none",border:"none",cursor:"pointer",fontSize:18,padding:6,color:C.textoSuave}}>✕</button>}
+          </div>
           {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
-          {pedidos.map(p=>{
+          {(()=>{
+            const q=buscarPedido.trim().toLowerCase();
+            const lista=q?pedidos.filter(p=>(p.descripcion||"").toLowerCase().includes(q)||(p._clienteNombre||"").toLowerCase().includes(q)):pedidos;
+            if(pedidos.length>0&&lista.length===0) return <div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No se encontró ningún pedido con "{buscarPedido}"</div>;
+            return lista.map(p=>{
             const mat=MATS.find(m=>m.id===p.material);
             return(
               <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>{setSel(p);setYaEnvio(false);}}
@@ -1037,13 +1055,15 @@ function VistaCarpinteria({usuario,notif}){
                 <div style={{display:"flex",justifyContent:"space-between"}}>
                   <div>
                     <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:21}}>{p.descripcion}</div>
+                    {p._clienteNombre&&<div style={{fontSize:16,color:C.marron,marginTop:2}}>👤 {p._clienteNombre}</div>}
                     <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{p.alto}×{p.ancho}×{p.profundidad}cm · {mat?.label} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
                   </div>
                   <Badge e={p.estado}/>
                 </div>
               </div>
             );
-          })}
+          });
+          })()}
         </div>
       )}
 
@@ -1195,15 +1215,28 @@ function VistaCarpinteria({usuario,notif}){
               <textarea value={pintF.descripcion} onChange={e=>setPintF(f=>({...f,descripcion:e.target.value}))} placeholder="Ej: Laca poliuretánica mate 4L, barniz marino, tinta al agua color nogal, esmalte blanco..." style={{...S.input,minHeight:72,resize:"vertical"}}/>
             </div>
             <div style={S.row}>
-              <div style={S.col()}><label style={S.label}>Cantidad</label><input type="number" value={pintF.cantidad} onChange={e=>setPintF(f=>({...f,cantidad:e.target.value}))} placeholder="0" style={S.input}/></div>
-              <div style={S.col()}><label style={S.label}>Notas adicionales</label><input value={pintF.notas} onChange={e=>setPintF(f=>({...f,notas:e.target.value}))} placeholder="Marca, color, acabado, etc." style={S.input}/></div>
+              <div style={S.col()}><label style={S.label}>Color</label><input value={pintF.color} onChange={e=>setPintF(f=>({...f,color:e.target.value}))} placeholder="Ej: Blanco, Nogal, Roble..." style={S.input}/></div>
+              <div style={S.col()}><label style={S.label}>Tono / terminación</label>
+                <select value={pintF.tono} onChange={e=>setPintF(f=>({...f,tono:e.target.value}))} style={S.input}>
+                  <option value="">Elegí...</option>
+                  <option value="Mate">Mate</option>
+                  <option value="Satinado">Satinado</option>
+                  <option value="Semisatinado">Semisatinado</option>
+                  <option value="Brillante">Brillante</option>
+                  <option value="No especifica">No especifica</option>
+                </select>
+              </div>
+            </div>
+            <div style={S.row}>
+              <div style={S.col()}><label style={S.label}>Litros</label><input type="number" value={pintF.litros} onChange={e=>setPintF(f=>({...f,litros:e.target.value}))} placeholder="0" style={S.input}/></div>
+              <div style={S.col()}><label style={S.label}>Otros materiales / notas</label><input value={pintF.notas} onChange={e=>setPintF(f=>({...f,notas:e.target.value}))} placeholder="Pinceles, brochas, lijas, cintas..." style={S.input}/></div>
             </div>
             <button style={{...S.btn("dark"),marginTop:12}} onClick={async()=>{
               if(!pintF.descripcion)return;
               try{
-                await db.insert("pedidos_pintureria",{carpinteria_id:usuario.id,descripcion:pintF.descripcion,cantidad:Number(pintF.cantidad)||0,notas:pintF.notas});
+                await db.insert("pedidos_pintureria",{carpinteria_id:usuario.id,descripcion:pintF.descripcion,color:pintF.color,tono:pintF.tono,litros:Number(pintF.litros)||null,notas:pintF.notas});
                 notif("¡Pedido enviado a las pinturerías!");
-                setPintF({descripcion:"",cantidad:"",notas:""});
+                setPintF({descripcion:"",color:"",tono:"",litros:"",notas:""});
                 cargarMisPedidosPint();
               }catch(e){alert("Error: "+e.message);}
             }}>📤 Enviar a pinturerías</button>
@@ -1220,7 +1253,7 @@ function VistaCarpinteria({usuario,notif}){
                   <div style={{display:"flex",justifyContent:"space-between"}}>
                     <div>
                       <div style={{fontWeight:700,fontSize:18,color:C.marron}}>{p.descripcion}</div>
-                      <div style={{fontSize:17,color:C.textoSuave}}>Cantidad: {p.cantidad} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                      <div style={{fontSize:17,color:C.textoSuave}}>{[p.color&&`🎨 ${p.color}`,p.tono,p.litros&&`${p.litros} L`].filter(Boolean).join(" · ")||"Sin detalle"} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
                     </div>
                     <Badge e={p.estado}/>
                   </div>
@@ -1632,8 +1665,8 @@ function VistaPintureria({usuario,notif}){
         <div style={{background:C.suave,borderRadius:8,padding:12,border:`1px solid ${C.borde}`}}>
           <div style={S.label}>PINTURAS SOLICITADAS</div>
           <div style={{fontWeight:700,fontSize:21,color:C.marron,marginTop:4}}>{sel.descripcion}</div>
-          {sel.cantidad&&<div style={{fontSize:17,color:C.textoSuave,marginTop:4}}>Cantidad: {sel.cantidad}</div>}
-          {sel.notas&&<div style={{fontSize:17,color:C.textoSuave,fontStyle:"italic",marginTop:4}}>{sel.notas}</div>}
+          {(sel.color||sel.tono||sel.litros)&&<div style={{fontSize:17,color:C.textoSuave,marginTop:6}}>{[sel.color&&`Color: ${sel.color}`,sel.tono&&`Tono: ${sel.tono}`,sel.litros&&`${sel.litros} litros`].filter(Boolean).join(" · ")}</div>}
+          {sel.notas&&<div style={{fontSize:17,color:C.textoSuave,fontStyle:"italic",marginTop:4}}>Otros: {sel.notas}</div>}
         </div>
       </div>
 
@@ -1770,7 +1803,7 @@ function PantallaBienvenida({onEntrar}){
           {t:"5. Con quién se comparte",d:"No vendemos ni cedemos tus datos a terceros con fines comerciales. Otros usuarios solo ven la información necesaria para operar (por ejemplo, nombre, ciudad, tipo de usuario y el contenido de los pedidos o presupuestos que compartís con ellos)."},
           {t:"6. Proveedores tecnológicos",d:"La información se almacena en servidores de Supabase, proveedor de infraestructura que aplica medidas de seguridad estándar de la industria. Las contraseñas se guardan cifradas y nunca en texto plano."},
           {t:"7. Conservación de los datos",d:"Conservamos tus datos mientras tu cuenta esté activa. Si solicitás la baja, los eliminamos, salvo aquellos que debamos conservar por obligaciones legales."},
-          {t:"8. Tus derechos",d:"Como titular de los datos tenés derecho a acceder, rectificar, actualizar y solicitar la supresión de tu información. Para ejercerlos, escribinos a carpinteriavetaraiz@gmail.com."},
+          {t:"8. Tus derechos",d:"Como titular de los datos tenés derecho a acceder, rectificar, actualizar y solicitar la supresión de tu información. Podés dar de baja tu cuenta en cualquier momento desde la propia app (botón al pie de la pantalla principal), o escribirnos a carpinteriavetaraiz@gmail.com para ejercer cualquiera de estos derechos."},
           {t:"9. Normativa y autoridad de control",d:"El tratamiento se realiza conforme a la Ley 25.326 de Protección de los Datos Personales de la República Argentina. La Agencia de Acceso a la Información Pública (AAIP) es el organismo de control ante quien podés presentar denuncias si considerás afectados tus derechos."},
           {t:"10. Datos de menores",d:"Encastre está dirigida a personas mayores de edad. No recopilamos intencionalmente datos de menores sin autorización de sus responsables."},
           {t:"11. Almacenamiento en tu dispositivo",d:"La app puede guardar información en tu dispositivo para funcionar como aplicación instalada (PWA) y mantener tu sesión iniciada."},
@@ -1826,6 +1859,16 @@ function App(){
     try{localStorage.removeItem("encastre_sesion");}catch{}
   };
 
+  const darDeBaja=async()=>{
+    if(!window.confirm("¿Seguro que querés dar de baja tu cuenta? No vas a poder volver a ingresar con ella. Solo la administración puede reactivarla."))return;
+    try{
+      await db.update("usuarios",{activo:false},`id=eq.${sesion?.usuario?.id}`);
+    }catch(e){alert("No se pudo dar de baja: "+(e.message||"revisá tu conexión"));return;}
+    await cerrar();
+    setMostrarBienvenida(true);
+    alert("Tu cuenta fue dada de baja. ¡Gracias por haber sido parte de Encastre!");
+  };
+
   if(mostrarBienvenida&&!sesion) return <PantallaBienvenida onEntrar={()=>setMostrarBienvenida(false)}/>;
   if(!sesion) return <AuthScreen onAuth={handleAuth}/>;
 
@@ -1869,6 +1912,9 @@ function App(){
         {navTab==="principal"&&usuario.tipo==="ferreteria"&&<VistaFerreteria usuario={usuario} notif={setNotifMsg}/>}
         {navTab==="principal"&&usuario.tipo==="pintureria"&&<VistaPintureria usuario={usuario} notif={setNotifMsg}/>}
         {navTab==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg}/>}
+        <div style={{textAlign:"center",marginTop:34,marginBottom:6}}>
+          <button onClick={darDeBaja} style={{background:"none",border:"none",color:C.textoSuave,fontSize:14,textDecoration:"underline",cursor:"pointer",minHeight:"auto",padding:6}}>Dar de baja mi cuenta</button>
+        </div>
       </div>
     </div>
   );
