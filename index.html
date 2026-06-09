@@ -130,6 +130,7 @@ const db = {
   async select(t,q=""){ const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}${q}`,{headers:this.h}); if(!r.ok)throw new Error(await r.text()); return r.json(); },
   async insert(t,d){ const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}`,{method:"POST",headers:this.h,body:JSON.stringify(d)}); if(!r.ok)throw new Error(await r.text()); return r.json(); },
   async update(t,d,q){ const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?${q}`,{method:"PATCH",headers:this.h,body:JSON.stringify(d)}); if(!r.ok)throw new Error(await r.text()); return r.json(); },
+  async remove(t,q){ const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?${q}`,{method:"DELETE",headers:this.h}); if(!r.ok)throw new Error(await r.text()); return true; },
   async signUp(e,p){ const r=await fetch(`${SUPABASE_URL}/auth/v1/signup`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:e,password:p})}); return r.json(); },
   async signIn(e,p){ const r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:e,password:p})}); return r.json(); },
   async signOut(tk){ await fetch(`${SUPABASE_URL}/auth/v1/logout`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${tk}`}}); },
@@ -502,25 +503,60 @@ function AuthScreen({onAuth}){
 function Chat({pedidoId,tipoPedido,miUsuario,otroUsuario}){
   const [msgs,setMsgs]=useState([]);
   const [txt,setTxt]=useState("");
+  const [bloqueoMio,setBloqueoMio]=useState(null);
+  const [meBloquearon,setMeBloquearon]=useState(false);
   const endRef=useRef(null);
+  const otroId=otroUsuario?.id;
 
   const cargar=useCallback(async()=>{
     try{ const d=await db.select("mensajes",`?pedido_id=eq.${pedidoId}&tipo_pedido=eq.${tipoPedido}&order=created_at.asc`); setMsgs(d); }catch{}
   },[pedidoId,tipoPedido]);
 
-  useEffect(()=>{cargar();const t=setInterval(cargar,10000);return()=>clearInterval(t);},[cargar]);
-  // scroll manual only
+  const verBloqueo=useCallback(async()=>{
+    if(!otroId)return;
+    try{
+      const d=await db.select("bloqueos",`?bloqueador_id=in.(${miUsuario.id},${otroId})&bloqueado_id=in.(${miUsuario.id},${otroId})`);
+      setBloqueoMio(d.find(b=>b.bloqueador_id===miUsuario.id&&b.bloqueado_id===otroId)||null);
+      setMeBloquearon(d.some(b=>b.bloqueador_id===otroId&&b.bloqueado_id===miUsuario.id));
+    }catch{}
+  },[otroId,miUsuario.id]);
+
+  useEffect(()=>{cargar();verBloqueo();const t=setInterval(cargar,10000);return()=>clearInterval(t);},[cargar,verBloqueo]);
+
+  const bloqueado=!!bloqueoMio||meBloquearon;
 
   const enviar=async()=>{
-    if(!txt.trim())return;
-    const m={pedido_id:pedidoId,tipo_pedido:tipoPedido,de_usuario_id:miUsuario.id,para_usuario_id:otroUsuario?.id,texto:txt};
+    if(!txt.trim()||bloqueado)return;
+    const m={pedido_id:pedidoId,tipo_pedido:tipoPedido,de_usuario_id:miUsuario.id,para_usuario_id:otroId,texto:txt};
     setTxt("");
     try{await db.insert("mensajes",m);await cargar();}catch{}
   };
 
+  const bloquear=async()=>{
+    if(!otroId)return;
+    if(!window.confirm("¿Bloquear a este usuario? No vas a poder intercambiar mensajes con él. Podés desbloquearlo cuando quieras."))return;
+    try{ await db.insert("bloqueos",{bloqueador_id:miUsuario.id,bloqueado_id:otroId}); await verBloqueo(); }catch(e){alert("No se pudo bloquear: "+(e.message||""));}
+  };
+  const desbloquear=async()=>{
+    if(!bloqueoMio)return;
+    try{ await db.remove("bloqueos",`id=eq.${bloqueoMio.id}`); await verBloqueo(); }catch(e){alert("No se pudo desbloquear: "+(e.message||""));}
+  };
+
   return(
     <div style={{background:C.input,border:`1px solid ${C.borde}`,borderRadius:10,overflow:"hidden"}}>
-      <div style={{padding:"9px 14px",background:C.suave,fontSize:17,color:C.textoSuave,fontWeight:700,letterSpacing:.8,textTransform:"uppercase",borderBottom:`1px solid ${C.borde}`}}>💬 Chat directo</div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 14px",background:C.suave,borderBottom:`1px solid ${C.borde}`}}>
+        <span style={{fontSize:17,color:C.textoSuave,fontWeight:700,letterSpacing:.8,textTransform:"uppercase"}}>💬 Chat directo</span>
+        {otroId&&!meBloquearon&&(bloqueoMio
+          ? <button onClick={desbloquear} style={{...S.btn("ghost"),fontSize:14,padding:"4px 10px",minHeight:"auto"}}>Desbloquear</button>
+          : <button onClick={bloquear} style={{background:"none",border:`1px solid ${C.borde}`,color:C.textoSuave,borderRadius:8,padding:"4px 10px",cursor:"pointer",fontSize:14,minHeight:"auto"}}>🚫 Bloquear</button>
+        )}
+      </div>
+      {meBloquearon?(
+        <div style={{padding:18,textAlign:"center",color:C.textoSuave,fontSize:16}}>🚫 Este usuario te bloqueó. No podés enviarle mensajes.</div>
+      ):bloqueoMio?(
+        <div style={{padding:18,textAlign:"center",color:C.textoSuave,fontSize:16}}>🚫 Bloqueaste a este usuario. Tocá "Desbloquear" para volver a chatear.</div>
+      ):(
+      <div>
       <div style={{maxHeight:180,overflowY:"auto",padding:"10px 14px"}}>
         {msgs.length===0&&<div style={{color:C.textoSuave,fontSize:17,textAlign:"center",padding:16,fontStyle:"italic"}}>Sin mensajes aún...</div>}
         {msgs.map((m,i)=>{
@@ -540,6 +576,8 @@ function Chat({pedidoId,tipoPedido,miUsuario,otroUsuario}){
         <input value={txt} onChange={e=>setTxt(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")enviar();}} placeholder="Escribí tu mensaje..." style={{...S.input,flex:1}}/>
         <button style={S.btn("dark")} onClick={enviar}>Enviar</button>
       </div>
+      </div>
+      )}
     </div>
   );
 }
@@ -1870,6 +1908,83 @@ function PantallaBienvenida({onEntrar}){
   );
 }
 
+function comprimirFoto(file){
+  return new Promise((resolve,reject)=>{
+    if(!file){reject(new Error("sin archivo"));return;}
+    if(!file.type.startsWith("image/")){reject(new Error("no es imagen"));return;}
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        const maxLado=900; let w=img.width,h=img.height;
+        if(w>h&&w>maxLado){h=Math.round(h*maxLado/w);w=maxLado;}
+        else if(h>=w&&h>maxLado){w=Math.round(w*maxLado/h);h=maxLado;}
+        const c=document.createElement("canvas");c.width=w;c.height=h;
+        c.getContext("2d").drawImage(img,0,0,w,h);
+        resolve(c.toDataURL("image/jpeg",0.6));
+      };
+      img.onerror=()=>reject(new Error("no se pudo leer la imagen"));
+      img.src=ev.target.result;
+    };
+    reader.onerror=()=>reject(new Error("no se pudo leer el archivo"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function MisFotos({usuario}){
+  const [fotos,setFotos]=useState([usuario.foto1||"",usuario.foto2||"",usuario.foto3||""]);
+  const [proc,setProc]=useState(false);
+
+  const guardar=async(nuevas)=>{
+    setFotos(nuevas);
+    try{
+      await db.update("usuarios",{foto1:nuevas[0]||null,foto2:nuevas[1]||null,foto3:nuevas[2]||null},`id=eq.${usuario.id}`);
+      try{
+        const s=JSON.parse(localStorage.getItem("encastre_sesion"));
+        if(s&&s.usuario){s.usuario.foto1=nuevas[0];s.usuario.foto2=nuevas[1];s.usuario.foto3=nuevas[2];localStorage.setItem("encastre_sesion",JSON.stringify(s));}
+      }catch{}
+    }catch(e){alert("No se pudieron guardar las fotos: "+(e.message||""));}
+  };
+
+  const subir=async(i,file)=>{
+    if(!file)return;
+    setProc(true);
+    try{
+      const data=await comprimirFoto(file);
+      const nuevas=[...fotos]; nuevas[i]=data;
+      await guardar(nuevas);
+    }catch(e){alert("No se pudo procesar la foto. Probá con una imagen JPG o PNG.");}
+    setProc(false);
+  };
+  const quitar=(i)=>{ const nuevas=[...fotos]; nuevas[i]=""; guardar(nuevas); };
+
+  return(
+    <div style={{...S.card,marginTop:24}}>
+      <div style={S.cardTitle}>🛠️ Trabajos realizados</div>
+      <div style={{fontSize:15,color:C.textoSuave,marginBottom:12}}>Mostrá hasta 3 fotos de tus trabajos. Forman parte de tu presentación profesional.</div>
+      {proc&&<div style={{fontSize:15,color:C.textoSuave,marginBottom:8}}>⟳ Procesando imagen...</div>}
+      <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+        {[0,1,2].map(i=>(
+          <div key={i} style={{width:"30%",minWidth:100,flexGrow:1}}>
+            {fotos[i]?(
+              <div>
+                <img src={fotos[i]} alt={"trabajo "+(i+1)} style={{width:"100%",height:110,objectFit:"cover",borderRadius:8,border:`1px solid ${C.borde}`}}/>
+                <button onClick={()=>quitar(i)} style={{...S.btn("ghost"),width:"100%",justifyContent:"center",fontSize:14,marginTop:4,padding:"6px",minHeight:"auto"}}>🗑️ Quitar</button>
+              </div>
+            ):(
+              <label style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:110,border:`2px dashed ${C.borde}`,borderRadius:8,cursor:"pointer",color:C.textoSuave,fontSize:14}}>
+                <span style={{fontSize:26}}>＋</span>
+                <span>Foto {i+1}</span>
+                <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{subir(i,e.target.files[0]);e.target.value="";}}/>
+              </label>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function App(){
   const [sesion,setSesion]=useState(null);
   const [navTab,setNavTab]=useState("principal");
@@ -1945,6 +2060,7 @@ function App(){
         {navTab==="principal"&&usuario.tipo==="ferreteria"&&<VistaFerreteria usuario={usuario} notif={setNotifMsg}/>}
         {navTab==="principal"&&usuario.tipo==="pintureria"&&<VistaPintureria usuario={usuario} notif={setNotifMsg}/>}
         {navTab==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg}/>}
+        {navTab==="principal"&&usuario.tipo!=="cliente"&&<MisFotos usuario={usuario}/>}
         <div style={{textAlign:"center",marginTop:34,marginBottom:6}}>
           <button onClick={darDeBaja} style={{background:"none",border:"none",color:C.textoSuave,fontSize:14,textDecoration:"underline",cursor:"pointer",minHeight:"auto",padding:6}}>Dar de baja mi cuenta</button>
         </div>
