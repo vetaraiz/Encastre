@@ -535,8 +535,12 @@ function Chat({pedidoId,tipoPedido,miUsuario,otroUsuario}){
   const otroId=otroUsuario?.id;
 
   const cargar=useCallback(async()=>{
-    try{ const d=await db.select("mensajes",`?pedido_id=eq.${pedidoId}&tipo_pedido=eq.${tipoPedido}&order=created_at.asc`); setMsgs(d); }catch{}
-  },[pedidoId,tipoPedido]);
+    try{
+      const filtroPareja=otroId?`&or=(and(de_usuario_id.eq.${miUsuario.id},para_usuario_id.eq.${otroId}),and(de_usuario_id.eq.${otroId},para_usuario_id.eq.${miUsuario.id}))`:"";
+      const d=await db.select("mensajes",`?pedido_id=eq.${pedidoId}&tipo_pedido=eq.${tipoPedido}${filtroPareja}&order=created_at.asc`);
+      setMsgs(d);
+    }catch{}
+  },[pedidoId,tipoPedido,otroId,miUsuario.id]);
 
   const verBloqueo=useCallback(async()=>{
     if(!otroId)return;
