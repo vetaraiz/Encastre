@@ -807,7 +807,7 @@ function VistaCliente({usuario,notif}){
       const d=await db.select("presupuestos",`?pedido_id=eq.${p.id}&order=created_at.asc`);
       const enr=await Promise.all(d.map(async pr=>{
         const c=await db.select("usuarios",`?id=eq.${pr.carpinteria_id}&limit=1`);
-        return{...pr,carpNombre:c[0]?.nombre||"Carpintería"};
+        return{...pr,carpNombre:c[0]?.nombre||"Carpintería",carpFotos:[c[0]?.foto1,c[0]?.foto2,c[0]?.foto3].filter(Boolean)};
       }));
       setPresups(enr);
     }catch{}
@@ -866,6 +866,16 @@ function VistaCliente({usuario,notif}){
                   <div style={S.col()}><span style={{fontSize:17,color:C.textoSuave}}>Flete: </span><b>{pr.incluye_flete?(pr.monto_flete>0?`✅ Incluido ($ ${Number(pr.monto_flete).toLocaleString("es-AR")})`:"✅ Incluido"):"❌ No incluido"}</b></div>
                 </div>
                 {pr.detalle&&<div style={{marginTop:8,fontSize:17,color:C.textoSuave,whiteSpace:"pre-line",fontStyle:"italic",borderLeft:`3px solid ${C.acento}`,paddingLeft:10,marginLeft:4}}>{pr.detalle}</div>}
+                {pr.carpFotos&&pr.carpFotos.length>0&&(
+                  <div style={{marginTop:10}}>
+                    <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>🛠️ Trabajos realizados por {pr.carpNombre}</div>
+                    <div style={{display:"flex",gap:8}}>
+                      {pr.carpFotos.map((f,j)=>(
+                        <img key={j} src={f} alt={"trabajo "+(j+1)} style={{width:"31%",height:90,objectFit:"cover",borderRadius:8,border:`1px solid ${C.borde}`}}/>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div style={{marginTop:8}}><Badge e={pr.estado}/></div>
                 {pr.estado==="enviado"&&(
                   <div style={{display:"flex",gap:8,marginTop:10}}>
