@@ -657,7 +657,21 @@ function Calificar({deUsuario,paraUsuario,pedidoId,califs=[]}){
 function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
   const [f,setF]=useState({descripcion:"",alto:"",ancho:"",profundidad:"",material:"",terminacion:"",color:"",notasCroquis:"",usaCroquis:false,tieneCajones:"No",cantidadCajones:"",medidasCajones:"",croquisImg:""});
   const [procImg,setProcImg]=useState(false);
+  const [intento,setIntento]=useState(false);
   const set=(k,v)=>setF(p=>({...p,[k]:v}));
+  // Lista de lo que falta completar, para marcar en rojo y avisar
+  const faltan=()=>{
+    const l=[];
+    if(!f.descripcion)l.push("qué necesitás");
+    if(!f.alto)l.push("el alto");
+    if(!f.ancho)l.push("el ancho");
+    if(!f.profundidad)l.push("la profundidad");
+    if(!f.material)l.push("el material");
+    if(!f.terminacion)l.push("la terminación");
+    return l;
+  };
+  const errBorde=(cond)=>(intento&&cond)?{border:`2px solid ${C.rojo}`}:{};
+  const AvisoFalta=({cond,texto})=>(intento&&cond)?<div style={{color:C.rojo,fontSize:15,marginTop:4,fontWeight:600}}>⚠️ {texto||"Falta completar este campo"}</div>:null;
 
   // Toma una foto del croquis, la achica y la convierte a texto para guardarla en la base
   const elegirImagenCroquis=(file)=>{
@@ -707,7 +721,8 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
 
       <div style={{marginBottom:14}}>
         <label style={S.label}>¿Qué necesitás?</label>
-        <textarea value={f.descripcion} onChange={e=>set("descripcion",e.target.value)} placeholder="Describí lo que querés hacer: ej. Mesa de comedor para 8 personas con cajón lateral..." style={{...S.input,minHeight:72,resize:"vertical"}}/>
+        <textarea value={f.descripcion} onChange={e=>set("descripcion",e.target.value)} placeholder="Describí lo que querés hacer: ej. Mesa de comedor para 8 personas con cajón lateral..." style={{...S.input,minHeight:72,resize:"vertical",...errBorde(!f.descripcion)}}/>
+        <AvisoFalta cond={!f.descripcion}/>
       </div>
 
       <Divider/>
@@ -716,7 +731,8 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
         {[["alto","Alto (cm)"],["ancho","Ancho (cm)"],["profundidad","Profundidad (cm)"]].map(([k,l])=>(
           <div key={k} style={S.col()}>
             <label style={S.label}>{l}</label>
-            <input type="number" value={f[k]} onChange={e=>set(k,e.target.value)} placeholder="0" style={S.input}/>
+            <input type="number" value={f[k]} onChange={e=>set(k,e.target.value)} placeholder="0" style={{...S.input,...errBorde(!f[k])}}/>
+            <AvisoFalta cond={!f[k]} texto="Falta esta medida"/>
             {f[k]&&<div style={{fontSize:17,color:C.textoSuave,marginTop:3,fontFamily:"monospace"}}>= {cmToMm(f[k])}mm · {cmToIn(f[k])}"</div>}
           </div>
         ))}
@@ -743,6 +759,7 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
 
       <Divider/>
       <div style={S.secTitle}>🪵 Material</div>
+      <AvisoFalta cond={!f.material} texto="Falta elegir un material"/>
       <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:6}}>
         {MATS.map(m=><button key={m.id} style={S.tag(f.material===m.id)} onClick={()=>{set("material",m.id);set("terminacion","");set("color","");}}>{m.label}</button>)}
       </div>
@@ -750,6 +767,7 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
 
       <Divider/>
       <div style={S.secTitle}>🎨 Terminación / Acabado</div>
+      <AvisoFalta cond={!f.terminacion} texto="Falta elegir una terminación"/>
       <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
         {TERS.filter(t=>{
           const esMadera=["madera_dura","madera_semidura","madera_blanda"].includes(f.material);
@@ -778,8 +796,13 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
         </div>
       )}
 
-      <div style={{display:"flex",gap:10,marginTop:20}}>
-        <button style={S.btn("dark")} disabled={!ok} onClick={guardar}>📤 Enviar pedido</button>
+      {intento&&!ok&&(
+        <div style={{marginTop:16,padding:"10px 14px",background:"#FDECEA",border:`1px solid ${C.rojo}`,borderRadius:10,color:C.rojo,fontSize:16,fontWeight:600}}>
+          ⚠️ Para enviar el pedido te falta completar: {faltan().join(", ")}.
+        </div>
+      )}
+      <div style={{display:"flex",gap:10,marginTop:intento&&!ok?10:20}}>
+        <button style={S.btn("dark")} onClick={()=>{ if(!ok){ setIntento(true); return; } guardar(); }}>📤 Enviar pedido</button>
         <button style={S.btn("ghost")} onClick={onCancelar}>Cancelar</button>
       </div>
     </div>
