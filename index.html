@@ -792,6 +792,7 @@ function VistaCliente({usuario,notif}){
   const [vista,setVista]=useState("lista");
   const [sel,setSel]=useState(null);
   const [presups,setPresups]=useState([]);
+  const [chatCarp,setChatCarp]=useState(null);
 
   const cargar=useCallback(async()=>{
     try{const d=await db.select("pedidos",`?cliente_id=eq.${usuario.id}&order=created_at.desc`);setPedidos(d);}catch{}
@@ -801,6 +802,7 @@ function VistaCliente({usuario,notif}){
 
   const abrirPedido=async(p)=>{
     setSel(p);
+    setChatCarp(null);
     try{
       const d=await db.select("presupuestos",`?pedido_id=eq.${p.id}&order=created_at.asc`);
       const enr=await Promise.all(d.map(async pr=>{
@@ -872,15 +874,22 @@ function VistaCliente({usuario,notif}){
                   </div>
                 )}
                 <Calificar deUsuario={usuario} paraUsuario={{id:pr.carpinteria_id}} pedidoId={sel.id}/>
+                <div style={{marginTop:10}}>
+                  <button style={{...S.btn("ghost"),fontSize:15,padding:"6px 10px"}} onClick={()=>setChatCarp(chatCarp===pr.carpinteria_id?null:pr.carpinteria_id)}>
+                    {chatCarp===pr.carpinteria_id?"▲ Ocultar chat":`💬 Chatear con ${pr.carpNombre}`}
+                  </button>
+                  {chatCarp===pr.carpinteria_id&&(
+                    <div style={{marginTop:10}}>
+                      <Chat key={pr.carpinteria_id} pedidoId={sel.id} tipoPedido="cliente" miUsuario={usuario} otroUsuario={{id:pr.carpinteria_id}}/>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         )}
 
-        <div style={S.card}>
-          <div style={S.cardTitle}>💬 Chat con carpintería</div>
-          <Chat pedidoId={sel.id} tipoPedido="cliente" miUsuario={usuario} otroUsuario={presups[0]?{id:presups[0].carpinteria_id}:null}/>
-        </div>
+
       </div>
     );
   }
