@@ -792,7 +792,7 @@ function VistaCliente({usuario,notif}){
   const [vista,setVista]=useState("lista");
   const [sel,setSel]=useState(null);
   const [presups,setPresups]=useState([]);
-  const [chatCarp,setChatCarp]=useState(null);
+  const [selPresup,setSelPresup]=useState(null);
 
   const cargar=useCallback(async()=>{
     try{const d=await db.select("pedidos",`?cliente_id=eq.${usuario.id}&order=created_at.desc`);setPedidos(d);}catch{}
@@ -802,7 +802,7 @@ function VistaCliente({usuario,notif}){
 
   const abrirPedido=async(p)=>{
     setSel(p);
-    setChatCarp(null);
+    setSelPresup(null);
     try{
       const d=await db.select("presupuestos",`?pedido_id=eq.${p.id}&order=created_at.asc`);
       const enr=await Promise.all(d.map(async pr=>{
@@ -819,11 +819,58 @@ function VistaCliente({usuario,notif}){
       await db.update("presupuestos",{estado:"aceptado"},`id=eq.${pr.id}`);
       await db.update("pedidos",{estado:"aceptado"},`id=eq.${sel.id}`);
       notif("¡Presupuesto aceptado!");
+      setSelPresup(null);
       abrirPedido(sel);
     }catch{}
   };
 
   if(vista==="nuevo") return <NuevoPedido usuario={usuario} onGuardar={()=>{cargar();setVista("lista");}} onCancelar={()=>setVista("lista")} notif={notif}/>;
+
+  if(vista==="detalle"&&sel&&selPresup){
+    const pr=presups.find(p=>p.id===selPresup.id)||selPresup;
+    return(
+      <div className="fade">
+        <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSelPresup(null)}>← Volver al pedido</button>
+        <div style={S.card}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,color:C.marron,fontSize:24}}>🔨 {pr.carpNombre}</div>
+            <Badge e={pr.estado}/>
+          </div>
+          <div style={{fontSize:16,color:C.textoSuave}}>Presupuesto para: <b>{sel.descripcion}</b></div>
+        </div>
+        <div style={S.card}>
+          <div style={S.cardTitle}>💰 Presupuesto</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:28,fontWeight:800,color:C.verde,marginBottom:8}}>$ {Number(pr.monto).toLocaleString("es-AR")}</div>
+          <div style={S.row}>
+            <div style={S.col()}><span style={{fontSize:17,color:C.textoSuave}}>Tiempo: </span><b>{pr.tiempo_entrega}</b></div>
+            <div style={S.col()}><span style={{fontSize:17,color:C.textoSuave}}>Flete: </span><b>{pr.incluye_flete?(pr.monto_flete>0?`✅ Incluido ($ ${Number(pr.monto_flete).toLocaleString("es-AR")})`:"✅ Incluido"):"❌ No incluido"}</b></div>
+          </div>
+          {pr.detalle&&<div style={{marginTop:8,fontSize:17,color:C.textoSuave,whiteSpace:"pre-line",fontStyle:"italic",borderLeft:`3px solid ${C.acento}`,paddingLeft:10,marginLeft:4}}>{pr.detalle}</div>}
+          {pr.estado==="enviado"&&(
+            <div style={{display:"flex",gap:8,marginTop:12}}>
+              <button style={S.btn("dark")} onClick={()=>aceptar(pr)}>✅ Aceptar presupuesto</button>
+              <button style={{...S.btn("ghost"),color:C.rojo,borderColor:C.rojo}}>❌ Rechazar</button>
+            </div>
+          )}
+          <Calificar deUsuario={usuario} paraUsuario={{id:pr.carpinteria_id}} pedidoId={sel.id}/>
+        </div>
+        {pr.carpFotos&&pr.carpFotos.length>0&&(
+          <div style={S.card}>
+            <div style={S.cardTitle}>🛠️ Trabajos realizados</div>
+            <div style={{display:"flex",gap:8}}>
+              {pr.carpFotos.map((f,j)=>(
+                <img key={j} src={f} alt={"trabajo "+(j+1)} style={{width:"31%",height:110,objectFit:"cover",borderRadius:8,border:`1px solid ${C.borde}`}}/>
+              ))}
+            </div>
+          </div>
+        )}
+        <div style={S.card}>
+          <div style={S.cardTitle}>💬 Chat con {pr.carpNombre}</div>
+          <Chat key={pr.carpinteria_id} pedidoId={sel.id} tipoPedido="cliente" miUsuario={usuario} otroUsuario={{id:pr.carpinteria_id}}/>
+        </div>
+      </div>
+    );
+  }
 
   if(vista==="detalle"&&sel){
     const mat=MATS.find(m=>m.id===sel.material);
@@ -856,43 +903,14 @@ function VistaCliente({usuario,notif}){
           <div style={S.card}>
             <div style={S.cardTitle}>💰 Presupuestos recibidos ({presups.length})</div>
             {presups.map((pr,i)=>(
-              <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:14,marginBottom:12,background:C.input}}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
-                  <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:17}}>{pr.carpNombre}</div>
+              <div key={i} onClick={()=>setSelPresup(pr)} style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:14,marginBottom:12,background:C.input,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:17}}>🔨 {pr.carpNombre}</div>
+                  <div style={{marginTop:6}}><Badge e={pr.estado}/></div>
+                </div>
+                <div style={{textAlign:"right"}}>
                   <div style={{fontFamily:"'Playfair Display',serif",fontSize:21,fontWeight:800,color:C.verde}}>$ {Number(pr.monto).toLocaleString("es-AR")}</div>
-                </div>
-                <div style={S.row}>
-                  <div style={S.col()}><span style={{fontSize:17,color:C.textoSuave}}>Tiempo: </span><b>{pr.tiempo_entrega}</b></div>
-                  <div style={S.col()}><span style={{fontSize:17,color:C.textoSuave}}>Flete: </span><b>{pr.incluye_flete?(pr.monto_flete>0?`✅ Incluido ($ ${Number(pr.monto_flete).toLocaleString("es-AR")})`:"✅ Incluido"):"❌ No incluido"}</b></div>
-                </div>
-                {pr.detalle&&<div style={{marginTop:8,fontSize:17,color:C.textoSuave,whiteSpace:"pre-line",fontStyle:"italic",borderLeft:`3px solid ${C.acento}`,paddingLeft:10,marginLeft:4}}>{pr.detalle}</div>}
-                {pr.carpFotos&&pr.carpFotos.length>0&&(
-                  <div style={{marginTop:10}}>
-                    <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>🛠️ Trabajos realizados por {pr.carpNombre}</div>
-                    <div style={{display:"flex",gap:8}}>
-                      {pr.carpFotos.map((f,j)=>(
-                        <img key={j} src={f} alt={"trabajo "+(j+1)} style={{width:"31%",height:90,objectFit:"cover",borderRadius:8,border:`1px solid ${C.borde}`}}/>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <div style={{marginTop:8}}><Badge e={pr.estado}/></div>
-                {pr.estado==="enviado"&&(
-                  <div style={{display:"flex",gap:8,marginTop:10}}>
-                    <button style={S.btn("dark")} onClick={()=>aceptar(pr)}>✅ Aceptar presupuesto</button>
-                    <button style={{...S.btn("ghost"),color:C.rojo,borderColor:C.rojo}}>❌ Rechazar</button>
-                  </div>
-                )}
-                <Calificar deUsuario={usuario} paraUsuario={{id:pr.carpinteria_id}} pedidoId={sel.id}/>
-                <div style={{marginTop:10}}>
-                  <button style={{...S.btn("ghost"),fontSize:15,padding:"6px 10px"}} onClick={()=>setChatCarp(chatCarp===pr.carpinteria_id?null:pr.carpinteria_id)}>
-                    {chatCarp===pr.carpinteria_id?"▲ Ocultar chat":`💬 Chatear con ${pr.carpNombre}`}
-                  </button>
-                  {chatCarp===pr.carpinteria_id&&(
-                    <div style={{marginTop:10}}>
-                      <Chat key={pr.carpinteria_id} pedidoId={sel.id} tipoPedido="cliente" miUsuario={usuario} otroUsuario={{id:pr.carpinteria_id}}/>
-                    </div>
-                  )}
+                  <div style={{fontSize:15,color:C.textoSuave,marginTop:4}}>Ver todo →</div>
                 </div>
               </div>
             ))}
