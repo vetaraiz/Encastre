@@ -421,7 +421,7 @@ function AuthScreen({onAuth}){
         const access_token=signInRes.access_token;
         const error=signInRes.error;
         if(error||!access_token){setErr("Email o contraseña incorrectos");setCargando(false);return;}
-        const perfiles=await db.select("usuarios",`?email=eq.${email}&limit=1`);
+        const perfiles=await db.select("usuarios",`?email=eq.${encodeURIComponent(email.trim())}&limit=1`);
         if(perfiles.length===0){setErr("Perfil no encontrado");setCargando(false);return;}
         if(perfiles[0].activo===false){setErr("Esta cuenta fue dada de baja. Escribí a carpinteriavetaraiz@gmail.com si querés reactivarla.");setCargando(false);return;}
         console.log("Usuario al login:",perfiles[0]);
@@ -489,7 +489,7 @@ function AuthScreen({onAuth}){
 
         <div style={{marginBottom:12}}>
           <label style={S.label}>Email</label>
-          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="tu@email.com" style={S.input}/>
+          <input type="email" value={email} onChange={e=>setEmail(e.target.value.replace(/\s+/g,""))} placeholder="tu@email.com" style={S.input}/>
         </div>
         <div style={{marginBottom:16}}>
           <label style={S.label}>Contraseña</label>
