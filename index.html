@@ -995,6 +995,8 @@ function VistaCarpinteria({usuario,notif}){
   const [asF,setAsF]=useState({material:"",pies:"",pulgadas:"",espesor:"",cantidad:"",descripcion:""});
   const [misPedidosAserr,setMisPedidosAserr]=useState([]);
   const [subAserr,setSubAserr]=useState("pedir");
+  const [subFerr,setSubFerr]=useState("pedir");
+  const [subPint,setSubPint]=useState("pedir");
   const [selAserr,setSelAserr]=useState(null);
   const [cotizacionesAserr,setCotizacionesAserr]=useState([]);
   const [ferrF,setFerrF]=useState({descripcion:"",cantidad:"",notas:""});
@@ -1318,6 +1320,12 @@ function VistaCarpinteria({usuario,notif}){
 
       {tab==="ferreteria"&&(
         <div>
+          <div style={{display:"flex",gap:8,marginBottom:14}}>
+            {[["pedir","🔩 Pedir herrajes"],["mis",`📋 Mis pedidos${misPedidosFerreria.length>0?` (${misPedidosFerreria.length})`:""}`]].map(([id,l])=>(
+              <button key={id} style={{...S.btn(subFerr===id?"dark":"ghost"),flex:1,justifyContent:"center",fontSize:16}} onClick={()=>setSubFerr(id)}>{l}</button>
+            ))}
+          </div>
+          {subFerr==="pedir"&&(
           <div style={S.card}>
             <div style={S.cardTitle}>🔩 Pedir herrajes a ferretería</div>
             <div style={{marginBottom:12}}>
@@ -1335,11 +1343,19 @@ function VistaCarpinteria({usuario,notif}){
                 notif("¡Pedido enviado a las ferreterías!");
                 setFerrF({descripcion:"",cantidad:"",notas:""});
                 cargarMisPedidosFerreria();
+                setSubFerr("mis");
               }catch(e){alert("Error: "+e.message);}
             }}>📤 Enviar a ferreterías</button>
           </div>
+          )}
 
-          {misPedidosFerreria.length>0&&(
+          {subFerr==="mis"&&misPedidosFerreria.length===0&&(
+            <div style={S.card}>
+              <div style={{fontSize:17,color:C.textoSuave,fontStyle:"italic"}}>Todavía no enviaste pedidos de herrajes. Andá a la solapa "Pedir herrajes" para hacer el primero.</div>
+            </div>
+          )}
+
+          {subFerr==="mis"&&misPedidosFerreria.length>0&&(
             <div style={S.card}>
               <div style={S.cardTitle}>📋 Mis pedidos de herrajes</div>
               {misPedidosFerreria.map(p=>(
@@ -1389,6 +1405,12 @@ function VistaCarpinteria({usuario,notif}){
 
       {tab==="pintureria"&&(
         <div>
+          <div style={{display:"flex",gap:8,marginBottom:14}}>
+            {[["pedir","🎨 Pedir pinturas"],["mis",`📋 Mis pedidos${misPedidosPint.length>0?` (${misPedidosPint.length})`:""}`]].map(([id,l])=>(
+              <button key={id} style={{...S.btn(subPint===id?"dark":"ghost"),flex:1,justifyContent:"center",fontSize:16}} onClick={()=>setSubPint(id)}>{l}</button>
+            ))}
+          </div>
+          {subPint==="pedir"&&(
           <div style={S.card}>
             <div style={S.cardTitle}>🎨 Pedir pinturas a pinturería</div>
             <div style={{marginBottom:12}}>
@@ -1419,11 +1441,19 @@ function VistaCarpinteria({usuario,notif}){
                 notif("¡Pedido enviado a las pinturerías!");
                 setPintF({descripcion:"",color:"",tono:"",litros:"",notas:""});
                 cargarMisPedidosPint();
+                setSubPint("mis");
               }catch(e){alert("Error: "+e.message);}
             }}>📤 Enviar a pinturerías</button>
           </div>
+          )}
 
-          {misPedidosPint.length>0&&(
+          {subPint==="mis"&&misPedidosPint.length===0&&(
+            <div style={S.card}>
+              <div style={{fontSize:17,color:C.textoSuave,fontStyle:"italic"}}>Todavía no enviaste pedidos de pinturas. Andá a la solapa "Pedir pinturas" para hacer el primero.</div>
+            </div>
+          )}
+
+          {subPint==="mis"&&misPedidosPint.length>0&&(
             <div style={S.card}>
               <div style={S.cardTitle}>📋 Mis pedidos de pinturas</div>
               {misPedidosPint.map(p=>(
