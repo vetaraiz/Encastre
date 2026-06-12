@@ -997,6 +997,15 @@ function VistaCarpinteria({usuario,notif}){
   const [subAserr,setSubAserr]=useState("pedir");
   const [subFerr,setSubFerr]=useState("pedir");
   const [subPint,setSubPint]=useState("pedir");
+  const [intAs,setIntAs]=useState(false);
+  const [intFe,setIntFe]=useState(false);
+  const [intPi,setIntPi]=useState(false);
+  const marcaErr=(activo,cond)=>(activo&&cond)?{border:`2px solid ${C.rojo}`}:{};
+  const AvisoErr=({activo,cond,texto})=>(activo&&cond)?<div style={{color:C.rojo,fontSize:15,marginTop:4,fontWeight:600}}>⚠️ {texto||"Falta completar"}</div>:null;
+  const BannerFalta=({activo,lista})=>{
+    const f=lista.filter(x=>x[0]).map(x=>x[1]);
+    return (activo&&f.length>0)?<div style={{marginTop:12,padding:"10px 14px",background:"#FDECEA",border:`1px solid ${C.rojo}`,borderRadius:10,color:C.rojo,fontSize:16,fontWeight:600}}>⚠️ Para enviar te falta completar: {f.join(", ")}.</div>:null;
+  };
   const [selAserr,setSelAserr]=useState(null);
   const [cotizacionesAserr,setCotizacionesAserr]=useState([]);
   const [ferrF,setFerrF]=useState({descripcion:"",cantidad:"",notas:""});
@@ -1095,11 +1104,12 @@ function VistaCarpinteria({usuario,notif}){
     }catch{}
   };
   const enviarAserr=async()=>{
-    if(!asF.material)return;
+    if(!(asF.material&&asF.pies&&asF.pulgadas&&asF.cantidad)){setIntAs(true);return;}
     try{
       await db.insert("pedidos_aserradero",{carpinteria_id:usuario.id,material:asF.material,pies:Number(asF.pies),pulgadas:Number(asF.pulgadas),espesor:Number(asF.espesor||0),cantidad:Number(asF.cantidad),descripcion:asF.descripcion});
       notif("¡Pedido enviado a los aserraderos!");
       setAsF({material:"",pies:"",pulgadas:"",espesor:"",cantidad:"",descripcion:""});
+      setIntAs(false);
       cargarMisPedidosAserr();
       setSubAserr("mis");
     }catch(e){alert("Error: "+e.message);}
@@ -1249,14 +1259,17 @@ function VistaCarpinteria({usuario,notif}){
           <div style={S.cardTitle}>🪵 Pedir madera al aserradero</div>
           <div style={{fontSize:17,color:C.textoSuave,marginBottom:14,fontStyle:"italic"}}>Las medidas van en pulgadas y pies (como trabaja el aserradero)</div>
           <label style={S.label}>Tipo de madera</label>
-          <input value={asF.material} onChange={e=>setAsF(f=>({...f,material:e.target.value}))} placeholder="Ej: Roble, Pino, Cedro, Quebracho..." style={{...S.input,marginBottom:14}}/>
+          <input value={asF.material} onChange={e=>setAsF(f=>({...f,material:e.target.value}))} placeholder="Ej: Roble, Pino, Cedro, Quebracho..." style={{...S.input,marginBottom:0,...marcaErr(intAs,!asF.material)}}/>
+          <AvisoErr activo={intAs} cond={!asF.material} texto="Falta el tipo de madera"/>
+          <div style={{marginBottom:14}}/>
           <div style={S.row}>
-            <div style={S.col()}><label style={S.label}>Largo (pies)</label><input type="number" value={asF.pies} onChange={e=>setAsF(f=>({...f,pies:e.target.value}))} placeholder="0'" style={S.input}/>{asF.pies&&<div style={{fontSize:17,color:C.textoSuave,fontFamily:"monospace"}}>= {ftToCm(asF.pies)}cm</div>}</div>
-            <div style={S.col()}><label style={S.label}>Ancho (pulgadas)</label><input type="number" value={asF.pulgadas} onChange={e=>setAsF(f=>({...f,pulgadas:e.target.value}))} placeholder='0"' style={S.input}/>{asF.pulgadas&&<div style={{fontSize:17,color:C.textoSuave,fontFamily:"monospace"}}>= {inToCm(asF.pulgadas)}cm</div>}</div>
+            <div style={S.col()}><label style={S.label}>Largo (pies)</label><input type="number" value={asF.pies} onChange={e=>setAsF(f=>({...f,pies:e.target.value}))} placeholder="0'" style={{...S.input,...marcaErr(intAs,!asF.pies)}}/><AvisoErr activo={intAs} cond={!asF.pies} texto="Falta el largo"/>{asF.pies&&<div style={{fontSize:17,color:C.textoSuave,fontFamily:"monospace"}}>= {ftToCm(asF.pies)}cm</div>}</div>
+            <div style={S.col()}><label style={S.label}>Ancho (pulgadas)</label><input type="number" value={asF.pulgadas} onChange={e=>setAsF(f=>({...f,pulgadas:e.target.value}))} placeholder='0"' style={{...S.input,...marcaErr(intAs,!asF.pulgadas)}}/><AvisoErr activo={intAs} cond={!asF.pulgadas} texto="Falta el ancho"/>{asF.pulgadas&&<div style={{fontSize:17,color:C.textoSuave,fontFamily:"monospace"}}>= {inToCm(asF.pulgadas)}cm</div>}</div>
             <div style={S.col()}><label style={S.label}>Espesor (pulgadas)</label><input type="number" value={asF.espesor||""} onChange={e=>setAsF(f=>({...f,espesor:e.target.value}))} placeholder='0"' style={S.input}/>{asF.espesor&&<div style={{fontSize:17,color:C.textoSuave,fontFamily:"monospace"}}>= {inToCm(asF.espesor)}cm</div>}</div>
-            <div style={S.col()}><label style={S.label}>Cantidad</label><input type="number" value={asF.cantidad} onChange={e=>setAsF(f=>({...f,cantidad:e.target.value}))} placeholder="0" style={S.input}/></div>
+            <div style={S.col()}><label style={S.label}>Cantidad</label><input type="number" value={asF.cantidad} onChange={e=>setAsF(f=>({...f,cantidad:e.target.value}))} placeholder="0" style={{...S.input,...marcaErr(intAs,!asF.cantidad)}}/><AvisoErr activo={intAs} cond={!asF.cantidad} texto="Falta la cantidad"/></div>
           </div>
           <div style={{marginTop:12}}><label style={S.label}>Observaciones</label><textarea value={asF.descripcion} onChange={e=>setAsF(f=>({...f,descripcion:e.target.value}))} placeholder="Calidad, secado, escuadría..." style={{...S.input,minHeight:56,resize:"vertical"}}/></div>
+          <BannerFalta activo={intAs} lista={[[!asF.material,"el tipo de madera"],[!asF.pies,"el largo"],[!asF.pulgadas,"el ancho"],[!asF.cantidad,"la cantidad"]]}/>
           <button style={{...S.btn("dark"),marginTop:12}} onClick={enviarAserr}>📤 Enviar a aserraderos</button>
         </div>
       )}
@@ -1330,18 +1343,21 @@ function VistaCarpinteria({usuario,notif}){
             <div style={S.cardTitle}>🔩 Pedir herrajes a ferretería</div>
             <div style={{marginBottom:12}}>
               <label style={S.label}>¿Qué herrajes necesitás?</label>
-              <textarea value={ferrF.descripcion} onChange={e=>setFerrF(f=>({...f,descripcion:e.target.value}))} placeholder="Ej: Bisagras de piano 180cm, rieles telescópicos 45cm, manijas negras mate..." style={{...S.input,minHeight:72,resize:"vertical"}}/>
+              <textarea value={ferrF.descripcion} onChange={e=>setFerrF(f=>({...f,descripcion:e.target.value}))} placeholder="Ej: Bisagras de piano 180cm, rieles telescópicos 45cm, manijas negras mate..." style={{...S.input,minHeight:72,resize:"vertical",...marcaErr(intFe,!ferrF.descripcion)}}/>
+              <AvisoErr activo={intFe} cond={!ferrF.descripcion} texto="Falta describir los herrajes"/>
             </div>
             <div style={S.row}>
-              <div style={S.col()}><label style={S.label}>Cantidad (unidades)</label><input type="number" value={ferrF.cantidad} onChange={e=>setFerrF(f=>({...f,cantidad:e.target.value}))} placeholder="0" style={S.input}/></div>
+              <div style={S.col()}><label style={S.label}>Cantidad (unidades)</label><input type="number" value={ferrF.cantidad} onChange={e=>setFerrF(f=>({...f,cantidad:e.target.value}))} placeholder="0" style={{...S.input,...marcaErr(intFe,!ferrF.cantidad)}}/><AvisoErr activo={intFe} cond={!ferrF.cantidad} texto="Falta la cantidad"/></div>
               <div style={S.col()}><label style={S.label}>Notas adicionales</label><input value={ferrF.notas} onChange={e=>setFerrF(f=>({...f,notas:e.target.value}))} placeholder="Marca preferida, color, etc." style={S.input}/></div>
             </div>
+            <BannerFalta activo={intFe} lista={[[!ferrF.descripcion,"qué herrajes necesitás"],[!ferrF.cantidad,"la cantidad"]]}/>
             <button style={{...S.btn("dark"),marginTop:12}} onClick={async()=>{
-              if(!ferrF.descripcion)return;
+              if(!(ferrF.descripcion&&ferrF.cantidad)){setIntFe(true);return;}
               try{
                 await db.insert("pedidos_ferreteria",{carpinteria_id:usuario.id,descripcion:ferrF.descripcion,cantidad:Number(ferrF.cantidad)||0,notas:ferrF.notas});
                 notif("¡Pedido enviado a las ferreterías!");
                 setFerrF({descripcion:"",cantidad:"",notas:""});
+                setIntFe(false);
                 cargarMisPedidosFerreria();
                 setSubFerr("mis");
               }catch(e){alert("Error: "+e.message);}
@@ -1415,7 +1431,8 @@ function VistaCarpinteria({usuario,notif}){
             <div style={S.cardTitle}>🎨 Pedir pinturas a pinturería</div>
             <div style={{marginBottom:12}}>
               <label style={S.label}>¿Qué pinturas o materiales necesitás?</label>
-              <textarea value={pintF.descripcion} onChange={e=>setPintF(f=>({...f,descripcion:e.target.value}))} placeholder="Ej: Laca poliuretánica mate 4L, barniz marino, tinta al agua color nogal, esmalte blanco..." style={{...S.input,minHeight:72,resize:"vertical"}}/>
+              <textarea value={pintF.descripcion} onChange={e=>setPintF(f=>({...f,descripcion:e.target.value}))} placeholder="Ej: Laca poliuretánica mate 4L, barniz marino, tinta al agua color nogal, esmalte blanco..." style={{...S.input,minHeight:72,resize:"vertical",...marcaErr(intPi,!pintF.descripcion)}}/>
+              <AvisoErr activo={intPi} cond={!pintF.descripcion} texto="Falta describir qué necesitás"/>
             </div>
             <div style={S.row}>
               <div style={S.col()}><label style={S.label}>Color</label><input value={pintF.color} onChange={e=>setPintF(f=>({...f,color:e.target.value}))} placeholder="Ej: Blanco, Nogal, Roble..." style={S.input}/></div>
@@ -1431,15 +1448,17 @@ function VistaCarpinteria({usuario,notif}){
               </div>
             </div>
             <div style={S.row}>
-              <div style={S.col()}><label style={S.label}>Litros</label><input type="number" value={pintF.litros} onChange={e=>setPintF(f=>({...f,litros:e.target.value}))} placeholder="0" style={S.input}/></div>
+              <div style={S.col()}><label style={S.label}>Litros</label><input type="number" value={pintF.litros} onChange={e=>setPintF(f=>({...f,litros:e.target.value}))} placeholder="0" style={{...S.input,...marcaErr(intPi,!pintF.litros)}}/><AvisoErr activo={intPi} cond={!pintF.litros} texto="Faltan los litros"/></div>
               <div style={S.col()}><label style={S.label}>Otros materiales / notas</label><input value={pintF.notas} onChange={e=>setPintF(f=>({...f,notas:e.target.value}))} placeholder="Pinceles, brochas, lijas, cintas..." style={S.input}/></div>
             </div>
+            <BannerFalta activo={intPi} lista={[[!pintF.descripcion,"qué necesitás"],[!pintF.litros,"los litros"]]}/>
             <button style={{...S.btn("dark"),marginTop:12}} onClick={async()=>{
-              if(!pintF.descripcion)return;
+              if(!(pintF.descripcion&&pintF.litros)){setIntPi(true);return;}
               try{
                 await db.insert("pedidos_pintureria",{carpinteria_id:usuario.id,descripcion:pintF.descripcion,color:pintF.color,tono:pintF.tono,litros:Number(pintF.litros)||null,notas:pintF.notas});
                 notif("¡Pedido enviado a las pinturerías!");
                 setPintF({descripcion:"",color:"",tono:"",litros:"",notas:""});
+                setIntPi(false);
                 cargarMisPedidosPint();
                 setSubPint("mis");
               }catch(e){alert("Error: "+e.message);}
