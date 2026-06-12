@@ -408,12 +408,16 @@ function AuthScreen({onAuth}){
         if(error){setErr(error.message||"Error al registrar");setCargando(false);return;}
         const user=signUpRes.data?.user||signUpRes.user||signUpRes;
         const userId=user?.id||signUpRes?.id;
-        if(!userId){
-          // User created but no ID returned - try to insert with email only
-          await db.insert("usuarios",{tipo,nombre,email,ciudad,tipo_documento:tipoDoc,documento:docLimpio});
-        } else {
-          await db.insert("usuarios",{auth_id:userId,tipo,nombre,email,ciudad,tipo_documento:tipoDoc,documento:docLimpio});
-        }
+        // Presentarse ante la base con la credencial recién creada, para poder crear la propia ficha
+        if(signUpRes.access_token){ db.setSesion({token:signUpRes.access_token,refresh:signUpRes.refresh_token,expira:Date.now()+((signUpRes.expires_in||3600)*1000)}); }
+        const emailLimpio=email.trim().toLowerCase();
+        try{
+          if(!userId){
+            await db.insert("usuarios",{tipo,nombre,email:emailLimpio,ciudad,tipo_documento:tipoDoc,documento:docLimpio});
+          } else {
+            await db.insert("usuarios",{auth_id:userId,tipo,nombre,email:emailLimpio,ciudad,tipo_documento:tipoDoc,documento:docLimpio});
+          }
+        } finally { db.limpiarSesion(); }
         setOk("¡Cuenta creada! Ahora iniciá sesión.");
         setModo("login");
       }else{
@@ -421,12 +425,14 @@ function AuthScreen({onAuth}){
         const access_token=signInRes.access_token;
         const error=signInRes.error;
         if(error||!access_token){setErr("Email o contraseña incorrectos");setCargando(false);return;}
+        // Presentarse ante la base antes de buscar el perfil (necesario con la seguridad activada)
+        db.setSesion({token:access_token,refresh:signInRes.refresh_token,expira:Date.now()+((signInRes.expires_in||3600)*1000)});
         const uidAuth=signInRes.user?.id;
         let perfiles=[];
         if(uidAuth){ try{ perfiles=await db.select("usuarios",`?auth_id=eq.${uidAuth}&limit=1`); }catch{} }
-        if(perfiles.length===0){ try{ perfiles=await db.select("usuarios",`?email=eq.${encodeURIComponent(email.trim())}&limit=1`); }catch{} }
-        if(perfiles.length===0){setErr("Perfil no encontrado");setCargando(false);return;}
-        if(perfiles[0].activo===false){setErr("Esta cuenta fue dada de baja. Escribí a carpinteriavetaraiz@gmail.com si querés reactivarla.");setCargando(false);return;}
+        if(perfiles.length===0){ try{ perfiles=await db.select("usuarios",`?email=eq.${encodeURIComponent(email.trim().toLowerCase())}&limit=1`); }catch{} }
+        if(perfiles.length===0){db.limpiarSesion();setErr("Perfil no encontrado");setCargando(false);return;}
+        if(perfiles[0].activo===false){db.limpiarSesion();setErr("Esta cuenta fue dada de baja. Escribí a carpinteriavetaraiz@gmail.com si querés reactivarla.");setCargando(false);return;}
         console.log("Usuario al login:",perfiles[0]);
         onAuth({token:access_token,refresh:signInRes.refresh_token,expira:Date.now()+((signInRes.expires_in||3600)*1000),usuario:perfiles[0]});
       }
@@ -524,6 +530,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-06-12.1</div>
     </div>
   );
 }
