@@ -182,9 +182,9 @@ const C = {
 };
 
 const MATS = [
-  {id:"madera_dura",label:"Madera Dura",ej:"Roble, Quebracho, Algarrobo"},
-  {id:"madera_semidura",label:"Madera Semidura",ej:"Cedro, Lapacho"},
-  {id:"madera_blanda",label:"Madera Blanda",ej:"Pino, Álamo"},
+  {id:"madera_dura",label:"Madera Dura",ej:"Roble, Quebracho, Algarrobo",especies:["Roble","Quebracho","Algarrobo","Incienso","Urunday","Curupay"]},
+  {id:"madera_semidura",label:"Madera Semidura",ej:"Cedro, Lapacho",especies:["Cedro","Lapacho","Petiribí","Viraró","Anchico"]},
+  {id:"madera_blanda",label:"Madera Blanda",ej:"Pino, Álamo",especies:["Pino","Álamo","Paraíso","Kiri","Eucalipto"]},
   {id:"aglomerado",label:"Aglomerado",ej:"Sin revestimiento"},
   {id:"aglomerado_melamina",label:"Aglom. c/ Melamina",ej:"Revestimiento melamínico"},
   {id:"mdf",label:"MDF",ej:"Fibra de densidad media"},
@@ -267,7 +267,7 @@ function IAcarpinteria({pedido,onAplicar}){
     const res=await pedirIA(`Sos un carpintero profesional argentino con 20 años de experiencia.
 Pedido: ${pedido.descripcion}
 Medidas: ${pedido.alto}cm alto × ${pedido.ancho}cm ancho × ${pedido.profundidad}cm prof
-Material: ${mat?.label||pedido.material}
+Material: ${mat?.label||pedido.material}${pedido.especie? " ("+pedido.especie+")":""}
 Terminación: ${ter?.label||pedido.terminacion}${pedido.color?` color ${pedido.color}`:""}
 Respondé SOLO con JSON válido, sin texto adicional:
 {"monto_total":número,"tiempo_entrega":"texto","items":[{"concepto":"texto","detalle":"texto","monto":número}],"nota":"texto"}`);
@@ -548,7 +548,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-06-12.5</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-06-12.6</div>
     </div>
   );
 }
@@ -683,7 +683,7 @@ function Calificar({deUsuario,paraUsuario,pedidoId,califs=[]}){
 
 // ─── NUEVO PEDIDO ─────────────────────────────────────────────────────────────
 function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
-  const [f,setF]=useState({descripcion:"",alto:"",ancho:"",profundidad:"",material:"",terminacion:"",color:"",notasCroquis:"",usaCroquis:false,tieneCajones:"No",cantidadCajones:"",medidasCajones:"",croquisImg:"",fechaLimite:""});
+  const [f,setF]=useState({descripcion:"",alto:"",ancho:"",profundidad:"",material:"",especie:"",terminacion:"",color:"",notasCroquis:"",usaCroquis:false,tieneCajones:"No",cantidadCajones:"",medidasCajones:"",croquisImg:"",fechaLimite:""});
   const [procImg,setProcImg]=useState(false);
   const [intento,setIntento]=useState(false);
   const set=(k,v)=>setF(p=>({...p,[k]:v}));
@@ -737,7 +737,7 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
         alert("Error: tu perfil no está en la base de datos. Cerrá sesión y volvé a entrar.");
         return;
       }
-      await db.insert("pedidos",{cliente_id:usuario.id,descripcion:f.descripcion,alto:Number(f.alto),ancho:Number(f.ancho),profundidad:Number(f.profundidad),material:f.material,terminacion:f.terminacion,color:f.color,notas_croquis:f.notasCroquis||"",tiene_cajones:f.tieneCajones==="Sí",cantidad_cajones:Number(f.cantidadCajones)||0,medidas_cajones:f.medidasCajones||"",croquis_imagen:f.croquisImg||"",fecha_limite:f.fechaLimite?new Date(f.fechaLimite+"T23:59:59").toISOString():null});
+      await db.insert("pedidos",{cliente_id:usuario.id,descripcion:f.descripcion,alto:Number(f.alto),ancho:Number(f.ancho),profundidad:Number(f.profundidad),material:f.material,especie:f.especie||null,terminacion:f.terminacion,color:f.color,notas_croquis:f.notasCroquis||"",tiene_cajones:f.tieneCajones==="Sí",cantidad_cajones:Number(f.cantidadCajones)||0,medidas_cajones:f.medidasCajones||"",croquis_imagen:f.croquisImg||"",fecha_limite:f.fechaLimite?new Date(f.fechaLimite+"T23:59:59").toISOString():null});
       notif("¡Pedido enviado a todas las carpinterías!");
       onGuardar();
     }catch(e){alert("Error al guardar pedido: "+e.message);}
@@ -789,9 +789,22 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
       <div style={S.secTitle}>🪵 Material</div>
       <AvisoFalta cond={!f.material} texto="Falta elegir un material"/>
       <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:6}}>
-        {MATS.map(m=><button key={m.id} style={S.tag(f.material===m.id)} onClick={()=>{set("material",m.id);set("terminacion","");set("color","");}}>{m.label}</button>)}
+        {MATS.map(m=><button key={m.id} style={S.tag(f.material===m.id)} onClick={()=>{set("material",m.id);set("especie","");set("terminacion","");set("color","");}}>{m.label}</button>)}
       </div>
-      {MATS.find(m=>m.id===f.material)&&<div style={{fontSize:17,color:C.textoSuave,fontStyle:"italic"}}>Ej: {MATS.find(m=>m.id===f.material).ej}</div>}
+      {(()=>{
+        const m=MATS.find(m=>m.id===f.material);
+        if(!m) return null;
+        if(m.especies) return(
+          <div style={{marginTop:4}}>
+            <div style={{fontSize:16,color:C.marron,marginBottom:6,fontWeight:600}}>¿Qué tipo de {m.label.toLowerCase()}?</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+              {m.especies.map(e=><button key={e} style={S.tag(f.especie===e)} onClick={()=>set("especie",f.especie===e?"":e)}>{e}</button>)}
+              <button style={S.tag(f.especie==="Otra / a definir")} onClick={()=>set("especie",f.especie==="Otra / a definir"?"":"Otra / a definir")}>Otra / a definir</button>
+            </div>
+          </div>
+        );
+        return <div style={{fontSize:17,color:C.textoSuave,fontStyle:"italic"}}>Ej: {m.ej}</div>;
+      })()}
 
       <Divider/>
       <div style={S.secTitle}>🎨 Terminación / Acabado</div>
@@ -948,7 +961,7 @@ function VistaCliente({usuario,notif}){
       <div style={{marginTop:12,borderTop:`1px dashed ${C.borde}`,paddingTop:12}} className="fade">
         <div style={S.row}>
           <div style={S.col()}><div style={S.label}>Medidas</div><div style={{fontSize:16,fontFamily:"monospace",color:C.marron}}>Alto {sel.alto} · Ancho {sel.ancho} · Prof {sel.profundidad} cm</div></div>
-          <div style={S.col()}><div style={S.label}>Material</div><div>{mat?.label}</div></div>
+          <div style={S.col()}><div style={S.label}>Material</div><div>{mat?.label}{sel.especie?` · ${sel.especie}`:""}</div></div>
           <div style={S.col()}><div style={S.label}>Terminación</div><div>{ter?.label}{sel.color?` · ${sel.color}`:""}</div></div>
         </div>
         {presups.length===0?(
@@ -1169,7 +1182,7 @@ function VistaCarpinteria({usuario,notif}){
             ))}
           </div>
           <div style={S.row,{marginTop:10}}>
-            <div style={S.col()}><div style={S.label}>Material</div><div style={{fontWeight:700}}>{mat?.label}</div></div>
+            <div style={S.col()}><div style={S.label}>Material</div><div style={{fontWeight:700}}>{mat?.label}{sel.especie?` · ${sel.especie}`:""}</div></div>
             <div style={S.col()}><div style={S.label}>Terminación</div><div>{ter?.label}{sel.color?` · ${sel.color}`:""}</div></div>
           </div>
           {sel.notas_croquis&&<div style={{marginTop:12}}>
