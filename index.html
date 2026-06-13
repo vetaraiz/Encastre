@@ -567,7 +567,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-06-12.8</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-06-12.9</div>
     </div>
   );
 }
@@ -866,7 +866,8 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
         })}
         {f.fechaLimite&&<button style={{...S.btn("ghost"),fontSize:15,padding:"6px 12px",color:C.rojo,borderColor:C.rojo}} onClick={()=>set("fechaLimite","")}>✕ Sin vencimiento</button>}
       </div>
-      <input type="date" value={f.fechaLimite} min={new Date(Date.now()+86400000).toISOString().slice(0,10)} onChange={e=>set("fechaLimite",e.target.value)} style={S.input}/>
+      <div style={{fontSize:15,color:C.textoSuave,margin:"4px 0 6px"}}>📆 O elegí una fecha exacta en el calendario:</div>
+      <input type="date" value={f.fechaLimite} min={new Date().toISOString().slice(0,10)} onChange={e=>set("fechaLimite",e.target.value)} style={S.input}/>
       {f.fechaLimite&&<div style={{fontSize:15,color:C.verde,marginTop:4}}>📅 Vence el {new Date(f.fechaLimite+"T00:00:00").toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}</div>}
 
       {intento&&!ok&&(
