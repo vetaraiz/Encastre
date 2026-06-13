@@ -567,7 +567,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-06-12.7</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-06-12.8</div>
     </div>
   );
 }
@@ -1134,6 +1134,7 @@ function VistaCarpinteria({usuario,notif}){
 
   const enviarPresup=async()=>{
     if(!presF.monto||!sel||enviando||yaEnvio)return;
+    if(sel.fecha_limite&&new Date(sel.fecha_limite)<new Date()){alert("Este pedido venció: ya no se pueden enviar presupuestos.");return;}
     setEnviando(true);
     try{
       const datos={pedido_id:sel.id,carpinteria_id:usuario.id,monto:Number(presF.monto),tiempo_entrega:presF.tiempo,incluye_flete:presF.incluye_flete,monto_flete:presF.incluye_flete?(Number(presF.montoFlete)||0):0,detalle:presF.detalle};
@@ -1217,7 +1218,13 @@ function VistaCarpinteria({usuario,notif}){
 
         {/* IA de sugerencia desactivada temporalmente — reponer cuando esté el puente serverless de Netlify */}
 
-        {miPresupuesto?(
+        {(sel.fecha_limite&&new Date(sel.fecha_limite)<new Date()&&!miPresupuesto)?(
+        <div style={{...S.card,textAlign:"center",borderColor:"#B23A2E"}}>
+          <div style={{fontSize:32,marginBottom:8}}>⛔</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,color:"#B23A2E",fontWeight:700}}>Este pedido venció</div>
+          <div style={{fontSize:16,color:C.textoSuave,marginTop:6}}>El cliente puso una fecha límite que ya pasó, así que no se pueden enviar presupuestos.</div>
+        </div>
+        ):miPresupuesto?(
         <div style={S.card}>
           <div style={S.cardTitle}>✅ Presupuesto enviado</div>
           <div style={{fontSize:15,color:C.textoSuave,marginBottom:10}}>Ya le enviaste un presupuesto a este cliente. Queda registrado acá:</div>
