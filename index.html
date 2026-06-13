@@ -567,7 +567,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-06-12.9</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-06-12.10</div>
     </div>
   );
 }
@@ -890,6 +890,7 @@ function VistaCliente({usuario,notif}){
   const [sel,setSel]=useState(null);
   const [presups,setPresups]=useState([]);
   const [selPresup,setSelPresup]=useState(null);
+  const [filtro,setFiltro]=useState("todos");
 
   const cargar=useCallback(async()=>{
     try{const d=await db.select("pedidos",`?cliente_id=eq.${usuario.id}&order=created_at.desc`);setPedidos(d);}catch{}
@@ -1027,10 +1028,33 @@ function VistaCliente({usuario,notif}){
           <button style={S.btn("dark")} onClick={()=>setVista("nuevo")}>➕ Crear primer pedido</button>
         </div>
       )}
-      {pedidos.map(p=>{
-        const mat=MATS.find(m=>m.id===p.material);
-        const abierto=sel&&sel.id===p.id;
+      {pedidos.length>0&&(()=>{
+        const venc=p=>p.fecha_limite&&new Date(p.fecha_limite)<new Date()&&p.estado!=="aceptado";
+        const cuenta={
+          todos:pedidos.length,
+          abierto:pedidos.filter(p=>!venc(p)&&p.estado!=="aceptado").length,
+          aceptado:pedidos.filter(p=>p.estado==="aceptado").length,
+          vencido:pedidos.filter(p=>venc(p)).length,
+        };
         return(
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+            {[["todos","Todos"],["abierto","Abiertos"],["aceptado","Aceptados"],["vencido","Vencidos"]].map(([id,l])=>(
+              <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} ({cuenta[id]})</button>
+            ))}
+          </div>
+        );
+      })()}
+      {pedidos.filter(p=>{
+        const venc=p.fecha_limite&&new Date(p.fecha_limite)<new Date()&&p.estado!=="aceptado";
+        if(filtro==="todos")return true;
+        if(filtro==="vencido")return venc;
+        if(filtro==="aceptado")return p.estado==="aceptado";
+        if(filtro==="abierto")return !venc&&p.estado!=="aceptado";
+        return true;
+      }).map(p=>{
+          const mat=MATS.find(m=>m.id===p.material);
+          const abierto=sel&&sel.id===p.id;
+          return(
           <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",...(abierto?{borderColor:C.acento}:{})}}>
             <div onClick={()=>abrirPedido(p)} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
               <div>
