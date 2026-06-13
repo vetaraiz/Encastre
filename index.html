@@ -406,10 +406,28 @@ function AuthScreen({onAuth}){
         const signUpRes=await db.signUp(email,pass);
         const error=signUpRes.error;
         if(error){setErr(error.message||"Error al registrar");setCargando(false);return;}
-        const user=signUpRes.data?.user||signUpRes.user||signUpRes;
-        const userId=user?.id||signUpRes?.id;
-        // Presentarse ante la base con la credencial recién creada, para poder crear la propia ficha
-        if(signUpRes.access_token){ db.setSesion({token:signUpRes.access_token,refresh:signUpRes.refresh_token,expira:Date.now()+((signUpRes.expires_in||3600)*1000)}); }
+        let tokenReg=signUpRes.access_token?{token:signUpRes.access_token,refresh:signUpRes.refresh_token,expira:Date.now()+((signUpRes.expires_in||3600)*1000)}:null;
+        let userId=(signUpRes.data?.user||signUpRes.user||signUpRes)?.id||signUpRes?.id;
+        if(!tokenReg){
+          // El mail ya tenía credencial (intento anterior). Probamos entrar con esa clave para completar la ficha.
+          const reIn=await db.signIn(email,pass);
+          if(reIn.access_token){
+            tokenReg={token:reIn.access_token,refresh:reIn.refresh_token,expira:Date.now()+((reIn.expires_in||3600)*1000)};
+            userId=reIn.user?.id||userId;
+            // Si ya tiene ficha, no hay nada que crear: que inicie sesión directamente
+            db.setSesion(tokenReg);
+            try{
+              const ya=await db.select("usuarios",`?auth_id=eq.${userId}&limit=1`);
+              if(ya.length>0){ db.limpiarSesion(); setOk("Esa cuenta ya existe y está completa. Iniciá sesión."); setModo("login"); setCargando(false); return; }
+            }catch{}
+          } else {
+            setErr("Este email ya está registrado. Iniciá sesión, o usá '¿Olvidaste tu contraseña?' para recuperarla.");
+            setCargando(false);
+            return;
+          }
+        }
+        // Presentarse ante la base con la credencial, para poder crear la propia ficha
+        db.setSesion(tokenReg);
         const emailLimpio=email.trim().toLowerCase();
         try{
           if(!userId){
@@ -530,7 +548,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-06-12.1</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-06-12.2</div>
     </div>
   );
 }
