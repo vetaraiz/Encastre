@@ -567,7 +567,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-06-12.10</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-06-12.11</div>
     </div>
   );
 }
@@ -1107,6 +1107,7 @@ function VistaCarpinteria({usuario,notif}){
   const [cotizacionesFerr,setCotizacionesFerr]=useState([]);
   const [pintF,setPintF]=useState({descripcion:"",color:"",tono:"",litros:"",notas:""});
   const [buscarPedido,setBuscarPedido]=useState("");
+  const [filtroCarp,setFiltroCarp]=useState("abierto");
   const [misPedidosPint,setMisPedidosPint]=useState([]);
   const [selPint,setSelPint]=useState(null);
   const [cotizacionesPint,setCotizacionesPint]=useState([]);
@@ -1321,10 +1322,31 @@ function VistaCarpinteria({usuario,notif}){
             {buscarPedido&&<button type="button" onClick={()=>setBuscarPedido("")} aria-label="Borrar búsqueda" style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",minHeight:"auto",background:"none",border:"none",cursor:"pointer",fontSize:18,padding:6,color:C.textoSuave}}>✕</button>}
           </div>
           {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
+          {pedidos.length>0&&(()=>{
+            const venc=p=>p.fecha_limite&&new Date(p.fecha_limite)<new Date();
+            const cuenta={
+              abierto:pedidos.filter(p=>!venc(p)&&p.estado!=="aceptado").length,
+              vencido:pedidos.filter(p=>venc(p)).length,
+              todos:pedidos.length,
+            };
+            return(
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
+                {[["abierto","Para cotizar"],["vencido","Vencidos"],["todos","Todos"]].map(([id,l])=>(
+                  <button key={id} style={{...S.btn(filtroCarp===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltroCarp(id)}>{l} ({cuenta[id]})</button>
+                ))}
+              </div>
+            );
+          })()}
           {(()=>{
             const q=buscarPedido.trim().toLowerCase();
-            const lista=q?pedidos.filter(p=>(p.descripcion||"").toLowerCase().includes(q)||(p._clienteNombre||"").toLowerCase().includes(q)):pedidos;
-            if(pedidos.length>0&&lista.length===0) return <div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No se encontró ningún pedido con "{buscarPedido}"</div>;
+            const venc=p=>p.fecha_limite&&new Date(p.fecha_limite)<new Date();
+            let lista=pedidos.filter(p=>{
+              if(filtroCarp==="vencido")return venc(p);
+              if(filtroCarp==="abierto")return !venc(p)&&p.estado!=="aceptado";
+              return true;
+            });
+            if(q)lista=lista.filter(p=>(p.descripcion||"").toLowerCase().includes(q)||(p._clienteNombre||"").toLowerCase().includes(q));
+            if(pedidos.length>0&&lista.length===0) return <div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría{q?` para "${buscarPedido}"`:""}</div>;
             return lista.map(p=>{
             const mat=MATS.find(m=>m.id===p.material);
             return(
