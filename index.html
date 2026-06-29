@@ -567,7 +567,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-06-12.11</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-06-29.1</div>
     </div>
   );
 }
@@ -706,6 +706,10 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
   const [procImg,setProcImg]=useState(false);
   const [intento,setIntento]=useState(false);
   const set=(k,v)=>setF(p=>({...p,[k]:v}));
+  // Fechas en horario LOCAL (evita el corrimiento de un día que daba toISOString en UTC-3)
+  const aISO=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  const masDias=n=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()+n);return aISO(d);};
+  const minFecha=masDias(1); // mínimo: mañana (un pedido no puede vencer hoy)
   // Lista de lo que falta completar, para marcar en rojo y avisar
   const faltan=()=>{
     const l=[];
@@ -860,14 +864,14 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
       <div style={{fontSize:15,color:C.textoSuave,marginBottom:8}}>Pasada esta fecha, las carpinterías ya no podrán cotizar. Si la dejás vacía, el pedido queda abierto sin vencimiento.</div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8}}>
         {[["3 días",3],["1 semana",7],["15 días",15]].map(([lbl,d])=>{
-          const fecha=new Date(Date.now()+d*86400000).toISOString().slice(0,10);
+          const fecha=masDias(d);
           const activo=f.fechaLimite===fecha;
           return <button key={d} style={{...S.btn(activo?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>set("fechaLimite",activo?"":fecha)}>{lbl}</button>;
         })}
         {f.fechaLimite&&<button style={{...S.btn("ghost"),fontSize:15,padding:"6px 12px",color:C.rojo,borderColor:C.rojo}} onClick={()=>set("fechaLimite","")}>✕ Sin vencimiento</button>}
       </div>
       <div style={{fontSize:15,color:C.textoSuave,margin:"4px 0 6px"}}>📆 O elegí una fecha exacta en el calendario:</div>
-      <input type="date" value={f.fechaLimite} min={new Date().toISOString().slice(0,10)} onChange={e=>set("fechaLimite",e.target.value)} style={S.input}/>
+      <input type="date" value={f.fechaLimite} min={minFecha} onChange={e=>{const v=e.target.value; set("fechaLimite", v&&v<minFecha?minFecha:v);}} style={S.input}/>
       {f.fechaLimite&&<div style={{fontSize:15,color:C.verde,marginTop:4}}>📅 Vence el {new Date(f.fechaLimite+"T00:00:00").toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}</div>}
 
       {intento&&!ok&&(
