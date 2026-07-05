@@ -1353,6 +1353,24 @@ const cmToIn = c=>(c/2.54).toFixed(2);
 const inToCm = i=>(i*2.54).toFixed(1);
 const ftToCm = f=>(f*30.48).toFixed(1);
 
+// ─── PRESUPUESTOS: cálculo de totales ───────────────────────────────────────
+const nmb = v => { const n=Number(v); return isFinite(n)?n:0; };
+const fmtPeso = v => "$ "+nmb(v).toLocaleString("es-AR",{minimumFractionDigits:0,maximumFractionDigits:2});
+// items: [{descripcion,precio,cantidad}] ; opts: {usarDesc,descTipo,descValor,usarIva,ivaPct}
+function calcularPresup(items, opts){
+  const filas=(items||[]).map(it=>({...it, importe: nmb(it.precio)*nmb(it.cantidad)}));
+  const subtotal=filas.reduce((a,f)=>a+f.importe,0);
+  let descuento=0;
+  if(opts&&opts.usarDesc){
+    descuento = opts.descTipo==="porcentaje" ? subtotal*(nmb(opts.descValor)/100) : nmb(opts.descValor);
+  }
+  if(descuento>subtotal) descuento=subtotal;
+  const baseImponible=subtotal-descuento;
+  const iva = (opts&&opts.usarIva) ? baseImponible*(nmb(opts.ivaPct)/100) : 0;
+  const total=baseImponible+iva;
+  return {filas, subtotal, descuento, baseImponible, iva, total};
+}
+
 // ─── ESTILOS ──────────────────────────────────────────────────────────────────
 const S = {
   app:{ minHeight:"100vh", background:C.crema, fontFamily:"'Lato',sans-serif", color:C.texto },
@@ -1713,7 +1731,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-04.4</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-05.1</div>
     </div>
   );
 }
@@ -2048,6 +2066,15 @@ function VistaCliente({usuario,notif}){
 
   useEffect(()=>{cargar();},[cargar]);
 
+  const enriquecerPresups=async(d)=>{
+    return await Promise.all(d.map(async pr=>{
+      const c=await db.select("usuarios",`?id=eq.${pr.carpinteria_id}&limit=1`);
+      let items=[];
+      try{ items=await db.select("presupuesto_items",`?presupuesto_id=eq.${pr.id}&order=orden.asc`); }catch{}
+      return{...pr,empresa:c[0]||{},carpNombre:c[0]?.nombre||"Carpintería",carpFotos:[c[0]?.foto1,c[0]?.foto2,c[0]?.foto3].filter(Boolean),items};
+    }));
+  };
+
   const abrirPedido=async(p)=>{
     if(sel&&sel.id===p.id){ setSel(null); setPresups([]); setSelPresup(null); return; }
     setSel(p);
@@ -2055,22 +2082,14 @@ function VistaCliente({usuario,notif}){
     setPresups([]);
     try{
       const d=await db.select("presupuestos",`?pedido_id=eq.${p.id}&order=created_at.asc`);
-      const enr=await Promise.all(d.map(async pr=>{
-        const c=await db.select("usuarios",`?id=eq.${pr.carpinteria_id}&limit=1`);
-        return{...pr,carpNombre:c[0]?.nombre||"Carpintería",carpFotos:[c[0]?.foto1,c[0]?.foto2,c[0]?.foto3].filter(Boolean)};
-      }));
-      setPresups(enr);
+      setPresups(await enriquecerPresups(d));
     }catch{}
   };
 
   const recargarPresups=async(p)=>{
     try{
       const d=await db.select("presupuestos",`?pedido_id=eq.${p.id}&order=created_at.asc`);
-      const enr=await Promise.all(d.map(async pr=>{
-        const c=await db.select("usuarios",`?id=eq.${pr.carpinteria_id}&limit=1`);
-        return{...pr,carpNombre:c[0]?.nombre||"Carpintería",carpFotos:[c[0]?.foto1,c[0]?.foto2,c[0]?.foto3].filter(Boolean)};
-      }));
-      setPresups(enr);
+      setPresups(await enriquecerPresups(d));
     }catch{}
   };
 
@@ -2095,12 +2114,15 @@ function VistaCliente({usuario,notif}){
         <button style={{...S.btn("ghost"),fontSize:14,padding:"4px 10px"}} onClick={()=>setSelPresup(null)}>✕ Cerrar</button>
       </div>
       <div style={{padding:12}}>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:800,color:C.verde,marginBottom:8}}>$ {Number(pr.monto).toLocaleString("es-AR")}</div>
-        <div style={S.row}>
-          <div style={S.col()}><span style={{fontSize:17,color:C.textoSuave}}>Tiempo: </span><b>{pr.tiempo_entrega}</b></div>
-          <div style={S.col()}><span style={{fontSize:17,color:C.textoSuave}}>Flete: </span><b>{pr.incluye_flete?(pr.monto_flete>0?`✅ Incluido ($ ${Number(pr.monto_flete).toLocaleString("es-AR")})`:"✅ Incluido"):"❌ No incluido"}</b></div>
-        </div>
-        {pr.detalle&&<div style={{marginTop:8,fontSize:17,color:C.textoSuave,whiteSpace:"pre-line",fontStyle:"italic",borderLeft:`3px solid ${C.acento}`,paddingLeft:10,marginLeft:4}}>{pr.detalle}</div>}
+        <PresupuestoFormato
+          empresa={pr.empresa||{nombre:pr.carpNombre}}
+          cliente={usuario}
+          items={pr.items||[]}
+          opts={{descuento_tipo:pr.descuento_tipo,descuento_valor:pr.descuento_valor,iva_pct:pr.iva_pct}}
+          numero={pr.numero||(pr.id?String(pr.id).slice(0,8):"")}
+          fecha={pr.created_at?new Date(pr.created_at).toLocaleDateString("es-AR"):null}
+          tiempoEntrega={pr.tiempo_entrega}
+        />
         {pr.estado==="enviado"&&(
           <div style={{display:"flex",gap:8,marginTop:12}}>
             <button style={S.btn("dark")} onClick={()=>aceptar(pr)}>✅ Aceptar presupuesto</button>
@@ -2230,8 +2252,9 @@ function VistaCarpinteria({usuario,notif}){
   const [tab,setTab]=useState("pedidos");
   const [pedidos,setPedidos]=useState([]);
   const [sel,setSel]=useState(null);
-  const [presF,setPresF]=useState({monto:"",tiempo:"",incluye_flete:false,montoFlete:"",detalle:""});
+  const [presF,setPresF]=useState({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
   const [miPresupuesto,setMiPresupuesto]=useState(null);
+  const [clienteSel,setClienteSel]=useState({});
   const [enviando,setEnviando]=useState(false);
   const [yaEnvio,setYaEnvio]=useState(false);
   const [convF,setConvF]=useState({valor:"",unidad:"cm"});
@@ -2309,17 +2332,34 @@ function VistaCarpinteria({usuario,notif}){
   useEffect(()=>{cargar();cargarMisPedidosAserr();cargarMisPedidosFerreria();cargarMisPedidosPint();},[cargar,cargarMisPedidosAserr,cargarMisPedidosFerreria,cargarMisPedidosPint]);
 
   const enviarPresup=async()=>{
-    if(!presF.monto||!sel||enviando||yaEnvio)return;
+    if(!sel||enviando||yaEnvio)return;
+    const itemsValidos=(presF.items||[]).filter(it=>it.descripcion.trim()&&nmb(it.precio)>0&&nmb(it.cantidad)>0);
+    if(itemsValidos.length===0){alert("Cargá al menos un ítem con descripción, precio y cantidad.");return;}
     if(sel.fecha_limite&&new Date(sel.fecha_limite)<new Date()){alert("Este pedido venció: ya no se pueden enviar presupuestos.");return;}
     setEnviando(true);
     try{
-      const datos={pedido_id:sel.id,carpinteria_id:usuario.id,monto:Number(presF.monto),tiempo_entrega:presF.tiempo,incluye_flete:presF.incluye_flete,monto_flete:presF.incluye_flete?(Number(presF.montoFlete)||0):0,detalle:presF.detalle};
-      await db.insert("presupuestos",datos);
+      const calc=calcularPresup(itemsValidos,presF);
+      const datos={
+        pedido_id:sel.id, carpinteria_id:usuario.id,
+        monto:calc.total, total:calc.total, subtotal:calc.subtotal,
+        descuento_tipo:presF.usarDesc?presF.descTipo:null,
+        descuento_valor:presF.usarDesc?nmb(presF.descValor):null,
+        iva_pct:presF.usarIva?nmb(presF.ivaPct):null,
+        tiempo_entrega:presF.tiempo, incluye_flete:false, monto_flete:0, detalle:null
+      };
+      const creado=await db.insert("presupuestos",datos);
+      const presId=Array.isArray(creado)?creado[0]?.id:creado?.id;
+      if(presId){
+        for(let i=0;i<itemsValidos.length;i++){
+          const it=itemsValidos[i];
+          await db.insert("presupuesto_items",{presupuesto_id:presId,descripcion:it.descripcion.trim(),precio:nmb(it.precio),cantidad:nmb(it.cantidad),importe:nmb(it.precio)*nmb(it.cantidad),orden:i});
+        }
+      }
       await db.update("pedidos",{estado:"presupuestado"},`id=eq.${sel.id}`);
       notif("¡Presupuesto enviado correctamente!");
-      setPresF({monto:"",tiempo:"",incluye_flete:false,montoFlete:"",detalle:""});
+      setPresF({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
       setYaEnvio(true);
-      setMiPresupuesto({...datos,created_at:new Date().toISOString()});
+      setMiPresupuesto({...datos,id:presId,items:itemsValidos.map(it=>({...it,precio:nmb(it.precio),cantidad:nmb(it.cantidad),importe:nmb(it.precio)*nmb(it.cantidad)})),created_at:new Date().toISOString()});
     }catch(e){alert("Error: "+e.message);}
     setEnviando(false);
   };
@@ -2328,13 +2368,20 @@ function VistaCarpinteria({usuario,notif}){
     setSel(p); setYaEnvio(false); setMiPresupuesto(null);
     try{
       const d=await db.select("presupuestos",`?pedido_id=eq.${p.id}&carpinteria_id=eq.${usuario.id}&limit=1`);
-      if(d&&d.length>0) setMiPresupuesto(d[0]);
+      if(d&&d.length>0){
+        let items=[];
+        try{ items=await db.select("presupuesto_items",`?presupuesto_id=eq.${d[0].id}&order=orden.asc`); }catch{}
+        setMiPresupuesto({...d[0],items});
+        setYaEnvio(true);
+      }
+      // datos del cliente para el formato
+      try{ const cl=await db.select("usuarios",`?id=eq.${p.cliente_id}&limit=1`); setClienteSel(cl[0]||{}); }catch{}
     }catch{}
   };
 
   const aplicarIA=(s)=>{
-    const det=s.items?.map(i=>`${i.concepto}: $${Number(i.monto).toLocaleString("es-AR")} — ${i.detalle}`).join("\n")||"";
-    setPresF(f=>({...f,monto:String(s.monto_total),tiempo:s.tiempo_entrega||f.tiempo,detalle:det||f.detalle}));
+    const its=(s.items||[]).map(i=>({descripcion:i.detalle||i.concepto||"",precio:String(i.monto||""),cantidad:"1"}));
+    if(its.length>0) setPresF(f=>({...f,items:its,tiempo:s.tiempo_entrega||f.tiempo}));
   };
 
   const abrirPedidoAserr=async(p)=>{
@@ -2403,46 +2450,114 @@ function VistaCarpinteria({usuario,notif}){
         ):miPresupuesto?(
         <div style={S.card}>
           <div style={S.cardTitle}>✅ Presupuesto enviado</div>
-          <div style={{fontSize:15,color:C.textoSuave,marginBottom:10}}>Ya le enviaste un presupuesto a este cliente. Queda registrado acá:</div>
-          <div style={{background:C.suave,borderRadius:8,padding:12,border:`1px solid ${C.borde}`}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-              <span style={{color:C.textoSuave}}>Monto total</span>
-              <b style={{fontSize:19,color:C.verde}}>$ {Number(miPresupuesto.monto).toLocaleString("es-AR")}</b>
-            </div>
-            {miPresupuesto.tiempo_entrega&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{color:C.textoSuave}}>Entrega</span><b>{miPresupuesto.tiempo_entrega}</b></div>}
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{color:C.textoSuave}}>Flete</span><b>{miPresupuesto.incluye_flete?(miPresupuesto.monto_flete>0?`✅ Incluido ($ ${Number(miPresupuesto.monto_flete).toLocaleString("es-AR")})`:"✅ Incluido"):"❌ No incluido"}</b></div>
-            {miPresupuesto.detalle&&<div style={{marginTop:8}}><div style={S.label}>Detalle</div><div style={{fontSize:16,color:C.marron,whiteSpace:"pre-wrap"}}>{miPresupuesto.detalle}</div></div>}
-            {miPresupuesto.created_at&&<div style={{fontSize:14,color:C.textoSuave,marginTop:8}}>Enviado el {new Date(miPresupuesto.created_at).toLocaleDateString("es-AR")}</div>}
-          </div>
+          <div style={{fontSize:15,color:C.textoSuave,marginBottom:10}}>Ya le enviaste un presupuesto a este cliente. Así lo ve:</div>
+          <PresupuestoFormato
+            empresa={usuario}
+            cliente={clienteSel||{}}
+            items={miPresupuesto.items||[]}
+            opts={{descuento_tipo:miPresupuesto.descuento_tipo,descuento_valor:miPresupuesto.descuento_valor,iva_pct:miPresupuesto.iva_pct}}
+            numero={miPresupuesto.numero||(miPresupuesto.id?String(miPresupuesto.id).slice(0,8):"")}
+            fecha={miPresupuesto.created_at?new Date(miPresupuesto.created_at).toLocaleDateString("es-AR"):null}
+            tiempoEntrega={miPresupuesto.tiempo_entrega}
+          />
         </div>
         ):(
         <div style={S.card}>
           <div style={S.cardTitle}>💰 Tu presupuesto</div>
-          <div style={S.row}>
-            <div style={S.col()}><label style={S.label}>Monto total ($)</label><input type="number" value={presF.monto} onChange={e=>setPresF(f=>({...f,monto:e.target.value}))} placeholder="0" style={S.input}/></div>
-            <div style={S.col()}><label style={S.label}>Tiempo de entrega</label><input value={presF.tiempo} onChange={e=>setPresF(f=>({...f,tiempo:e.target.value}))} placeholder="Ej: 2 semanas" style={S.input}/></div>
-          </div>
-          <div style={{marginTop:10}}>
-            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:17,color:C.textoSuave}}>
-              <input type="checkbox" checked={presF.incluye_flete} onChange={e=>setPresF(f=>({...f,incluye_flete:e.target.checked}))}/>
-              Incluir flete propio en el presupuesto
-            </label>
-          </div>
-          {presF.incluye_flete&&<div style={{marginTop:10}}>
-            <label style={S.label}>Importe del flete ($)</label>
-            <input type="number" value={presF.montoFlete} onChange={e=>setPresF(f=>({...f,montoFlete:e.target.value}))} placeholder="0" style={S.input}/>
-            <div style={{fontSize:14,color:C.textoSuave,marginTop:4}}>Lo que cobrás por el envío. El cliente lo verá detallado.</div>
-          </div>}
-          <div style={{marginTop:10}}>
-            <label style={S.label}>Detalle (materiales, herrajes, mano de obra)</label>
-            <textarea value={presF.detalle} onChange={e=>setPresF(f=>({...f,detalle:e.target.value}))} placeholder="Podés discriminar ítems o poner todo junto..." style={{...S.input,minHeight:80,resize:"vertical"}}/>
-          </div>
-          <button style={{...S.btn("dark"),marginTop:12,opacity:enviando||yaEnvio?0.6:1}} 
-              onClick={enviarPresup} 
-              disabled={enviando||yaEnvio}>
-              {enviando?"⟳ Enviando...":(yaEnvio?"✅ Presupuesto enviado":"📤 Enviar presupuesto")}
-            </button>
-            {yaEnvio&&<div style={{fontSize:17,color:C.verde,marginTop:6,fontWeight:700}}>✅ El cliente ya recibió tu presupuesto.</div>}
+
+          {(() => {
+            const calc=calcularPresup(presF.items,presF);
+            const setItem=(i,campo,val)=>setPresF(f=>{const its=[...f.items];its[i]={...its[i],[campo]:val};return{...f,items:its};});
+            const addItem=()=>setPresF(f=>({...f,items:[...f.items,{descripcion:"",precio:"",cantidad:"1"}]}));
+            const delItem=(i)=>setPresF(f=>({...f,items:f.items.length>1?f.items.filter((_,j)=>j!==i):f.items}));
+            return(
+            <div>
+              <div style={{fontSize:14,color:C.textoSuave,marginBottom:10}}>Agregá un renglón por cada concepto (materiales, herrajes, mano de obra, flete si lo cobrás, etc.).</div>
+              {presF.items.map((it,i)=>{
+                const imp=nmb(it.precio)*nmb(it.cantidad);
+                return(
+                <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:10,marginBottom:8,background:C.suave}}>
+                  <div style={{marginBottom:8}}>
+                    <label style={S.label}>Descripción</label>
+                    <input value={it.descripcion} onChange={e=>setItem(i,"descripcion",e.target.value)} placeholder="Ej: Tablero de pino sin nudos" style={S.input}/>
+                  </div>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}}>
+                    <div style={{flex:1,minWidth:110}}>
+                      <label style={S.label}>Precio ($)</label>
+                      <input type="number" value={it.precio} onChange={e=>setItem(i,"precio",e.target.value)} placeholder="0" style={S.input}/>
+                    </div>
+                    <div style={{flex:"0 0 90px"}}>
+                      <label style={S.label}>Cantidad</label>
+                      <input type="number" value={it.cantidad} onChange={e=>setItem(i,"cantidad",e.target.value)} placeholder="1" style={S.input}/>
+                    </div>
+                    <div style={{flex:1,minWidth:110,textAlign:"right"}}>
+                      <label style={S.label}>Importe</label>
+                      <div style={{fontWeight:800,color:C.marron,fontSize:17,padding:"10px 0"}}>{fmtPeso(imp)}</div>
+                    </div>
+                  </div>
+                  {presF.items.length>1&&<button onClick={()=>delItem(i)} style={{...S.btn("ghost"),color:C.error,borderColor:C.error,fontSize:14,padding:"5px 10px",marginTop:6,minHeight:"auto"}}>🗑️ Quitar renglón</button>}
+                </div>
+                );
+              })}
+              <button onClick={addItem} style={{...S.btn("ghost"),width:"100%",justifyContent:"center",marginBottom:14}}>＋ Agregar renglón</button>
+
+              <div style={{marginBottom:12}}>
+                <label style={S.label}>Tiempo de entrega <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
+                <input value={presF.tiempo} onChange={e=>setPresF(f=>({...f,tiempo:e.target.value}))} placeholder="Ej: 15 días" style={S.input}/>
+              </div>
+
+              {/* DESCUENTO */}
+              <div style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:10,marginBottom:10}}>
+                <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:16,color:C.marron,fontWeight:700}}>
+                  <input type="checkbox" checked={presF.usarDesc} onChange={e=>setPresF(f=>({...f,usarDesc:e.target.checked}))}/>
+                  Aplicar descuento
+                </label>
+                {presF.usarDesc&&(
+                  <div style={{display:"flex",gap:8,marginTop:8,alignItems:"flex-end"}}>
+                    <div style={{flex:"0 0 140px"}}>
+                      <label style={S.label}>Tipo</label>
+                      <select value={presF.descTipo} onChange={e=>setPresF(f=>({...f,descTipo:e.target.value}))} style={S.input}>
+                        <option value="porcentaje">Porcentaje (%)</option>
+                        <option value="monto">Monto fijo ($)</option>
+                      </select>
+                    </div>
+                    <div style={{flex:1}}>
+                      <label style={S.label}>{presF.descTipo==="porcentaje"?"% de descuento":"Monto ($)"}</label>
+                      <input type="number" value={presF.descValor} onChange={e=>setPresF(f=>({...f,descValor:e.target.value}))} placeholder="0" style={S.input}/>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* IVA */}
+              <div style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:10,marginBottom:14}}>
+                <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:16,color:C.marron,fontWeight:700}}>
+                  <input type="checkbox" checked={presF.usarIva} onChange={e=>setPresF(f=>({...f,usarIva:e.target.checked}))}/>
+                  Agregar IVA
+                </label>
+                {presF.usarIva&&(
+                  <div style={{marginTop:8}}>
+                    <label style={S.label}>% de IVA</label>
+                    <input type="number" value={presF.ivaPct} onChange={e=>setPresF(f=>({...f,ivaPct:e.target.value}))} placeholder="21" style={{...S.input,maxWidth:160}}/>
+                  </div>
+                )}
+              </div>
+
+              {/* TOTALES */}
+              <div style={{background:C.suave,borderRadius:10,padding:12,border:`1px solid ${C.borde}`,marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:6,fontSize:16}}><span style={{color:C.textoSuave}}>Subtotal</span><b>{fmtPeso(calc.subtotal)}</b></div>
+                {presF.usarDesc&&calc.descuento>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:6,fontSize:16,color:C.error}}><span>Descuento{presF.descTipo==="porcentaje"?` (${nmb(presF.descValor)}%)`:""}</span><b>− {fmtPeso(calc.descuento)}</b></div>}
+                {presF.usarIva&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:6,fontSize:16}}><span style={{color:C.textoSuave}}>IVA ({nmb(presF.ivaPct)}%)</span><b>{fmtPeso(calc.iva)}</b></div>}
+                <div style={{display:"flex",justifyContent:"space-between",borderTop:`2px solid ${C.verde}`,paddingTop:8,marginTop:4}}><span style={{fontWeight:800,fontSize:19,color:C.marron}}>TOTAL</span><b style={{fontWeight:800,fontSize:22,color:C.verde}}>{fmtPeso(calc.total)}</b></div>
+              </div>
+
+              <button style={{...S.btn("dark"),opacity:enviando||yaEnvio?0.6:1}} onClick={enviarPresup} disabled={enviando||yaEnvio}>
+                {enviando?"⟳ Enviando...":(yaEnvio?"✅ Presupuesto enviado":"📤 Enviar presupuesto")}
+              </button>
+              {yaEnvio&&<div style={{fontSize:17,color:C.verde,marginTop:6,fontWeight:700}}>✅ El cliente ya recibió tu presupuesto.</div>}
+            </div>
+            );
+          })()}
         </div>
         )}
 
@@ -3356,6 +3471,103 @@ function comprimirFoto(file){
   });
 }
 
+// ─── PRESUPUESTO: formato tipo planilla (verde) ─────────────────────────────
+function PresupuestoFormato({empresa,cliente,items,opts,numero,fecha,tiempoEntrega}){
+  const V="#009966"; // verde encabezado
+  const o=opts||{};
+  const optsCalc={
+    usarDesc: o.descuento_tipo!=null && o.descuento_valor!=null,
+    descTipo: o.descuento_tipo||"porcentaje",
+    descValor: o.descuento_valor||0,
+    usarIva: o.iva_pct!=null,
+    ivaPct: o.iva_pct||0,
+  };
+  const calc=calcularPresup(items,optsCalc);
+  const filas=(items||[]).map(it=>({...it,importe:nmb(it.precio)*nmb(it.cantidad)}));
+  const linkIg = h => { if(!h)return null; const u=h.replace(/^@/,""); return `https://instagram.com/${u}`; };
+  const linkTt = h => { if(!h)return null; const u=h.replace(/^@/,""); return `https://tiktok.com/@${u}`; };
+  const web = empresa.web ? (empresa.web.startsWith("http")?empresa.web:`https://${empresa.web}`) : null;
+  const th={textAlign:"left",padding:"8px 10px",color:"#fff",background:V,fontSize:14,fontWeight:700,fontFamily:"'Lato',sans-serif"};
+  const td={padding:"8px 10px",fontSize:15,color:C.texto,borderBottom:`1px solid ${C.borde}`,verticalAlign:"top"};
+  const tdNum={...td,textAlign:"right",fontFamily:"monospace",whiteSpace:"nowrap"};
+  const dato=(l,v)=> v?<div style={{fontSize:14,color:C.texto,marginBottom:2}}><span style={{color:C.textoSuave}}>{l}:</span> {v}</div>:null;
+  return(
+    <div style={{border:`1px solid ${C.borde}`,borderRadius:10,overflow:"hidden",background:"#fff"}}>
+      {/* Encabezado verde */}
+      <div style={{background:V,color:"#fff",padding:"12px 14px",display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+        <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:20}}>Presupuesto{numero?` N° ${numero}`:""}</div>
+        <div style={{fontSize:14,alignSelf:"center"}}>Fecha: {fecha||new Date().toLocaleDateString("es-AR")}</div>
+      </div>
+
+      {/* Datos empresa / cliente */}
+      <div style={{display:"flex",flexWrap:"wrap",borderBottom:`2px solid ${V}`}}>
+        <div style={{flex:1,minWidth:220,padding:"12px 14px",borderRight:`1px solid ${C.borde}`}}>
+          <div style={{fontSize:12,fontWeight:700,color:V,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Datos de la empresa</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:18,color:C.marron,marginBottom:4}}>{empresa.nombre||"—"}</div>
+          {/* datos públicos justo debajo del nombre */}
+          <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:6}}>
+            {empresa.instagram&&<a href={linkIg(empresa.instagram)} target="_blank" rel="noreferrer" style={{fontSize:13,color:V,textDecoration:"none",fontWeight:700}}>📷 {empresa.instagram}</a>}
+            {empresa.tiktok&&<a href={linkTt(empresa.tiktok)} target="_blank" rel="noreferrer" style={{fontSize:13,color:V,textDecoration:"none",fontWeight:700}}>🎵 {empresa.tiktok}</a>}
+            {web&&<a href={web} target="_blank" rel="noreferrer" style={{fontSize:13,color:V,textDecoration:"none",fontWeight:700}}>🌐 web</a>}
+          </div>
+          {dato("Dirección",empresa.direccion)}
+          {dato("Barrio",empresa.barrio)}
+          {dato("Ciudad",empresa.ciudad)}
+          {dato("Teléfono",empresa.telefono)}
+          {dato("Email",empresa.email_empresa)}
+          {dato(empresa.tipo_documento||"DNI",empresa.documento)}
+        </div>
+        <div style={{flex:1,minWidth:220,padding:"12px 14px"}}>
+          <div style={{fontSize:12,fontWeight:700,color:V,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Datos del cliente</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:18,color:C.marron,marginBottom:4}}>{cliente.nombre||"—"}</div>
+          {dato("Dirección",cliente.direccion)}
+          {dato("Barrio",cliente.barrio)}
+          {dato("Ciudad",cliente.ciudad)}
+          {dato("Teléfono",cliente.telefono)}
+          {dato("Email",cliente.email)}
+          {dato(cliente.tipo_documento||"DNI",cliente.documento)}
+        </div>
+      </div>
+
+      {/* Tabla de ítems */}
+      <div style={{overflowX:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",minWidth:420}}>
+          <thead><tr>
+            <th style={th}>Descripción</th>
+            <th style={{...th,textAlign:"right"}}>Precio</th>
+            <th style={{...th,textAlign:"right"}}>Cant.</th>
+            <th style={{...th,textAlign:"right"}}>Importe</th>
+          </tr></thead>
+          <tbody>
+            {filas.length===0?(
+              <tr><td style={td} colSpan={4}>Sin ítems.</td></tr>
+            ):filas.map((f,i)=>(
+              <tr key={i}>
+                <td style={td}>{f.descripcion}</td>
+                <td style={tdNum}>{fmtPeso(f.precio)}</td>
+                <td style={tdNum}>{nmb(f.cantidad)}</td>
+                <td style={{...tdNum,fontWeight:700}}>{fmtPeso(f.importe)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Totales */}
+      <div style={{padding:"12px 14px",background:C.suave}}>
+        <div style={{maxWidth:320,marginLeft:"auto"}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:5,fontSize:15}}><span style={{color:C.textoSuave}}>Subtotal</span><b>{fmtPeso(calc.subtotal)}</b></div>
+          {calc.descuento>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:5,fontSize:15,color:C.error}}><span>Descuento{o.descuento_tipo==="porcentaje"?` (${nmb(o.descuento_valor)}%)`:""}</span><b>− {fmtPeso(calc.descuento)}</b></div>}
+          {calc.iva>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:5,fontSize:15}}><span style={{color:C.textoSuave}}>IVA ({nmb(o.iva_pct)}%)</span><b>{fmtPeso(calc.iva)}</b></div>}
+          <div style={{display:"flex",justifyContent:"space-between",borderTop:`2px solid ${V}`,paddingTop:8,marginTop:4}}><span style={{fontWeight:800,fontSize:18,color:C.marron}}>TOTAL</span><b style={{fontWeight:800,fontSize:22,color:V}}>{fmtPeso(calc.total)}</b></div>
+        </div>
+      </div>
+
+      {tiempoEntrega&&<div style={{padding:"10px 14px",borderTop:`1px solid ${C.borde}`,fontSize:14,color:C.textoSuave}}>⏱️ Tiempo de entrega: <b style={{color:C.marron}}>{tiempoEntrega}</b></div>}
+    </div>
+  );
+}
+
 function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja}){
   const esCliente = usuario.tipo==="cliente";
   const [solapa,setSolapa]=useState("privado");
@@ -3363,6 +3575,9 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja}){
   // ── PRIVADO ──
   const [nombre,setNombre]=useState(usuario.nombre||"");
   const [ciudad,setCiudad]=useState(usuario.ciudad||"");
+  const [direccion,setDireccion]=useState(usuario.direccion||"");
+  const [barrio,setBarrio]=useState(usuario.barrio||"");
+  const [telefono,setTelefono]=useState(usuario.telefono||"");
   const [tipoDoc,setTipoDoc]=useState(usuario.tipo_documento||"DNI");
   const [documento,setDocumento]=useState(usuario.documento||"");
   const [guardandoPriv,setGuardandoPriv]=useState(false);
@@ -3401,7 +3616,7 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja}){
     setErrPriv(""); setOkPriv("");
     if(!nombre.trim()){ setErrPriv("El nombre no puede quedar vacío."); return; }
     setGuardandoPriv(true);
-    const campos={nombre:nombre.trim(),ciudad:ciudad.trim(),tipo_documento:tipoDoc,documento:documento.trim()};
+    const campos={nombre:nombre.trim(),ciudad:ciudad.trim(),direccion:direccion.trim()||null,barrio:barrio.trim()||null,telefono:telefono.trim()||null,tipo_documento:tipoDoc,documento:documento.trim()};
     try{
       await db.update("usuarios",campos,`id=eq.${usuario.id}`);
       parchearSesion(campos);
@@ -3487,6 +3702,20 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja}){
             <div style={{marginBottom:14}}>
               <label style={S.label}>Ciudad</label>
               <input style={S.input} value={ciudad} onChange={e=>setCiudad(e.target.value)}/>
+            </div>
+            <div style={{marginBottom:14}}>
+              <label style={S.label}>Dirección</label>
+              <input style={S.input} value={direccion} onChange={e=>setDireccion(e.target.value)} placeholder="Calle y número"/>
+            </div>
+            <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:14}}>
+              <div style={{flex:1,minWidth:140}}>
+                <label style={S.label}>Barrio</label>
+                <input style={S.input} value={barrio} onChange={e=>setBarrio(e.target.value)}/>
+              </div>
+              <div style={{flex:1,minWidth:140}}>
+                <label style={S.label}>Teléfono</label>
+                <input style={S.input} value={telefono} onChange={e=>setTelefono(e.target.value)}/>
+              </div>
             </div>
             <div style={{marginBottom:14}}>
               <label style={S.label}>Correo electrónico</label>
