@@ -1345,8 +1345,8 @@ const TERS = [
 const COLORES_MEL = ["Blanco","Negro","Roble","Nogal","Wengué","Gris perla","Arena","Otro"];
 const MADERAS_A = ["Roble","Cedro","Pino","Quebracho","Algarrobo","Lapacho"];
 
-const EC = {pendiente:C.acento,presupuestado:C.azul,aceptado:C.verde,en_produccion:"#7A4A8B",finalizado:C.textoSuave,disponible:C.verde,en_viaje:C.acento,ocupado:C.rojo,cancelado:C.textoSuave};
-const EL = {pendiente:"Pendiente",presupuestado:"Presupuestado",aceptado:"Aceptado",en_produccion:"En producción",finalizado:"Finalizado",disponible:"Disponible",en_viaje:"En viaje",ocupado:"Ocupado",cancelado:"Cancelado"};
+const EC = {pendiente:C.acento,presupuestado:C.azul,aceptado:C.verde,cerrado:"#8A7A6A",en_produccion:"#7A4A8B",finalizado:C.textoSuave,disponible:C.verde,en_viaje:C.acento,ocupado:C.rojo,cancelado:C.textoSuave};
+const EL = {pendiente:"Pendiente",presupuestado:"Presupuestado",aceptado:"Aceptado",cerrado:"No seleccionado",en_produccion:"En producción",finalizado:"Finalizado",disponible:"Disponible",en_viaje:"En viaje",ocupado:"Ocupado",cancelado:"Cancelado"};
 
 const cmToMm = c=>(c*10).toFixed(0);
 const cmToIn = c=>(c/2.54).toFixed(2);
@@ -1731,7 +1731,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-05.5</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-05.6</div>
     </div>
   );
 }
@@ -2095,13 +2095,32 @@ function VistaCliente({usuario,notif}){
 
   const aceptar=async(pr)=>{
     try{
-      await db.update("presupuestos",{estado:"aceptado"},`id=eq.${pr.id}`);
+      const ahora=new Date().toISOString();
+      // 1) Aceptar el elegido
+      await db.update("presupuestos",{estado:"aceptado",aceptado_at:ahora},`id=eq.${pr.id}`);
+      // 2) Cerrar los demás presupuestos del mismo pedido
+      await db.update("presupuestos",{estado:"cerrado"},`pedido_id=eq.${sel.id}&id=neq.${pr.id}`);
+      // 3) Marcar el pedido como aceptado
       await db.update("pedidos",{estado:"aceptado"},`id=eq.${sel.id}`);
       notif("¡Presupuesto aceptado!");
       setSelPresup(null);
       cargar();
       recargarPresups(sel);
-    }catch{}
+    }catch(e){alert("No se pudo aceptar: "+(e.message||"revisá tu conexión"));}
+  };
+
+  const deshacerAceptacion=async(pr)=>{
+    if(!window.confirm("¿Deshacer la aceptación? El pedido vuelve a quedar abierto y las carpinterías podrán ser elegidas de nuevo."))return;
+    try{
+      // Reabrir: el aceptado vuelve a enviado, los cerrados vuelven a enviado, el pedido se reabre
+      await db.update("presupuestos",{estado:"enviado",aceptado_at:null},`id=eq.${pr.id}`);
+      await db.update("presupuestos",{estado:"enviado"},`pedido_id=eq.${sel.id}&estado=eq.cerrado`);
+      await db.update("pedidos",{estado:"presupuestado"},`id=eq.${sel.id}`);
+      notif("Aceptación deshecha. El pedido quedó abierto de nuevo.");
+      setSelPresup(null);
+      cargar();
+      recargarPresups(sel);
+    }catch(e){alert("No se pudo deshacer: "+(e.message||"revisá tu conexión"));}
   };
 
   if(vista==="nuevo") return <NuevoPedido usuario={usuario} onGuardar={()=>{cargar();setVista("lista");}} onCancelar={()=>setVista("lista")} notif={notif}/>;
@@ -2126,11 +2145,29 @@ function VistaCliente({usuario,notif}){
           aceptado={pr.estado==="aceptado"}
         />
         {pr.estado==="enviado"&&(
-          <div style={{display:"flex",gap:8,marginTop:12}}>
-            <button style={S.btn("dark")} onClick={()=>aceptar(pr)}>✅ Aceptar presupuesto</button>
-            <button style={{...S.btn("ghost"),color:C.rojo,borderColor:C.rojo}}>❌ Rechazar</button>
+          <div style={{marginTop:12}}>
+            <button style={{...S.btn("dark"),width:"100%",justifyContent:"center"}} onClick={()=>aceptar(pr)}>✅ Aceptar presupuesto</button>
           </div>
         )}
+        {pr.estado==="aceptado"&&(()=>{
+          const t=pr.aceptado_at?new Date(pr.aceptado_at).getTime():null;
+          const dentroDeHora = t && (Date.now()-t) < 3600000;
+          return(
+            <div style={{marginTop:12}}>
+              <div style={{background:C.verde+"22",border:`1px solid ${C.verde}`,borderRadius:10,padding:12,textAlign:"center",marginBottom:dentroDeHora?10:0}}>
+                <div style={{fontWeight:800,color:C.verde,fontSize:17}}>✅ Presupuesto aceptado</div>
+              </div>
+              {dentroDeHora?(
+                <div>
+                  <button style={{...S.btn("ghost"),width:"100%",justifyContent:"center",color:C.error,borderColor:C.error}} onClick={()=>deshacerAceptacion(pr)}>↩️ Deshacer aceptación</button>
+                  <div style={{fontSize:13,color:C.textoSuave,marginTop:6,textAlign:"center"}}>Podés deshacer la aceptación hasta 1 hora después de haberla hecho. Pasado ese tiempo queda fija.</div>
+                </div>
+              ):(
+                <div style={{fontSize:13,color:C.textoSuave,marginTop:2,textAlign:"center"}}>La aceptación es definitiva.</div>
+              )}
+            </div>
+          );
+        })()}
         <Calificar deUsuario={usuario} paraUsuario={{id:pr.carpinteria_id}} pedidoId={sel.id}/>
         {pr.carpFotos&&pr.carpFotos.length>0&&(
           <div style={{marginTop:12}}>
