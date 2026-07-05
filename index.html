@@ -1713,7 +1713,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-04.3</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-04.4</div>
     </div>
   );
 }
@@ -3356,7 +3356,7 @@ function comprimirFoto(file){
   });
 }
 
-function MiCuenta({usuario,onCerrar,onActualizar}){
+function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja}){
   const esCliente = usuario.tipo==="cliente";
   const [solapa,setSolapa]=useState("privado");
 
@@ -3530,6 +3530,12 @@ function MiCuenta({usuario,onCerrar,onActualizar}){
             {msg(okPass,"ok")} {msg(errPass,"err")}
             <button style={{...S.btn("dark"),marginTop:16,width:"100%",justifyContent:"center"}} onClick={cambiarPass} disabled={guardandoPass}>{guardandoPass?"Guardando...":"Cambiar contraseña"}</button>
           </div>
+
+          <div style={{...S.card,borderColor:C.error+"55"}}>
+            <div style={{...S.cardTitle,color:C.error}}>Dar de baja</div>
+            <div style={{fontSize:14,color:C.textoSuave,marginBottom:14}}>Al dar de baja tu cuenta no vas a poder volver a ingresar con ella. Solo la administración puede reactivarla.</div>
+            <button style={{...S.btn("ghost"),width:"100%",justifyContent:"center",color:C.error,borderColor:C.error}} onClick={onDarDeBaja}>🚫 Dar de baja mi cuenta</button>
+          </div>
         </div>
       )}
 
@@ -3674,7 +3680,6 @@ function App(){
                 <div onClick={()=>setMenuAbierto(false)} style={{position:"fixed",inset:0,zIndex:200}}/>
                 <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:C.card,border:`1px solid ${C.borde}`,borderRadius:10,boxShadow:"0 6px 24px #5C2E0A44",zIndex:201,minWidth:190,overflow:"hidden"}}>
                   <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnMiCuenta(true);setMenuAbierto(false);}}>👤 Mi cuenta</button>
-                  <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.error,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setMenuAbierto(false);darDeBaja();}}>🚫 Dar de baja</button>
                   <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setMenuAbierto(false);cerrar();setMostrarBienvenida(true);}}>← Salir</button>
                 </div>
               </>
@@ -3686,7 +3691,7 @@ function App(){
       {/* CONTENIDO */}
       <div style={S.main}>
         {enMiCuenta ? (
-          <MiCuenta usuario={usuario} onCerrar={()=>setEnMiCuenta(false)} onActualizar={actualizarUsuario}/>
+          <MiCuenta usuario={usuario} onCerrar={()=>setEnMiCuenta(false)} onActualizar={actualizarUsuario} onDarDeBaja={darDeBaja}/>
         ) : (
           <>
             {navTab==="principal"&&usuario.tipo==="cliente"&&<VistaCliente usuario={usuario} notif={setNotifMsg}/>}
