@@ -1731,7 +1731,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-05.3</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-05.4</div>
     </div>
   );
 }
@@ -2110,7 +2110,7 @@ function VistaCliente({usuario,notif}){
   const DetallePresup=({pr})=>(
     <div style={{marginTop:10,border:`1px solid ${C.acento}`,borderRadius:10,overflow:"hidden"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 12px",background:C.input}}>
-        <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,color:C.marron,fontSize:19}}>🔨 {pr.carpNombre}</div>
+        <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,color:C.marron,fontSize:22}}>🔨 {pr.carpNombre}</div>
         <button style={{...S.btn("ghost"),fontSize:14,padding:"4px 10px"}} onClick={()=>setSelPresup(null)}>✕ Cerrar</button>
       </div>
       <div style={{padding:12}}>
@@ -2171,8 +2171,8 @@ function VistaCliente({usuario,notif}){
               <div key={i}>
                 <div onClick={()=>setSelPresup(selPresup&&selPresup.id===pr.id?null:pr)} style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:12,marginBottom:8,background:C.input,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <div>
-                    <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:17}}>🔨 {pr.carpNombre}</div>
-                    <div style={{marginTop:6}}><Badge e={pr.estado}/></div>
+                    <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,color:C.marron,fontSize:22}}>🔨 {pr.carpNombre}</div>
+                    {pr.estado&&pr.estado!=="enviado"&&<div style={{marginTop:6}}><Badge e={pr.estado}/></div>}
                   </div>
                   <div style={{textAlign:"right"}}>
                     <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:800,color:C.verde}}>$ {Number(pr.monto).toLocaleString("es-AR")}</div>
