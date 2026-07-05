@@ -1731,7 +1731,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-05.1</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-05.3</div>
     </div>
   );
 }
@@ -2119,9 +2119,11 @@ function VistaCliente({usuario,notif}){
           cliente={usuario}
           items={pr.items||[]}
           opts={{descuento_tipo:pr.descuento_tipo,descuento_valor:pr.descuento_valor,iva_pct:pr.iva_pct}}
-          numero={pr.numero||(pr.id?String(pr.id).slice(0,8):"")}
+          numero={pr.numero!=null?pr.numero:""}
           fecha={pr.created_at?new Date(pr.created_at).toLocaleDateString("es-AR"):null}
           tiempoEntrega={pr.tiempo_entrega}
+          esEmpresa={false}
+          aceptado={pr.estado==="aceptado"}
         />
         {pr.estado==="enviado"&&(
           <div style={{display:"flex",gap:8,marginTop:12}}>
@@ -2338,9 +2340,15 @@ function VistaCarpinteria({usuario,notif}){
     if(sel.fecha_limite&&new Date(sel.fecha_limite)<new Date()){alert("Este pedido venció: ya no se pueden enviar presupuestos.");return;}
     setEnviando(true);
     try{
+      // Número correlativo por empresa: mayor número existente + 1
+      let numero=1;
+      try{
+        const prev=await db.select("presupuestos",`?carpinteria_id=eq.${usuario.id}&select=numero&order=numero.desc.nullslast&limit=1`);
+        if(prev&&prev.length>0&&prev[0].numero!=null) numero=Number(prev[0].numero)+1;
+      }catch{}
       const calc=calcularPresup(itemsValidos,presF);
       const datos={
-        pedido_id:sel.id, carpinteria_id:usuario.id,
+        pedido_id:sel.id, carpinteria_id:usuario.id, numero,
         monto:calc.total, total:calc.total, subtotal:calc.subtotal,
         descuento_tipo:presF.usarDesc?presF.descTipo:null,
         descuento_valor:presF.usarDesc?nmb(presF.descValor):null,
@@ -2456,9 +2464,11 @@ function VistaCarpinteria({usuario,notif}){
             cliente={clienteSel||{}}
             items={miPresupuesto.items||[]}
             opts={{descuento_tipo:miPresupuesto.descuento_tipo,descuento_valor:miPresupuesto.descuento_valor,iva_pct:miPresupuesto.iva_pct}}
-            numero={miPresupuesto.numero||(miPresupuesto.id?String(miPresupuesto.id).slice(0,8):"")}
+            numero={miPresupuesto.numero!=null?miPresupuesto.numero:""}
             fecha={miPresupuesto.created_at?new Date(miPresupuesto.created_at).toLocaleDateString("es-AR"):null}
             tiempoEntrega={miPresupuesto.tiempo_entrega}
+            esEmpresa={true}
+            aceptado={miPresupuesto.estado==="aceptado"}
           />
         </div>
         ):(
@@ -3472,7 +3482,7 @@ function comprimirFoto(file){
 }
 
 // ─── PRESUPUESTO: formato tipo planilla (verde) ─────────────────────────────
-function PresupuestoFormato({empresa,cliente,items,opts,numero,fecha,tiempoEntrega}){
+function PresupuestoFormato({empresa,cliente,items,opts,numero,fecha,tiempoEntrega,esEmpresa,aceptado}){
   const V="#009966"; // verde encabezado
   const o=opts||{};
   const optsCalc={
@@ -3495,7 +3505,7 @@ function PresupuestoFormato({empresa,cliente,items,opts,numero,fecha,tiempoEntre
     <div style={{border:`1px solid ${C.borde}`,borderRadius:10,overflow:"hidden",background:"#fff"}}>
       {/* Encabezado verde */}
       <div style={{background:V,color:"#fff",padding:"12px 14px",display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-        <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:20}}>Presupuesto{numero?` N° ${numero}`:""}</div>
+        <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:20}}>Presupuesto{(numero!==""&&numero!=null)?` N° ${numero}`:""}</div>
         <div style={{fontSize:14,alignSelf:"center"}}>Fecha: {fecha||new Date().toLocaleDateString("es-AR")}</div>
       </div>
 
@@ -3520,12 +3530,11 @@ function PresupuestoFormato({empresa,cliente,items,opts,numero,fecha,tiempoEntre
         <div style={{flex:1,minWidth:220,padding:"12px 14px"}}>
           <div style={{fontSize:12,fontWeight:700,color:V,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Datos del cliente</div>
           <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:18,color:C.marron,marginBottom:4}}>{cliente.nombre||"—"}</div>
-          {dato("Dirección",cliente.direccion)}
           {dato("Barrio",cliente.barrio)}
           {dato("Ciudad",cliente.ciudad)}
           {dato("Teléfono",cliente.telefono)}
-          {dato("Email",cliente.email)}
-          {dato(cliente.tipo_documento||"DNI",cliente.documento)}
+          {(esEmpresa&&aceptado)&&dato("Dirección",cliente.direccion)}
+          {(esEmpresa&&aceptado)&&cliente.direccion&&<div style={{fontSize:12,color:V,marginTop:4}}>✓ Datos de entrega visibles porque el presupuesto fue aceptado.</div>}
         </div>
       </div>
 
