@@ -1713,7 +1713,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-04.1</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-04.3</div>
     </div>
   );
 }
@@ -3370,8 +3370,10 @@ function MiCuenta({usuario,onCerrar,onActualizar}){
   const [errPriv,setErrPriv]=useState("");
 
   // ── CONTRASEÑA ──
+  const [passActual,setPassActual]=useState("");
   const [pass1,setPass1]=useState("");
   const [pass2,setPass2]=useState("");
+  const [verPass,setVerPass]=useState(false);
   const [guardandoPass,setGuardandoPass]=useState(false);
   const [okPass,setOkPass]=useState("");
   const [errPass,setErrPass]=useState("");
@@ -3410,13 +3412,17 @@ function MiCuenta({usuario,onCerrar,onActualizar}){
 
   const cambiarPass=async()=>{
     setErrPass(""); setOkPass("");
-    if(pass1.length<6){ setErrPass("La contraseña debe tener al menos 6 caracteres."); return; }
-    if(pass1!==pass2){ setErrPass("Las contraseñas no coinciden."); return; }
+    if(!passActual){ setErrPass("Ingresá tu contraseña actual."); return; }
+    if(pass1.length<6){ setErrPass("La nueva contraseña debe tener al menos 6 caracteres."); return; }
+    if(pass1!==pass2){ setErrPass("Las contraseñas nuevas no coinciden."); return; }
+    if(pass1===passActual){ setErrPass("La nueva contraseña es igual a la actual."); return; }
     setGuardandoPass(true);
     try{
+      const chk=await db.signIn(usuario.email,passActual);
+      if(!chk.access_token){ setErrPass("La contraseña actual es incorrecta."); setGuardandoPass(false); return; }
       await db.updatePassword(pass1);
       setOkPass("Contraseña actualizada.");
-      setPass1(""); setPass2("");
+      setPassActual(""); setPass1(""); setPass2("");
     }catch(e){ setErrPass(e.message||"No se pudo cambiar la contraseña."); }
     setGuardandoPass(false);
   };
@@ -3507,12 +3513,19 @@ function MiCuenta({usuario,onCerrar,onActualizar}){
           <div style={S.card}>
             <div style={S.cardTitle}>Cambiar contraseña</div>
             <div style={{marginBottom:14}}>
+              <label style={S.label}>Contraseña actual</label>
+              <input type={verPass?"text":"password"} style={S.input} value={passActual} onChange={e=>setPassActual(e.target.value)}/>
+            </div>
+            <div style={{marginBottom:14}}>
               <label style={S.label}>Nueva contraseña</label>
-              <input type="password" style={S.input} value={pass1} onChange={e=>setPass1(e.target.value)} placeholder="Mínimo 6 caracteres"/>
+              <div style={{position:"relative"}}>
+                <input type={verPass?"text":"password"} style={{...S.input,paddingRight:64}} value={pass1} onChange={e=>setPass1(e.target.value)} placeholder="Mínimo 6 caracteres"/>
+                <button type="button" onClick={()=>setVerPass(v=>!v)} style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",cursor:"pointer",fontSize:14,fontWeight:700,color:C.textoSuave,padding:"6px 8px",fontFamily:"'Lato',sans-serif"}}>{verPass?"🙈 Ocultar":"👁 Ver"}</button>
+              </div>
             </div>
             <div style={{marginBottom:4}}>
               <label style={S.label}>Repetir contraseña</label>
-              <input type="password" style={S.input} value={pass2} onChange={e=>setPass2(e.target.value)}/>
+              <input type={verPass?"text":"password"} style={S.input} value={pass2} onChange={e=>setPass2(e.target.value)}/>
             </div>
             {msg(okPass,"ok")} {msg(errPass,"err")}
             <button style={{...S.btn("dark"),marginTop:16,width:"100%",justifyContent:"center"}} onClick={cambiarPass} disabled={guardandoPass}>{guardandoPass?"Guardando...":"Cambiar contraseña"}</button>
