@@ -1731,7 +1731,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-05.4</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-05.5</div>
     </div>
   );
 }
@@ -2282,7 +2282,7 @@ function VistaCarpinteria({usuario,notif}){
   const [cotizacionesFerr,setCotizacionesFerr]=useState([]);
   const [pintF,setPintF]=useState({descripcion:"",color:"",tono:"",litros:"",notas:""});
   const [buscarPedido,setBuscarPedido]=useState("");
-  const [filtroCarp,setFiltroCarp]=useState("abierto");
+  const [filtroCarp,setFiltroCarp]=useState("cotizar");
   const [misPedidosPint,setMisPedidosPint]=useState([]);
   const [selPint,setSelPint]=useState(null);
   const [cotizacionesPint,setCotizacionesPint]=useState([]);
@@ -2295,9 +2295,15 @@ function VistaCarpinteria({usuario,notif}){
       if(ids.length){
         try{const us=await db.select("usuarios",`?id=in.(${ids.join(",")})`);us.forEach(u=>{mapa[u.id]=u.nombre;});}catch{}
       }
-      setPedidos(d.map(p=>({...p,_clienteNombre:mapa[p.cliente_id]||""})));
+      // Mis presupuestos, para saber cuáles ya coticé (sobre cerrado: solo veo los míos)
+      let mios={};
+      try{
+        const mp=await db.select("presupuestos",`?carpinteria_id=eq.${usuario.id}&select=pedido_id,estado`);
+        mp.forEach(p=>{ mios[p.pedido_id]=p.estado||"enviado"; });
+      }catch{}
+      setPedidos(d.map(p=>({...p,_clienteNombre:mapa[p.cliente_id]||"",_miEstado:mios[p.id]||null})));
     }catch{}
-  },[]);
+  },[usuario.id]);
   // Auto-refresh cada 15 segundos para ver pedidos nuevos
   useEffect(()=>{const t=setInterval(cargar,15000);return()=>clearInterval(t);},[cargar]);
   const cargarMisPedidosAserr=useCallback(async()=>{
@@ -2363,11 +2369,13 @@ function VistaCarpinteria({usuario,notif}){
           await db.insert("presupuesto_items",{presupuesto_id:presId,descripcion:it.descripcion.trim(),precio:nmb(it.precio),cantidad:nmb(it.cantidad),importe:nmb(it.precio)*nmb(it.cantidad),orden:i});
         }
       }
-      await db.update("pedidos",{estado:"presupuestado"},`id=eq.${sel.id}`);
+      // NO se cambia el estado global del pedido: cada carpintería ve su propio estado.
+      // (El pedido solo pasa a "aceptado" cuando el cliente elige, desde su vista.)
       notif("¡Presupuesto enviado correctamente!");
       setPresF({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
       setYaEnvio(true);
       setMiPresupuesto({...datos,id:presId,items:itemsValidos.map(it=>({...it,precio:nmb(it.precio),cantidad:nmb(it.cantidad),importe:nmb(it.precio)*nmb(it.cantidad)})),created_at:new Date().toISOString()});
+      setPedidos(ps=>ps.map(p=>p.id===sel.id?{...p,_miEstado:"enviado"}:p));
     }catch(e){alert("Error: "+e.message);}
     setEnviando(false);
   };
@@ -2449,7 +2457,16 @@ function VistaCarpinteria({usuario,notif}){
 
         {/* IA de sugerencia desactivada temporalmente — reponer cuando esté el puente serverless de Netlify */}
 
-        {(sel.fecha_limite&&new Date(sel.fecha_limite)<new Date()&&!miPresupuesto)?(
+        {(sel.estado==="aceptado"&&(!miPresupuesto||miPresupuesto.estado!=="aceptado"))?(
+        <div style={{...S.card,textAlign:"center",borderColor:"#8A7A6A"}}>
+          <div style={{fontSize:32,marginBottom:8}}>🔒</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,color:C.marron,fontWeight:700}}>Pedido cerrado</div>
+          <div style={{fontSize:16,color:C.textoSuave,marginTop:6}}>El cliente ya eligió un presupuesto para este pedido.</div>
+          {miPresupuesto&&<div style={{marginTop:12}}>
+            <PresupuestoFormato empresa={usuario} cliente={clienteSel||{}} items={miPresupuesto.items||[]} opts={{descuento_tipo:miPresupuesto.descuento_tipo,descuento_valor:miPresupuesto.descuento_valor,iva_pct:miPresupuesto.iva_pct}} numero={miPresupuesto.numero!=null?miPresupuesto.numero:""} fecha={miPresupuesto.created_at?new Date(miPresupuesto.created_at).toLocaleDateString("es-AR"):null} tiempoEntrega={miPresupuesto.tiempo_entrega} esEmpresa={true} aceptado={false}/>
+          </div>}
+        </div>
+        ):(sel.fecha_limite&&new Date(sel.fecha_limite)<new Date()&&!miPresupuesto)?(
         <div style={{...S.card,textAlign:"center",borderColor:"#B23A2E"}}>
           <div style={{fontSize:32,marginBottom:8}}>⛔</div>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,color:"#B23A2E",fontWeight:700}}>Este pedido venció</div>
@@ -2600,13 +2617,15 @@ function VistaCarpinteria({usuario,notif}){
           {pedidos.length>0&&(()=>{
             const venc=p=>p.fecha_limite&&new Date(p.fecha_limite)<new Date();
             const cuenta={
-              abierto:pedidos.filter(p=>!venc(p)&&p.estado!=="aceptado").length,
-              vencido:pedidos.filter(p=>venc(p)).length,
+              cotizar:pedidos.filter(p=>p.estado!=="aceptado"&&!venc(p)&&!p._miEstado).length,
+              cotizados:pedidos.filter(p=>p._miEstado&&p.estado!=="aceptado").length,
+              cerrados:pedidos.filter(p=>p.estado==="aceptado").length,
+              vencido:pedidos.filter(p=>venc(p)&&p.estado!=="aceptado"&&!p._miEstado).length,
               todos:pedidos.length,
             };
             return(
               <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
-                {[["abierto","Para cotizar"],["vencido","Vencidos"],["todos","Todos"]].map(([id,l])=>(
+                {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["cerrados","Cerrados"],["vencido","Vencidos"],["todos","Todos"]].map(([id,l])=>(
                   <button key={id} style={{...S.btn(filtroCarp===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltroCarp(id)}>{l} ({cuenta[id]})</button>
                 ))}
               </div>
@@ -2616,26 +2635,35 @@ function VistaCarpinteria({usuario,notif}){
             const q=buscarPedido.trim().toLowerCase();
             const venc=p=>p.fecha_limite&&new Date(p.fecha_limite)<new Date();
             let lista=pedidos.filter(p=>{
-              if(filtroCarp==="vencido")return venc(p);
-              if(filtroCarp==="abierto")return !venc(p)&&p.estado!=="aceptado";
+              if(filtroCarp==="cotizar")return p.estado!=="aceptado"&&!venc(p)&&!p._miEstado;
+              if(filtroCarp==="cotizados")return p._miEstado&&p.estado!=="aceptado";
+              if(filtroCarp==="cerrados")return p.estado==="aceptado";
+              if(filtroCarp==="vencido")return venc(p)&&p.estado!=="aceptado"&&!p._miEstado;
               return true;
             });
             if(q)lista=lista.filter(p=>(p.descripcion||"").toLowerCase().includes(q)||(p._clienteNombre||"").toLowerCase().includes(q));
             if(pedidos.length>0&&lista.length===0) return <div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría{q?` para "${buscarPedido}"`:""}</div>;
             return lista.map(p=>{
             const mat=MATS.find(m=>m.id===p.material);
+            const vencido=p.fecha_limite&&new Date(p.fecha_limite)<new Date();
+            let et;
+            if(p.estado==="aceptado"){ et=p._miEstado==="aceptado"?{t:"Aceptado ✓",bg:C.verde,fg:"#fff"}:{t:"Cerrado · adjudicado a otro",bg:"#8A7A6A",fg:"#fff"}; }
+            else if(p._miEstado){ et={t:"Cotizado por mí",bg:C.acento,fg:C.marron}; }
+            else if(vencido){ et={t:"Vencido",bg:"#B23A2E",fg:"#fff"}; }
+            else { et={t:"Para cotizar",bg:C.marron,fg:C.crema}; }
+            const cerradoParaMi = p.estado==="aceptado" && p._miEstado!=="aceptado";
             return(
-              <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>abrirPedidoCliente(p)}
-                onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
+              <div key={p.id} style={{...S.card,cursor:cerradoParaMi?"default":"pointer",transition:"all .15s",opacity:cerradoParaMi?0.7:1}} onClick={()=>{ if(!cerradoParaMi) abrirPedidoCliente(p); }}
+                onMouseEnter={e=>{if(!cerradoParaMi){e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}}
                 onMouseLeave={e=>{e.currentTarget.style.borderColor=C.borde;e.currentTarget.style.transform="none";}}>
-                <div style={{display:"flex",justifyContent:"space-between"}}>
+                <div style={{display:"flex",justifyContent:"space-between",gap:10}}>
                   <div>
                     <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:21}}>{p.descripcion}</div>
                     {p._clienteNombre&&<div style={{fontSize:16,color:C.marron,marginTop:2}}>👤 {p._clienteNombre}</div>}
                     <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{p.alto}×{p.ancho}×{p.profundidad}cm · {mat?.label} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
                     {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
                   </div>
-                  <Badge e={p.estado}/>
+                  <span style={{alignSelf:"flex-start",whiteSpace:"nowrap",background:et.bg,color:et.fg,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:20,fontFamily:"'Lato',sans-serif"}}>{et.t}</span>
                 </div>
               </div>
             );
