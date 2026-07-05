@@ -1305,6 +1305,7 @@ const db = {
   async signUp(e,p){ const r=await fetch(`${SUPABASE_URL}/auth/v1/signup`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:e,password:p})}); return r.json(); },
   async signIn(e,p){ const r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:e,password:p})}); return r.json(); },
   async signOut(tk){ await fetch(`${SUPABASE_URL}/auth/v1/logout`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${tk}`}}); },
+  async updatePassword(nueva){ const tk=await this.tokenActual(); const r=await fetch(`${SUPABASE_URL}/auth/v1/user`,{method:"PUT",headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${tk}`,"Content-Type":"application/json"},body:JSON.stringify({password:nueva})}); const d=await r.json(); if(!r.ok)throw new Error(d.msg||d.error_description||d.error||"No se pudo cambiar la contraseña"); return d; },
 };
 
 async function pedirIA(prompt) {
@@ -1712,7 +1713,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-06-29.1</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-04.1</div>
     </div>
   );
 }
@@ -3355,56 +3356,220 @@ function comprimirFoto(file){
   });
 }
 
-function MisFotos({usuario}){
-  const [fotos,setFotos]=useState([usuario.foto1||"",usuario.foto2||"",usuario.foto3||""]);
-  const [proc,setProc]=useState(false);
+function MiCuenta({usuario,onCerrar,onActualizar}){
+  const esCliente = usuario.tipo==="cliente";
+  const [solapa,setSolapa]=useState("privado");
 
-  const guardar=async(nuevas)=>{
-    setFotos(nuevas);
+  // ── PRIVADO ──
+  const [nombre,setNombre]=useState(usuario.nombre||"");
+  const [ciudad,setCiudad]=useState(usuario.ciudad||"");
+  const [tipoDoc,setTipoDoc]=useState(usuario.tipo_documento||"DNI");
+  const [documento,setDocumento]=useState(usuario.documento||"");
+  const [guardandoPriv,setGuardandoPriv]=useState(false);
+  const [okPriv,setOkPriv]=useState("");
+  const [errPriv,setErrPriv]=useState("");
+
+  // ── CONTRASEÑA ──
+  const [pass1,setPass1]=useState("");
+  const [pass2,setPass2]=useState("");
+  const [guardandoPass,setGuardandoPass]=useState(false);
+  const [okPass,setOkPass]=useState("");
+  const [errPass,setErrPass]=useState("");
+
+  // ── PÚBLICO ──
+  const [instagram,setInstagram]=useState(usuario.instagram||"");
+  const [tiktok,setTiktok]=useState(usuario.tiktok||"");
+  const [emailEmpresa,setEmailEmpresa]=useState(usuario.email_empresa||"");
+  const [web,setWeb]=useState(usuario.web||"");
+  const [guardandoPub,setGuardandoPub]=useState(false);
+  const [okPub,setOkPub]=useState("");
+  const [errPub,setErrPub]=useState("");
+  const [fotos,setFotos]=useState([usuario.foto1||"",usuario.foto2||"",usuario.foto3||""]);
+  const [procFoto,setProcFoto]=useState(false);
+
+  const parchearSesion=(campos)=>{
     try{
-      await db.update("usuarios",{foto1:nuevas[0]||null,foto2:nuevas[1]||null,foto3:nuevas[2]||null},`id=eq.${usuario.id}`);
-      try{
-        const s=JSON.parse(localStorage.getItem("encastre_sesion"));
-        if(s&&s.usuario){s.usuario.foto1=nuevas[0];s.usuario.foto2=nuevas[1];s.usuario.foto3=nuevas[2];localStorage.setItem("encastre_sesion",JSON.stringify(s));}
-      }catch{}
-    }catch(e){alert("No se pudieron guardar las fotos: "+(e.message||""));}
+      const s=JSON.parse(localStorage.getItem("encastre_sesion"));
+      if(s&&s.usuario){ Object.assign(s.usuario,campos); localStorage.setItem("encastre_sesion",JSON.stringify(s)); }
+    }catch{}
+    if(onActualizar) onActualizar(campos);
   };
 
-  const subir=async(i,file)=>{
+  const guardarPrivado=async()=>{
+    setErrPriv(""); setOkPriv("");
+    if(!nombre.trim()){ setErrPriv("El nombre no puede quedar vacío."); return; }
+    setGuardandoPriv(true);
+    const campos={nombre:nombre.trim(),ciudad:ciudad.trim(),tipo_documento:tipoDoc,documento:documento.trim()};
+    try{
+      await db.update("usuarios",campos,`id=eq.${usuario.id}`);
+      parchearSesion(campos);
+      setOkPriv("Datos guardados.");
+    }catch(e){ setErrPriv("No se pudieron guardar los datos: "+(e.message||"revisá tu conexión")); }
+    setGuardandoPriv(false);
+  };
+
+  const cambiarPass=async()=>{
+    setErrPass(""); setOkPass("");
+    if(pass1.length<6){ setErrPass("La contraseña debe tener al menos 6 caracteres."); return; }
+    if(pass1!==pass2){ setErrPass("Las contraseñas no coinciden."); return; }
+    setGuardandoPass(true);
+    try{
+      await db.updatePassword(pass1);
+      setOkPass("Contraseña actualizada.");
+      setPass1(""); setPass2("");
+    }catch(e){ setErrPass(e.message||"No se pudo cambiar la contraseña."); }
+    setGuardandoPass(false);
+  };
+
+  const guardarPublico=async()=>{
+    setErrPub(""); setOkPub("");
+    setGuardandoPub(true);
+    const campos={instagram:instagram.trim()||null,tiktok:tiktok.trim()||null,email_empresa:emailEmpresa.trim()||null,web:web.trim()||null};
+    try{
+      await db.update("usuarios",campos,`id=eq.${usuario.id}`);
+      parchearSesion(campos);
+      setOkPub("Datos guardados.");
+    }catch(e){ setErrPub("No se pudieron guardar los datos: "+(e.message||"revisá tu conexión")); }
+    setGuardandoPub(false);
+  };
+
+  const guardarFotos=async(nuevas)=>{
+    setFotos(nuevas);
+    const campos={foto1:nuevas[0]||null,foto2:nuevas[1]||null,foto3:nuevas[2]||null};
+    try{
+      await db.update("usuarios",campos,`id=eq.${usuario.id}`);
+      parchearSesion(campos);
+    }catch(e){ setErrPub("No se pudieron guardar las fotos: "+(e.message||"")); }
+  };
+  const subirFoto=async(i,file)=>{
     if(!file)return;
-    setProc(true);
+    setProcFoto(true);
     try{
       const data=await comprimirFoto(file);
       const nuevas=[...fotos]; nuevas[i]=data;
-      await guardar(nuevas);
-    }catch(e){alert("No se pudo procesar la foto. Probá con una imagen JPG o PNG.");}
-    setProc(false);
+      await guardarFotos(nuevas);
+    }catch(e){ setErrPub("No se pudo procesar la foto. Probá con una imagen JPG o PNG."); }
+    setProcFoto(false);
   };
-  const quitar=(i)=>{ const nuevas=[...fotos]; nuevas[i]=""; guardar(nuevas); };
+  const quitarFoto=(i)=>{ const nuevas=[...fotos]; nuevas[i]=""; guardarFotos(nuevas); };
+
+  const solapaBtn=(id,txt)=>({
+    flex:1, background:solapa===id?C.acento:"transparent", color:solapa===id?C.marron:C.textoSuave,
+    border:solapa===id?"none":`1px solid ${C.borde}`, borderRadius:9, padding:"12px 8px", cursor:"pointer",
+    fontSize:16, fontWeight:700, fontFamily:"'Lato',sans-serif", minHeight:46,
+  });
+  const msg=(t,tipo)=> t?<div style={{fontSize:15,fontWeight:700,color:tipo==="ok"?C.exito:C.error,marginTop:10}}>{t}</div>:null;
 
   return(
-    <div style={{...S.card,marginTop:24}}>
-      <div style={S.cardTitle}>🛠️ Trabajos realizados</div>
-      <div style={{fontSize:15,color:C.textoSuave,marginBottom:12}}>Mostrá hasta 3 fotos de tus trabajos. Forman parte de tu presentación profesional.</div>
-      {proc&&<div style={{fontSize:15,color:C.textoSuave,marginBottom:8}}>⟳ Procesando imagen...</div>}
-      <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-        {[0,1,2].map(i=>(
-          <div key={i} style={{width:"30%",minWidth:100,flexGrow:1}}>
-            {fotos[i]?(
-              <div>
-                <img src={fotos[i]} alt={"trabajo "+(i+1)} style={{width:"100%",height:110,objectFit:"cover",borderRadius:8,border:`1px solid ${C.borde}`}}/>
-                <button onClick={()=>quitar(i)} style={{...S.btn("ghost"),width:"100%",justifyContent:"center",fontSize:14,marginTop:4,padding:"6px",minHeight:"auto"}}>🗑️ Quitar</button>
-              </div>
-            ):(
-              <label style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:110,border:`2px dashed ${C.borde}`,borderRadius:8,cursor:"pointer",color:C.textoSuave,fontSize:14}}>
-                <span style={{fontSize:26}}>＋</span>
-                <span>Foto {i+1}</span>
-                <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{subir(i,e.target.files[0]);e.target.value="";}}/>
-              </label>
-            )}
-          </div>
-        ))}
+    <div style={{maxWidth:640,margin:"0 auto"}}>
+      <button style={{...S.btn("ghost"),marginBottom:16}} onClick={onCerrar}>← Volver</button>
+      <div style={{...S.cardTitle,fontSize:26,marginBottom:16}}>👤 Mi cuenta</div>
+
+      <div style={{display:"flex",gap:8,marginBottom:18}}>
+        <button style={solapaBtn("privado","🔒 Privado")} onClick={()=>setSolapa("privado")}>🔒 Privado</button>
+        {!esCliente&&<button style={solapaBtn("publico","🌐 Público")} onClick={()=>setSolapa("publico")}>🌐 Público</button>}
       </div>
+
+      {solapa==="privado"&&(
+        <div>
+          <div style={S.card}>
+            <div style={S.cardTitle}>Datos personales</div>
+            <div style={{marginBottom:14}}>
+              <label style={S.label}>Nombre / Razón social</label>
+              <input style={S.input} value={nombre} onChange={e=>setNombre(e.target.value)}/>
+            </div>
+            <div style={{marginBottom:14}}>
+              <label style={S.label}>Ciudad</label>
+              <input style={S.input} value={ciudad} onChange={e=>setCiudad(e.target.value)}/>
+            </div>
+            <div style={{marginBottom:14}}>
+              <label style={S.label}>Correo electrónico</label>
+              <input style={{...S.input,background:"#EDE7D5",color:C.textoSuave}} value={usuario.email||""} disabled/>
+              <div style={{fontSize:13,color:C.textoSuave,marginTop:5}}>El correo de acceso no puede modificarse desde acá. Si lo escribiste mal, escribí a carpinteriavetaraiz@gmail.com.</div>
+            </div>
+            <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:4}}>
+              <div style={{flex:"0 0 130px"}}>
+                <label style={S.label}>Documento</label>
+                <select style={S.input} value={tipoDoc} onChange={e=>setTipoDoc(e.target.value)}>
+                  <option value="DNI">DNI</option>
+                  <option value="CUIT">CUIT</option>
+                </select>
+              </div>
+              <div style={{flex:1,minWidth:160}}>
+                <label style={S.label}>Número</label>
+                <input style={S.input} value={documento} onChange={e=>setDocumento(e.target.value)}/>
+              </div>
+            </div>
+            {msg(okPriv,"ok")} {msg(errPriv,"err")}
+            <button style={{...S.btn("gold"),marginTop:16,width:"100%",justifyContent:"center"}} onClick={guardarPrivado} disabled={guardandoPriv}>{guardandoPriv?"Guardando...":"Guardar cambios"}</button>
+          </div>
+
+          <div style={S.card}>
+            <div style={S.cardTitle}>Cambiar contraseña</div>
+            <div style={{marginBottom:14}}>
+              <label style={S.label}>Nueva contraseña</label>
+              <input type="password" style={S.input} value={pass1} onChange={e=>setPass1(e.target.value)} placeholder="Mínimo 6 caracteres"/>
+            </div>
+            <div style={{marginBottom:4}}>
+              <label style={S.label}>Repetir contraseña</label>
+              <input type="password" style={S.input} value={pass2} onChange={e=>setPass2(e.target.value)}/>
+            </div>
+            {msg(okPass,"ok")} {msg(errPass,"err")}
+            <button style={{...S.btn("dark"),marginTop:16,width:"100%",justifyContent:"center"}} onClick={cambiarPass} disabled={guardandoPass}>{guardandoPass?"Guardando...":"Cambiar contraseña"}</button>
+          </div>
+        </div>
+      )}
+
+      {solapa==="publico"&&!esCliente&&(
+        <div>
+          <div style={S.card}>
+            <div style={S.cardTitle}>Perfil público de la empresa</div>
+            <div style={{fontSize:14,color:C.textoSuave,marginBottom:16}}>Estos datos se muestran junto a tus presupuestos para que los clientes conozcan tu trabajo.</div>
+            <div style={{marginBottom:14}}>
+              <label style={S.label}>Instagram</label>
+              <input style={S.input} value={instagram} onChange={e=>setInstagram(e.target.value)} placeholder="@tuempresa"/>
+            </div>
+            <div style={{marginBottom:14}}>
+              <label style={S.label}>TikTok</label>
+              <input style={S.input} value={tiktok} onChange={e=>setTiktok(e.target.value)} placeholder="@tuempresa"/>
+            </div>
+            <div style={{marginBottom:14}}>
+              <label style={S.label}>Email de contacto</label>
+              <input style={S.input} value={emailEmpresa} onChange={e=>setEmailEmpresa(e.target.value)} placeholder="contacto@tuempresa.com"/>
+            </div>
+            <div style={{marginBottom:4}}>
+              <label style={S.label}>Página web</label>
+              <input style={S.input} value={web} onChange={e=>setWeb(e.target.value)} placeholder="www.tuempresa.com"/>
+            </div>
+            {msg(okPub,"ok")} {msg(errPub,"err")}
+            <button style={{...S.btn("gold"),marginTop:16,width:"100%",justifyContent:"center"}} onClick={guardarPublico} disabled={guardandoPub}>{guardandoPub?"Guardando...":"Guardar cambios"}</button>
+          </div>
+
+          <div style={S.card}>
+            <div style={S.cardTitle}>🛠️ Trabajos realizados</div>
+            <div style={{fontSize:14,color:C.textoSuave,marginBottom:12}}>Mostrá hasta 3 fotos de tus trabajos. Forman parte de tu presentación profesional.</div>
+            {procFoto&&<div style={{fontSize:15,color:C.textoSuave,marginBottom:8}}>⟳ Procesando imagen...</div>}
+            <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+              {[0,1,2].map(i=>(
+                <div key={i} style={{width:"30%",minWidth:100,flexGrow:1}}>
+                  {fotos[i]?(
+                    <div>
+                      <img src={fotos[i]} alt={"trabajo "+(i+1)} style={{width:"100%",height:110,objectFit:"cover",borderRadius:8,border:`1px solid ${C.borde}`}}/>
+                      <button onClick={()=>quitarFoto(i)} style={{...S.btn("ghost"),width:"100%",justifyContent:"center",fontSize:14,marginTop:4,padding:"6px",minHeight:"auto"}}>🗑️ Quitar</button>
+                    </div>
+                  ):(
+                    <label style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:110,border:`2px dashed ${C.borde}`,borderRadius:8,cursor:"pointer",color:C.textoSuave,fontSize:14}}>
+                      <span style={{fontSize:26}}>＋</span>
+                      <span>Foto {i+1}</span>
+                      <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{subirFoto(i,e.target.files[0]);e.target.value="";}}/>
+                    </label>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -3414,6 +3579,12 @@ function App(){
   const [navTab,setNavTab]=useState("principal");
   const [notifMsg,setNotifMsg]=useState("");
   const [mostrarBienvenida,setMostrarBienvenida]=useState(true);
+  const [menuAbierto,setMenuAbierto]=useState(false);
+  const [enMiCuenta,setEnMiCuenta]=useState(false);
+
+  const actualizarUsuario=(campos)=>{
+    setSesion(s=>s?{...s,usuario:{...s.usuario,...campos}}:s);
+  };
 
   useEffect(()=>{
     try{
@@ -3483,23 +3654,37 @@ function App(){
             <div style={{fontSize:16,color:C.crema,fontWeight:700}}>{EMOJIS[usuario.tipo]} {usuario.nombre}</div>
             <div style={{fontSize:13,color:C.acento,textTransform:"uppercase",letterSpacing:.5}}>{usuario.tipo}</div>
           </div>
-          <button style={{background:"transparent",color:C.suave,border:`1px solid ${C.suave}44`,borderRadius:8,padding:"10px 18px",cursor:"pointer",fontSize:18,fontWeight:700,fontFamily:"'Lato',sans-serif"}} onClick={()=>{cerrar();setMostrarBienvenida(true);}}>Salir</button>
+          <div style={{position:"relative"}}>
+            <button aria-label="Menú" style={{background:"transparent",color:C.suave,border:`1px solid ${C.suave}44`,borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:24,fontWeight:700,lineHeight:1,fontFamily:"'Lato',sans-serif"}} onClick={()=>setMenuAbierto(v=>!v)}>⋮</button>
+            {menuAbierto&&(
+              <>
+                <div onClick={()=>setMenuAbierto(false)} style={{position:"fixed",inset:0,zIndex:200}}/>
+                <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:C.card,border:`1px solid ${C.borde}`,borderRadius:10,boxShadow:"0 6px 24px #5C2E0A44",zIndex:201,minWidth:190,overflow:"hidden"}}>
+                  <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnMiCuenta(true);setMenuAbierto(false);}}>👤 Mi cuenta</button>
+                  <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.error,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setMenuAbierto(false);darDeBaja();}}>🚫 Dar de baja</button>
+                  <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setMenuAbierto(false);cerrar();setMostrarBienvenida(true);}}>← Salir</button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
       {/* CONTENIDO */}
       <div style={S.main}>
-        {navTab==="principal"&&usuario.tipo==="cliente"&&<VistaCliente usuario={usuario} notif={setNotifMsg}/>}
-        {navTab==="principal"&&usuario.tipo==="carpinteria"&&<VistaCarpinteria usuario={usuario} notif={setNotifMsg}/>}
-        {navTab==="principal"&&usuario.tipo==="aserradero"&&<VistaAserradero usuario={usuario} notif={setNotifMsg}/>}
-        {navTab==="principal"&&usuario.tipo==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg}/>}
-        {navTab==="principal"&&usuario.tipo==="ferreteria"&&<VistaFerreteria usuario={usuario} notif={setNotifMsg}/>}
-        {navTab==="principal"&&usuario.tipo==="pintureria"&&<VistaPintureria usuario={usuario} notif={setNotifMsg}/>}
-        {navTab==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg}/>}
-        {navTab==="principal"&&usuario.tipo!=="cliente"&&<MisFotos usuario={usuario}/>}
-        <div style={{textAlign:"center",marginTop:34,marginBottom:6}}>
-          <button onClick={darDeBaja} style={{background:"none",border:"none",color:C.textoSuave,fontSize:14,textDecoration:"underline",cursor:"pointer",minHeight:"auto",padding:6}}>Dar de baja mi cuenta</button>
-        </div>
+        {enMiCuenta ? (
+          <MiCuenta usuario={usuario} onCerrar={()=>setEnMiCuenta(false)} onActualizar={actualizarUsuario}/>
+        ) : (
+          <>
+            {navTab==="principal"&&usuario.tipo==="cliente"&&<VistaCliente usuario={usuario} notif={setNotifMsg}/>}
+            {navTab==="principal"&&usuario.tipo==="carpinteria"&&<VistaCarpinteria usuario={usuario} notif={setNotifMsg}/>}
+            {navTab==="principal"&&usuario.tipo==="aserradero"&&<VistaAserradero usuario={usuario} notif={setNotifMsg}/>}
+            {navTab==="principal"&&usuario.tipo==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg}/>}
+            {navTab==="principal"&&usuario.tipo==="ferreteria"&&<VistaFerreteria usuario={usuario} notif={setNotifMsg}/>}
+            {navTab==="principal"&&usuario.tipo==="pintureria"&&<VistaPintureria usuario={usuario} notif={setNotifMsg}/>}
+            {navTab==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg}/>}
+          </>
+        )}
       </div>
     </div>
   );
