@@ -1731,7 +1731,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-06.2</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-06.3</div>
     </div>
   );
 }
@@ -2359,15 +2359,30 @@ function VistaCarpinteria({usuario,notif}){
     }catch{}
   },[usuario.id]);
   const cargarMisPedidosFerreria=useCallback(async()=>{
-    try{const d=await db.select("pedidos_ferreteria",`?carpinteria_id=eq.${usuario.id}&order=created_at.desc`);setMisPedidosFerreria(d);}catch{}
+    try{
+      const d=await db.select("pedidos_ferreteria",`?carpinteria_id=eq.${usuario.id}&order=created_at.desc`);
+      let conteo={};
+      if(d.length){
+        try{
+          const ids=d.map(p=>p.id).join(",");
+          const cots=await db.select("cotizaciones_ferreteria",`?pedido_id=in.(${ids})&select=pedido_id`);
+          cots.forEach(c=>{conteo[c.pedido_id]=(conteo[c.pedido_id]||0)+1;});
+        }catch{}
+      }
+      setMisPedidosFerreria(d.map(p=>({...p,_cantCot:conteo[p.id]||0})));
+    }catch{}
   },[usuario.id]);
+  const [ferrAbierta,setFerrAbierta]=useState(null);
   const abrirPedidoFerr=async(p)=>{
     setSelFerr(p);
+    setFerrAbierta(null);
     try{
       const d=await db.select("cotizaciones_ferreteria",`?pedido_id=eq.${p.id}&order=created_at.asc`);
       const enr=await Promise.all(d.map(async ct=>{
         const fe=await db.select("usuarios",`?id=eq.${ct.ferreteria_id}&limit=1`);
-        return{...ct,ferrNombre:fe[0]?.nombre||"Ferretería"};
+        let items=[];
+        try{ items=Array.isArray(ct.presupuesto_items)?ct.presupuesto_items:JSON.parse(ct.presupuesto_items||"[]"); }catch{items=[];}
+        return{...ct,ferrNombre:fe[0]?.nombre||"Ferretería",ferrObj:fe[0]||{},items};
       }));
       setCotizacionesFerr(enr);
     }catch{}
@@ -2883,7 +2898,12 @@ function VistaCarpinteria({usuario,notif}){
                       <div style={{fontWeight:700,fontSize:18,color:C.marron}}>{p.descripcion}</div>
                       <div style={{fontSize:17,color:C.textoSuave}}>Cantidad: {p.cantidad} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
                     </div>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}><Badge e={p.estado}/><span style={{color:C.textoSuave,fontSize:18}}>{abierto?"▲":"▼"}</span></div>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{whiteSpace:"nowrap",background:p._cantCot>0?C.verde:C.suave,color:p._cantCot>0?"#fff":C.textoSuave,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:20,fontFamily:"'Lato',sans-serif"}}>
+                        {p._cantCot>0?`${p._cantCot} cotización${p._cantCot>1?"es":""}`:"Sin cotizaciones"}
+                      </span>
+                      <span style={{color:C.textoSuave,fontSize:18}}>{abierto?"▲":"▼"}</span>
+                    </div>
                   </div>
                   {abierto&&(
                     <div style={{marginTop:12,borderTop:`1px dashed ${C.borde}`,paddingTop:12}} className="fade">
@@ -2891,20 +2911,43 @@ function VistaCarpinteria({usuario,notif}){
                       {cotizacionesFerr.length===0?(
                         <div style={{color:C.textoSuave,textAlign:"center",padding:20,fontStyle:"italic"}}>⏳ Esperando cotizaciones...</div>
                       ):(
-                        cotizacionesFerr.map((ct,i)=>(
-                          <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:8,padding:12,marginBottom:10,background:C.fondo}}>
-                            <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-                              <b style={{color:C.marron}}>{ct.ferrNombre}</b>
-                              <b style={{fontSize:17,color:C.verde}}>$ {Number(ct.precio_total).toLocaleString("es-AR")}</b>
+                        cotizacionesFerr.map((ct,i)=>{
+                          const key=ct.id||i;
+                          const abiertaCot=ferrAbierta===key;
+                          return(
+                          <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:10,marginBottom:10,overflow:"hidden",background:C.input}}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
+                              onClick={()=>setFerrAbierta(abiertaCot?null:key)}>
+                              <b style={{color:C.marron,fontSize:17}}>🔩 {ct.ferrNombre||"Ferretería"}</b>
+                              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                                <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
+                                <span style={{color:C.textoSuave,fontSize:16}}>{abiertaCot?"▲":"▼"}</span>
+                              </div>
                             </div>
-                            <div style={S.col()}><span style={{fontSize:17,color:C.textoSuave}}>Entrega: </span><b>{ct.tiempo_entrega}</b></div>
-                            {ct.detalle&&<div style={{marginTop:6,fontSize:17,color:C.textoSuave,whiteSpace:"pre-line",fontStyle:"italic"}}>{ct.detalle}</div>}
-                            <div style={{marginTop:10}}>
-                              <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>💬 Chat con {ct.ferrNombre||"ferretería"}</div>
-                              <Chat key={ct.ferreteria_id} pedidoId={selFerr.id} tipoPedido="ferreteria" miUsuario={usuario} otroUsuario={{id:ct.ferreteria_id}}/>
+                            {abiertaCot&&(
+                            <div style={{padding:"0 14px 14px",borderTop:`1px dashed ${C.borde}`}} className="fade">
+                              <div style={{marginTop:12}}>
+                                <PresupuestoFormato
+                                  empresa={ct.ferrObj||{}}
+                                  cliente={{...usuario,mostrar_telefono:true,mostrar_direccion:true}}
+                                  items={ct.items||[]}
+                                  opts={{descuento_tipo:ct.descuento_tipo,descuento_valor:ct.descuento_valor,iva_pct:ct.iva_porcentaje}}
+                                  numero={ct.numero_presupuesto!=null?ct.numero_presupuesto:""}
+                                  fecha={ct.created_at?new Date(ct.created_at).toLocaleDateString("es-AR"):null}
+                                  tiempoEntrega={ct.tiempo_entrega}
+                                  esEmpresa={false}
+                                  aceptado={false}
+                                />
+                              </div>
+                              <div style={{marginTop:10}}>
+                                <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>💬 Chat con {ct.ferrNombre||"ferretería"}</div>
+                                <Chat key={ct.ferreteria_id} pedidoId={selFerr.id} tipoPedido="ferreteria" miUsuario={usuario} otroUsuario={{id:ct.ferreteria_id}}/>
+                              </div>
                             </div>
+                            )}
                           </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                   )}
@@ -3458,30 +3501,75 @@ function VistaFlete({usuario,notif}){
 function VistaFerreteria({usuario,notif}){
   const [pedidos,setPedidos]=useState([]);
   const [sel,setSel]=useState(null);
-  const [cotF,setCotF]=useState({monto:"",tiempo:"",detalle:""});
+  const [cotF,setCotF]=useState({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
+  const [miCot,setMiCot]=useState(null);
+  const [carpSel,setCarpSel]=useState({});
+  const [enviando,setEnviando]=useState(false);
+  const [yaEnvio,setYaEnvio]=useState(false);
+  const [filtro,setFiltro]=useState("cotizar");
 
   const cargar=useCallback(async()=>{
-    try{const d=await db.select("pedidos_ferreteria","?order=created_at.desc");setPedidos(d);}catch{}
-  },[]);
+    try{
+      const d=await db.select("pedidos_ferreteria","?order=created_at.desc");
+      let mias={};
+      try{
+        const mc=await db.select("cotizaciones_ferreteria",`?ferreteria_id=eq.${usuario.id}&select=pedido_id`);
+        mc.forEach(c=>{mias[c.pedido_id]=true;});
+      }catch{}
+      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null})));
+    }catch{}
+  },[usuario.id]);
   useEffect(()=>{cargar();const t=setInterval(cargar,15000);return()=>clearInterval(t);},[cargar]);
 
-  const aplicarIA=(s)=>{
-    const det=s.items?.map(i=>`${i.concepto}: $${Number(i.monto).toLocaleString("es-AR")} — ${i.detalle}`).join("\n")||"";
-    setCotF(f=>({...f,monto:String(s.precio_total||f.monto),tiempo:s.tiempo_entrega||f.tiempo,detalle:det||f.detalle}));
+  const abrirPedido=async(p)=>{
+    setSel(p); setYaEnvio(false); setMiCot(null);
+    try{
+      const d=await db.select("cotizaciones_ferreteria",`?pedido_id=eq.${p.id}&ferreteria_id=eq.${usuario.id}&limit=1`);
+      if(d&&d.length>0){
+        let items=[];
+        try{ items=Array.isArray(d[0].presupuesto_items)?d[0].presupuesto_items:JSON.parse(d[0].presupuesto_items||"[]"); }catch{items=[];}
+        setMiCot({...d[0],items});
+        setYaEnvio(true);
+      }
+      try{ const cp=await db.select("usuarios",`?id=eq.${p.carpinteria_id}&limit=1`); setCarpSel(cp[0]||{}); }catch{}
+    }catch{}
   };
 
   const enviarCot=async()=>{
-    if(!cotF.monto||!sel)return;
+    if(!sel||enviando||yaEnvio)return;
+    const itemsValidos=(cotF.items||[]).filter(it=>it.descripcion.trim()&&nmb(it.precio)>0&&nmb(it.cantidad)>0);
+    if(itemsValidos.length===0){alert("Cargá al menos un ítem con descripción, precio y cantidad.");return;}
+    setEnviando(true);
     try{
-      await db.insert("cotizaciones_ferreteria",{pedido_id:sel.id,ferreteria_id:usuario.id,precio_total:Number(cotF.monto),tiempo_entrega:cotF.tiempo,detalle:cotF.detalle});
-      await db.update("pedidos_ferreteria",{estado:"presupuestado"},`id=eq.${sel.id}`);
+      let numero=1;
+      try{
+        const prev=await db.select("cotizaciones_ferreteria",`?ferreteria_id=eq.${usuario.id}&select=numero_presupuesto&order=numero_presupuesto.desc.nullslast&limit=1`);
+        if(prev&&prev.length>0&&prev[0].numero_presupuesto!=null) numero=Number(prev[0].numero_presupuesto)+1;
+      }catch{}
+      const calc=calcularPresup(itemsValidos,cotF);
+      const datos={
+        pedido_id:sel.id, ferreteria_id:usuario.id, numero_presupuesto:numero,
+        precio_total:calc.total,
+        descuento_tipo:cotF.usarDesc?cotF.descTipo:null,
+        descuento_valor:cotF.usarDesc?nmb(cotF.descValor):null,
+        iva_porcentaje:cotF.usarIva?nmb(cotF.ivaPct):null,
+        tiempo_entrega:cotF.tiempo,
+        presupuesto_items:itemsValidos.map((it)=>({descripcion:it.descripcion.trim(),precio:nmb(it.precio),cantidad:nmb(it.cantidad),importe:nmb(it.precio)*nmb(it.cantidad)}))
+      };
+      await db.insert("cotizaciones_ferreteria",datos);
+      // NO se toca el estado global del pedido: sobre cerrado — cada ferretería ve solo su propio estado.
       notif("¡Cotización enviada!");
-      setCotF({monto:"",tiempo:"",detalle:""});
+      setCotF({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
+      setYaEnvio(true);
+      setMiCot({...datos,items:datos.presupuesto_items,created_at:new Date().toISOString()});
+      setPedidos(ps=>ps.map(p=>p.id===sel.id?{...p,_miEstado:"cotizado"}:p));
     }catch(e){alert("Error: "+e.message);}
+    setEnviando(false);
   };
 
-  if(sel) return(
-    <div>
+  if(sel){
+    return(
+    <div className="fade">
       <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSel(null)}>← Volver</button>
       <div style={S.card}>
         <div style={S.cardTitle}>Pedido de carpintería</div>
@@ -3493,40 +3581,166 @@ function VistaFerreteria({usuario,notif}){
         </div>
       </div>
 
+      {miCot?(
+      <div style={S.card}>
+        <div style={S.cardTitle}>✅ Cotización enviada</div>
+        <div style={{fontSize:15,color:C.textoSuave,marginBottom:10}}>Así la ve la carpintería:</div>
+        <PresupuestoFormato
+          empresa={usuario}
+          cliente={{...carpSel,mostrar_telefono:true,mostrar_direccion:true}}
+          items={miCot.items||[]}
+          opts={{descuento_tipo:miCot.descuento_tipo,descuento_valor:miCot.descuento_valor,iva_pct:miCot.iva_porcentaje}}
+          numero={miCot.numero_presupuesto!=null?miCot.numero_presupuesto:""}
+          fecha={miCot.created_at?new Date(miCot.created_at).toLocaleDateString("es-AR"):null}
+          tiempoEntrega={miCot.tiempo_entrega}
+          esEmpresa={true}
+          aceptado={false}
+        />
+      </div>
+      ):(
       <div style={S.card}>
         <div style={S.cardTitle}>💰 Tu cotización</div>
-        <div style={S.row}>
-          <div style={S.col()}><label style={S.label}>Precio total ($)</label><input type="number" value={cotF.monto} onChange={e=>setCotF(f=>({...f,monto:e.target.value}))} placeholder="0" style={S.input}/></div>
-          <div style={S.col()}><label style={S.label}>Tiempo de entrega</label><input value={cotF.tiempo} onChange={e=>setCotF(f=>({...f,tiempo:e.target.value}))} placeholder="Ej: 2 días" style={S.input}/></div>
-        </div>
-        <div style={{marginTop:10}}><label style={S.label}>Detalle / condiciones</label><textarea value={cotF.detalle} onChange={e=>setCotF(f=>({...f,detalle:e.target.value}))} placeholder="Marcas, modelos, observaciones..." style={{...S.input,minHeight:56,resize:"vertical"}}/></div>
-        <button style={{...S.btn("dark"),marginTop:12}} onClick={enviarCot}>📤 Enviar cotización</button>
+        {(() => {
+          const calc=calcularPresup(cotF.items,cotF);
+          const setItem=(i,campo,val)=>setCotF(f=>{const its=[...f.items];its[i]={...its[i],[campo]:val};return{...f,items:its};});
+          const addItem=()=>setCotF(f=>({...f,items:[...f.items,{descripcion:"",precio:"",cantidad:"1"}]}));
+          const delItem=(i)=>setCotF(f=>({...f,items:f.items.length>1?f.items.filter((_,j)=>j!==i):f.items}));
+          return(
+          <div>
+            <div style={{fontSize:14,color:C.textoSuave,marginBottom:10}}>Agregá un renglón por cada herraje (bisagras, rieles, manijas, flete si lo cobrás, etc.).</div>
+            {cotF.items.map((it,i)=>{
+              const imp=nmb(it.precio)*nmb(it.cantidad);
+              return(
+              <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:10,marginBottom:8,background:C.suave}}>
+                <div style={{marginBottom:8}}>
+                  <label style={S.label}>Descripción</label>
+                  <input value={it.descripcion} onChange={e=>setItem(i,"descripcion",e.target.value)} placeholder="Ej: Bisagra de piano 180cm" style={S.input}/>
+                </div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}}>
+                  <div style={{flex:1,minWidth:110}}>
+                    <label style={S.label}>Precio ($)</label>
+                    <input type="number" value={it.precio} onChange={e=>setItem(i,"precio",e.target.value)} placeholder="0" style={S.input}/>
+                  </div>
+                  <div style={{flex:"0 0 90px"}}>
+                    <label style={S.label}>Cantidad</label>
+                    <input type="number" value={it.cantidad} onChange={e=>setItem(i,"cantidad",e.target.value)} placeholder="1" style={S.input}/>
+                  </div>
+                  <div style={{flex:1,minWidth:110,textAlign:"right"}}>
+                    <label style={S.label}>Importe</label>
+                    <div style={{fontWeight:800,color:C.marron,fontSize:17,padding:"10px 0"}}>{fmtPeso(imp)}</div>
+                  </div>
+                </div>
+                {cotF.items.length>1&&<button onClick={()=>delItem(i)} style={{...S.btn("ghost"),color:C.error,borderColor:C.error,fontSize:14,padding:"5px 10px",marginTop:6,minHeight:"auto"}}>🗑️ Quitar renglón</button>}
+              </div>
+              );
+            })}
+            <button onClick={addItem} style={{...S.btn("ghost"),width:"100%",justifyContent:"center",marginBottom:14}}>＋ Agregar renglón</button>
+
+            <div style={{marginBottom:12}}>
+              <label style={S.label}>Tiempo de entrega <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
+              <input value={cotF.tiempo} onChange={e=>setCotF(f=>({...f,tiempo:e.target.value}))} placeholder="Ej: 2 días" style={S.input}/>
+            </div>
+
+            <div style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:10,marginBottom:10}}>
+              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:16,color:C.marron,fontWeight:700}}>
+                <input type="checkbox" checked={cotF.usarDesc} onChange={e=>setCotF(f=>({...f,usarDesc:e.target.checked}))}/>
+                Aplicar descuento
+              </label>
+              {cotF.usarDesc&&(
+                <div style={{display:"flex",gap:8,marginTop:8,alignItems:"flex-end"}}>
+                  <div style={{flex:"0 0 140px"}}>
+                    <label style={S.label}>Tipo</label>
+                    <select value={cotF.descTipo} onChange={e=>setCotF(f=>({...f,descTipo:e.target.value}))} style={S.input}>
+                      <option value="porcentaje">Porcentaje (%)</option>
+                      <option value="monto">Monto fijo ($)</option>
+                    </select>
+                  </div>
+                  <div style={{flex:1}}>
+                    <label style={S.label}>{cotF.descTipo==="porcentaje"?"% de descuento":"Monto ($)"}</label>
+                    <input type="number" value={cotF.descValor} onChange={e=>setCotF(f=>({...f,descValor:e.target.value}))} placeholder="0" style={S.input}/>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:10,marginBottom:14}}>
+              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:16,color:C.marron,fontWeight:700}}>
+                <input type="checkbox" checked={cotF.usarIva} onChange={e=>setCotF(f=>({...f,usarIva:e.target.checked}))}/>
+                Agregar IVA
+              </label>
+              {cotF.usarIva&&(
+                <div style={{marginTop:8}}>
+                  <label style={S.label}>% de IVA</label>
+                  <input type="number" value={cotF.ivaPct} onChange={e=>setCotF(f=>({...f,ivaPct:e.target.value}))} placeholder="21" style={{...S.input,maxWidth:160}}/>
+                </div>
+              )}
+            </div>
+
+            <div style={{marginBottom:12}}><label style={S.label}>Detalle / condiciones <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
+              <textarea value={cotF.detalle||""} onChange={e=>setCotF(f=>({...f,detalle:e.target.value}))} placeholder="Marcas, modelos, observaciones..." style={{...S.input,minHeight:56,resize:"vertical"}}/>
+            </div>
+
+            <div style={{background:C.suave,borderRadius:10,padding:12,border:`1px solid ${C.borde}`,marginBottom:12}}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:6,fontSize:16}}><span style={{color:C.textoSuave}}>Subtotal</span><b>{fmtPeso(calc.subtotal)}</b></div>
+              {cotF.usarDesc&&calc.descuento>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:6,fontSize:16,color:C.error}}><span>Descuento{cotF.descTipo==="porcentaje"?` (${nmb(cotF.descValor)}%)`:""}</span><b>− {fmtPeso(calc.descuento)}</b></div>}
+              {cotF.usarIva&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:6,fontSize:16}}><span style={{color:C.textoSuave}}>IVA ({nmb(cotF.ivaPct)}%)</span><b>{fmtPeso(calc.iva)}</b></div>}
+              <div style={{display:"flex",justifyContent:"space-between",borderTop:`2px solid ${C.verde}`,paddingTop:8,marginTop:4}}><span style={{fontWeight:800,fontSize:19,color:C.marron}}>TOTAL</span><b style={{fontWeight:800,fontSize:22,color:C.verde}}>{fmtPeso(calc.total)}</b></div>
+            </div>
+
+            <button style={{...S.btn("dark"),opacity:enviando||yaEnvio?0.6:1}} onClick={enviarCot} disabled={enviando||yaEnvio}>
+              {enviando?"⟳ Enviando...":(yaEnvio?"✅ Cotización enviada":"📤 Enviar cotización")}
+            </button>
+          </div>
+          );
+        })()}
       </div>
+      )}
 
       <div style={S.card}>
         <div style={S.cardTitle}>💬 Chat con carpintería</div>
         <Chat pedidoId={sel.id} tipoPedido="ferreteria" miUsuario={usuario} otroUsuario={{id:sel.carpinteria_id}}/>
       </div>
     </div>
-  );
+    );
+  }
+
+  const cuenta={
+    cotizar:pedidos.filter(p=>!p._miEstado).length,
+    cotizados:pedidos.filter(p=>p._miEstado).length,
+    todos:pedidos.length,
+  };
+  const lista=pedidos.filter(p=>{
+    if(filtro==="cotizar")return !p._miEstado;
+    if(filtro==="cotizados")return !!p._miEstado;
+    return true;
+  });
 
   return(
     <div>
       <div style={S.secTitle}>Pedidos de herrajes de carpinterías</div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
+        {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["todos","Todos"]].map(([id,l])=>(
+          <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} ({cuenta[id]})</button>
+        ))}
+      </div>
       {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
-      {pedidos.map(p=>(
-        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>setSel(p)}
-          onMouseEnter={e=>e.currentTarget.style.borderColor=C.acento}
-          onMouseLeave={e=>e.currentTarget.style.borderColor=C.borde}>
+      {pedidos.length>0&&lista.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría</div>}
+      {lista.map(p=>{
+        const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
+        return(
+        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>abrirPedido(p)}
+          onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
+          onMouseLeave={e=>{e.currentTarget.style.borderColor=C.borde;e.currentTarget.style.transform="none";}}>
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div>
               <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:21}}>{p.descripcion}</div>
               <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>Cantidad: {p.cantidad} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
             </div>
-            <Badge e={p.estado}/>
+            <span style={{alignSelf:"flex-start",whiteSpace:"nowrap",background:et.bg,color:et.fg,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:20,fontFamily:"'Lato',sans-serif"}}>{et.t}</span>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
