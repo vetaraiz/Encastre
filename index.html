@@ -1731,7 +1731,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-06.1</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-06.2</div>
     </div>
   );
 }
@@ -2313,6 +2313,7 @@ function VistaCarpinteria({usuario,notif}){
   };
   const [selAserr,setSelAserr]=useState(null);
   const [cotizacionesAserr,setCotizacionesAserr]=useState([]);
+  const [cotAserrAbierta,setCotAserrAbierta]=useState(null);
   const [ferrF,setFerrF]=useState({descripcion:"",cantidad:"",notas:""});
   const [misPedidosFerreria,setMisPedidosFerreria]=useState([]);
   const [selFerr,setSelFerr]=useState(null);
@@ -2764,7 +2765,7 @@ function VistaCarpinteria({usuario,notif}){
             return(
             <div key={p.id} style={{border:`1px solid ${abierto?C.acento:C.borde}`,borderRadius:8,padding:12,marginBottom:10,background:C.input}}>
               <div style={{display:"flex",justifyContent:"space-between",cursor:"pointer"}}
-                onClick={()=>{ if(abierto){setSelAserr(null);} else {abrirPedidoAserr(p);} }}>
+                onClick={()=>{ if(abierto){setSelAserr(null);} else {setCotAserrAbierta(null);abrirPedidoAserr(p);} }}>
                 <div>
                   <div style={{fontWeight:700,color:C.marron}}>{p.material}</div>
                   <div style={{fontSize:17,color:C.textoSuave}}>{p.pies}' largo · {p.pulgadas}" ancho · {p.espesor}" espesor · {p.cantidad} piezas</div>
@@ -2783,25 +2784,43 @@ function VistaCarpinteria({usuario,notif}){
                   {cotizacionesAserr.length===0?(
                     <div style={{color:C.textoSuave,textAlign:"center",padding:20,fontStyle:"italic"}}>⏳ Esperando cotizaciones del aserradero...</div>
                   ):(
-                    cotizacionesAserr.map((ct,i)=>(
-                      <div key={i} style={{marginBottom:14}}>
-                        <PresupuestoFormato
-                          empresa={ct.aserraderoObj||{}}
-                          cliente={{...usuario,mostrar_telefono:true,mostrar_direccion:true}}
-                          items={ct.items||[]}
-                          opts={{descuento_tipo:ct.descuento_tipo,descuento_valor:ct.descuento_valor,iva_pct:ct.iva_porcentaje}}
-                          numero={ct.numero_presupuesto!=null?ct.numero_presupuesto:""}
-                          fecha={ct.created_at?new Date(ct.created_at).toLocaleDateString("es-AR"):null}
-                          tiempoEntrega={ct.tiempo_entrega}
-                          esEmpresa={false}
-                          aceptado={false}
-                        />
-                        <div style={{marginTop:10}}>
-                          <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>💬 Chat con {ct.aserraderoNombre||"aserradero"}</div>
-                          <Chat key={ct.aserradero_id} pedidoId={selAserr.id} tipoPedido="aserradero" miUsuario={usuario} otroUsuario={{id:ct.aserradero_id}}/>
+                    cotizacionesAserr.map((ct,i)=>{
+                      const key=ct.id||i;
+                      const abiertaCot=cotAserrAbierta===key;
+                      return(
+                      <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:10,marginBottom:10,overflow:"hidden",background:C.input}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
+                          onClick={()=>setCotAserrAbierta(abiertaCot?null:key)}>
+                          <b style={{color:C.marron,fontSize:17}}>🏭 {ct.aserraderoNombre||"Aserradero"}</b>
+                          <div style={{display:"flex",alignItems:"center",gap:10}}>
+                            <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
+                            <span style={{color:C.textoSuave,fontSize:16}}>{abiertaCot?"▲":"▼"}</span>
+                          </div>
                         </div>
+                        {abiertaCot&&(
+                        <div style={{padding:"0 14px 14px",borderTop:`1px dashed ${C.borde}`}} className="fade">
+                          <div style={{marginTop:12}}>
+                            <PresupuestoFormato
+                              empresa={ct.aserraderoObj||{}}
+                              cliente={{...usuario,mostrar_telefono:true,mostrar_direccion:true}}
+                              items={ct.items||[]}
+                              opts={{descuento_tipo:ct.descuento_tipo,descuento_valor:ct.descuento_valor,iva_pct:ct.iva_porcentaje}}
+                              numero={ct.numero_presupuesto!=null?ct.numero_presupuesto:""}
+                              fecha={ct.created_at?new Date(ct.created_at).toLocaleDateString("es-AR"):null}
+                              tiempoEntrega={ct.tiempo_entrega}
+                              esEmpresa={false}
+                              aceptado={false}
+                            />
+                          </div>
+                          <div style={{marginTop:10}}>
+                            <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>💬 Chat con {ct.aserraderoNombre||"aserradero"}</div>
+                            <Chat key={ct.aserradero_id} pedidoId={selAserr.id} tipoPedido="aserradero" miUsuario={usuario} otroUsuario={{id:ct.aserradero_id}}/>
+                          </div>
+                        </div>
+                        )}
                       </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               )}
