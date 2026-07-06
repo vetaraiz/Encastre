@@ -1731,7 +1731,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-05.6</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-05.7</div>
     </div>
   );
 }
@@ -3597,9 +3597,9 @@ function PresupuestoFormato({empresa,cliente,items,opts,numero,fecha,tiempoEntre
           <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:18,color:C.marron,marginBottom:4}}>{cliente.nombre||"—"}</div>
           {dato("Barrio",cliente.barrio)}
           {dato("Ciudad",cliente.ciudad)}
-          {dato("Teléfono",cliente.telefono)}
-          {(esEmpresa&&aceptado)&&dato("Dirección",cliente.direccion)}
-          {(esEmpresa&&aceptado)&&cliente.direccion&&<div style={{fontSize:12,color:V,marginTop:4}}>✓ Datos de entrega visibles porque el presupuesto fue aceptado.</div>}
+          {cliente.mostrar_telefono&&dato("Teléfono",cliente.telefono)}
+          {(cliente.mostrar_direccion||(esEmpresa&&aceptado))&&dato("Dirección",cliente.direccion)}
+          {(esEmpresa&&aceptado&&!cliente.mostrar_direccion)&&cliente.direccion&&<div style={{fontSize:12,color:V,marginTop:4}}>✓ Dirección visible porque aceptaste este presupuesto.</div>}
         </div>
       </div>
 
@@ -3652,6 +3652,8 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja}){
   const [direccion,setDireccion]=useState(usuario.direccion||"");
   const [barrio,setBarrio]=useState(usuario.barrio||"");
   const [telefono,setTelefono]=useState(usuario.telefono||"");
+  const [mostrarTel,setMostrarTel]=useState(usuario.mostrar_telefono===true);
+  const [mostrarDir,setMostrarDir]=useState(usuario.mostrar_direccion===true);
   const [tipoDoc,setTipoDoc]=useState(usuario.tipo_documento||"DNI");
   const [documento,setDocumento]=useState(usuario.documento||"");
   const [guardandoPriv,setGuardandoPriv]=useState(false);
@@ -3690,7 +3692,7 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja}){
     setErrPriv(""); setOkPriv("");
     if(!nombre.trim()){ setErrPriv("El nombre no puede quedar vacío."); return; }
     setGuardandoPriv(true);
-    const campos={nombre:nombre.trim(),ciudad:ciudad.trim(),direccion:direccion.trim()||null,barrio:barrio.trim()||null,telefono:telefono.trim()||null,tipo_documento:tipoDoc,documento:documento.trim()};
+    const campos={nombre:nombre.trim(),ciudad:ciudad.trim(),direccion:direccion.trim()||null,barrio:barrio.trim()||null,telefono:telefono.trim()||null,mostrar_telefono:mostrarTel,mostrar_direccion:mostrarDir,tipo_documento:tipoDoc,documento:documento.trim()};
     try{
       await db.update("usuarios",campos,`id=eq.${usuario.id}`);
       parchearSesion(campos);
@@ -3791,6 +3793,20 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja}){
                 <input style={S.input} value={telefono} onChange={e=>setTelefono(e.target.value)}/>
               </div>
             </div>
+            {esCliente&&(
+              <div style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:12,marginBottom:14,background:C.suave}}>
+                <div style={{fontSize:14,fontWeight:700,color:C.marron,marginBottom:8}}>🔒 Privacidad: qué ven las empresas en tus pedidos</div>
+                <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",fontSize:16,color:C.texto,marginBottom:8}}>
+                  <input type="checkbox" checked={mostrarTel} onChange={e=>setMostrarTel(e.target.checked)}/>
+                  Mostrar mi teléfono a las empresas
+                </label>
+                <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",fontSize:16,color:C.texto}}>
+                  <input type="checkbox" checked={mostrarDir} onChange={e=>setMostrarDir(e.target.checked)}/>
+                  Mostrar mi dirección a las empresas
+                </label>
+                <div style={{fontSize:13,color:C.textoSuave,marginTop:8}}>Tu nombre, barrio y ciudad siempre se muestran. La dirección, aunque esté apagada, se comparte con la empresa que elijas cuando aceptes su presupuesto (para coordinar la entrega).</div>
+              </div>
+            )}
             <div style={{marginBottom:14}}>
               <label style={S.label}>Correo electrónico</label>
               <input style={{...S.input,background:"#EDE7D5",color:C.textoSuave}} value={usuario.email||""} disabled/>
