@@ -1731,7 +1731,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-06.3</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-06.4</div>
     </div>
   );
 }
@@ -2314,7 +2314,7 @@ function VistaCarpinteria({usuario,notif}){
   const [selAserr,setSelAserr]=useState(null);
   const [cotizacionesAserr,setCotizacionesAserr]=useState([]);
   const [cotAserrAbierta,setCotAserrAbierta]=useState(null);
-  const [ferrF,setFerrF]=useState({descripcion:"",cantidad:"",notas:""});
+  const [ferrF,setFerrF]=useState({items:[{descripcion:"",cantidad:"1"}],notas:""});
   const [misPedidosFerreria,setMisPedidosFerreria]=useState([]);
   const [selFerr,setSelFerr]=useState(null);
   const [cotizacionesFerr,setCotizacionesFerr]=useState([]);
@@ -2855,22 +2855,38 @@ function VistaCarpinteria({usuario,notif}){
           {subFerr==="pedir"&&(
           <div style={S.card}>
             <div style={S.cardTitle}>🔩 Pedir herrajes a ferretería</div>
-            <div style={{marginBottom:12}}>
-              <label style={S.label}>¿Qué herrajes necesitás?</label>
-              <textarea value={ferrF.descripcion} onChange={e=>setFerrF(f=>({...f,descripcion:e.target.value}))} placeholder="Ej: Bisagras de piano 180cm, rieles telescópicos 45cm, manijas negras mate..." style={{...S.input,minHeight:72,resize:"vertical",...marcaErr(intFe,!ferrF.descripcion)}}/>
-              <AvisoErr activo={intFe} cond={!ferrF.descripcion} texto="Falta describir los herrajes"/>
+            <div style={{fontSize:14,color:C.textoSuave,marginBottom:10}}>Agregá un renglón por cada herraje que necesitás, con su cantidad.</div>
+            {ferrF.items.map((it,i)=>(
+              <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:10,marginBottom:8,background:C.suave}}>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}}>
+                  <div style={{flex:1,minWidth:200}}>
+                    <label style={S.label}>Herraje</label>
+                    <input value={it.descripcion} onChange={e=>setFerrF(f=>{const its=[...f.items];its[i]={...its[i],descripcion:e.target.value};return{...f,items:its};})} placeholder="Ej: Bisagra de piano 180cm" style={{...S.input,...marcaErr(intFe,!it.descripcion&&i===0)}}/>
+                  </div>
+                  <div style={{flex:"0 0 100px"}}>
+                    <label style={S.label}>Cantidad</label>
+                    <input type="number" value={it.cantidad} onChange={e=>setFerrF(f=>{const its=[...f.items];its[i]={...its[i],cantidad:e.target.value};return{...f,items:its};})} placeholder="1" style={S.input}/>
+                  </div>
+                </div>
+                {ferrF.items.length>1&&<button onClick={()=>setFerrF(f=>({...f,items:f.items.filter((_,j)=>j!==i)}))} style={{...S.btn("ghost"),color:C.error,borderColor:C.error,fontSize:14,padding:"5px 10px",marginTop:6,minHeight:"auto"}}>🗑️ Quitar renglón</button>}
+              </div>
+            ))}
+            <button onClick={()=>setFerrF(f=>({...f,items:[...f.items,{descripcion:"",cantidad:"1"}]}))} style={{...S.btn("ghost"),width:"100%",justifyContent:"center",marginBottom:14}}>＋ Agregar renglón</button>
+            <AvisoErr activo={intFe} cond={ferrF.items.every(it=>!it.descripcion.trim())} texto="Falta describir al menos un herraje"/>
+            <div style={{marginBottom:0}}>
+              <label style={S.label}>Notas adicionales <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
+              <input value={ferrF.notas} onChange={e=>setFerrF(f=>({...f,notas:e.target.value}))} placeholder="Marca preferida, color, etc." style={S.input}/>
             </div>
-            <div style={S.row}>
-              <div style={S.col()}><label style={S.label}>Cantidad (unidades)</label><input type="number" value={ferrF.cantidad} onChange={e=>setFerrF(f=>({...f,cantidad:e.target.value}))} placeholder="0" style={{...S.input,...marcaErr(intFe,!ferrF.cantidad)}}/><AvisoErr activo={intFe} cond={!ferrF.cantidad} texto="Falta la cantidad"/></div>
-              <div style={S.col()}><label style={S.label}>Notas adicionales</label><input value={ferrF.notas} onChange={e=>setFerrF(f=>({...f,notas:e.target.value}))} placeholder="Marca preferida, color, etc." style={S.input}/></div>
-            </div>
-            <BannerFalta activo={intFe} lista={[[!ferrF.descripcion,"qué herrajes necesitás"],[!ferrF.cantidad,"la cantidad"]]}/>
+            <BannerFalta activo={intFe} lista={[[ferrF.items.every(it=>!it.descripcion.trim()||!nmb(it.cantidad)),"al menos un herraje con cantidad"]]}/>
             <button style={{...S.btn("dark"),marginTop:12}} onClick={async()=>{
-              if(!(ferrF.descripcion&&ferrF.cantidad)){setIntFe(true);return;}
+              const itemsValidos=ferrF.items.filter(it=>it.descripcion.trim()&&nmb(it.cantidad)>0);
+              if(itemsValidos.length===0){setIntFe(true);return;}
               try{
-                await db.insert("pedidos_ferreteria",{carpinteria_id:usuario.id,descripcion:ferrF.descripcion,cantidad:Number(ferrF.cantidad)||0,notas:ferrF.notas});
+                const itemsLimpios=itemsValidos.map(it=>({descripcion:it.descripcion.trim(),cantidad:nmb(it.cantidad)}));
+                const resumen=itemsLimpios.map(it=>it.descripcion).join(", ");
+                await db.insert("pedidos_ferreteria",{carpinteria_id:usuario.id,items:itemsLimpios,descripcion:resumen,cantidad:itemsLimpios.reduce((a,it)=>a+it.cantidad,0),notas:ferrF.notas});
                 notif("¡Pedido enviado a las ferreterías!");
-                setFerrF({descripcion:"",cantidad:"",notas:""});
+                setFerrF({items:[{descripcion:"",cantidad:"1"}],notas:""});
                 setIntFe(false);
                 cargarMisPedidosFerreria();
                 setSubFerr("mis");
@@ -2896,7 +2912,7 @@ function VistaCarpinteria({usuario,notif}){
                     onClick={()=>{ if(abierto){setSelFerr(null);} else {abrirPedidoFerr(p);} }}>
                     <div>
                       <div style={{fontWeight:700,fontSize:18,color:C.marron}}>{p.descripcion}</div>
-                      <div style={{fontSize:17,color:C.textoSuave}}>Cantidad: {p.cantidad} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                      <div style={{fontSize:17,color:C.textoSuave}}>{Array.isArray(p.items)&&p.items.length>0?`${p.items.length} ítem${p.items.length>1?"s":""}`:`Cantidad: ${p.cantidad}`} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
                     </div>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <span style={{whiteSpace:"nowrap",background:p._cantCot>0?C.verde:C.suave,color:p._cantCot>0?"#fff":C.textoSuave,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:20,fontFamily:"'Lato',sans-serif"}}>
@@ -3574,10 +3590,21 @@ function VistaFerreteria({usuario,notif}){
       <div style={S.card}>
         <div style={S.cardTitle}>Pedido de carpintería</div>
         <div style={{background:C.suave,borderRadius:8,padding:12,border:`1px solid ${C.borde}`}}>
-          <div style={S.label}>HERRAJES SOLICITADOS</div>
-          <div style={{fontWeight:700,fontSize:21,color:C.marron,marginTop:4}}>{sel.descripcion}</div>
-          {sel.cantidad&&<div style={{fontSize:17,color:C.textoSuave,marginTop:4}}>Cantidad: {sel.cantidad} unidades</div>}
-          {sel.notas&&<div style={{fontSize:17,color:C.textoSuave,fontStyle:"italic",marginTop:4}}>{sel.notas}</div>}
+          <div style={{...S.label,marginBottom:6}}>HERRAJES SOLICITADOS</div>
+          {Array.isArray(sel.items)&&sel.items.length>0?(
+            <div>
+              {sel.items.map((it,i)=>(
+                <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:i<sel.items.length-1?`1px dashed ${C.borde}`:"none"}}>
+                  <span style={{color:C.marron,fontWeight:700}}>{it.descripcion}</span>
+                  <span style={{color:C.textoSuave,fontFamily:"monospace"}}>x {it.cantidad}</span>
+                </div>
+              ))}
+            </div>
+          ):(
+            <div style={{fontWeight:700,fontSize:21,color:C.marron,marginTop:4}}>{sel.descripcion}</div>
+          )}
+          {!(Array.isArray(sel.items)&&sel.items.length>0)&&sel.cantidad&&<div style={{fontSize:17,color:C.textoSuave,marginTop:4}}>Cantidad: {sel.cantidad} unidades</div>}
+          {sel.notas&&<div style={{fontSize:17,color:C.textoSuave,fontStyle:"italic",marginTop:8}}>📝 {sel.notas}</div>}
         </div>
       </div>
 
@@ -3734,7 +3761,7 @@ function VistaFerreteria({usuario,notif}){
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div>
               <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:21}}>{p.descripcion}</div>
-              <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>Cantidad: {p.cantidad} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+              <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{Array.isArray(p.items)&&p.items.length>0?`${p.items.length} ítem${p.items.length>1?"s":""}`:`Cantidad: ${p.cantidad}`} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
             </div>
             <span style={{alignSelf:"flex-start",whiteSpace:"nowrap",background:et.bg,color:et.fg,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:20,fontFamily:"'Lato',sans-serif"}}>{et.t}</span>
           </div>
