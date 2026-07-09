@@ -1699,12 +1699,12 @@ function AuthScreen({onAuth}){
 
         <div style={{marginBottom:12}}>
           <label style={S.label}>Email</label>
-          <input type="email" autoCapitalize="none" autoCorrect="off" spellCheck="false" value={email} onChange={e=>setEmail(e.target.value.replace(/\s+/g,""))} placeholder="tu@email.com" style={S.input}/>
+          <input type="email" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck="false" value={email} onChange={e=>setEmail(e.target.value.replace(/\s+/g,""))} placeholder="tu@email.com" style={S.input}/>
         </div>
         <div style={{marginBottom:16}}>
           <label style={S.label}>Contraseña</label>
           <div style={{position:"relative"}}>
-            <input type={verPass?"text":"password"} value={pass} onChange={e=>setPass(e.target.value)} placeholder="Mínimo 6 caracteres" style={{...S.input,paddingRight:46}} onKeyDown={e=>{if(e.key==="Enter")submit();}}/>
+            <input type={verPass?"text":"password"} autoComplete={modo==="registro"?"new-password":"current-password"} value={pass} onChange={e=>setPass(e.target.value)} placeholder="Mínimo 6 caracteres" style={{...S.input,paddingRight:46}} onKeyDown={e=>{if(e.key==="Enter")submit();}}/>
             <button type="button" onClick={()=>setVerPass(v=>!v)} aria-label="Mostrar u ocultar contraseña" style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",minHeight:"auto",background:"none",border:"none",cursor:"pointer",fontSize:20,padding:6,lineHeight:1}}>{verPass?"🙈":"👁️"}</button>
           </div>
         </div>
@@ -1731,7 +1731,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-07.1</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-09.1</div>
     </div>
   );
 }
