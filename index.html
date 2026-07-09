@@ -1739,7 +1739,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-09.2</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-09.3</div>
     </div>
   );
 }
@@ -3424,7 +3424,7 @@ function VistaFlete({usuario,notif}){
   // ---- Lado fletero: recibe pedidos y cotiza ----
   const [pedidos,setPedidos]=useState([]);
   const [sel,setSel]=useState(null);
-  const [cotF,setCotF]=useState({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
+  const [cotF,setCotF]=useState({items:[{descripcion:"",precio:"",cantidad:"1",modo:"viaje"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
   const [miCot,setMiCot]=useState(null);
   const [solSel,setSolSel]=useState({});
   const [enviando,setEnviando]=useState(false);
@@ -3461,7 +3461,7 @@ function VistaFlete({usuario,notif}){
 
   const enviarCot=async()=>{
     if(!sel||enviando||yaEnvio)return;
-    const itemsValidos=(cotF.items||[]).filter(it=>it.descripcion.trim()&&nmb(it.precio)>0&&nmb(it.cantidad)>0);
+    const itemsValidos=(cotF.items||[]).filter(it=>it.descripcion.trim()&&nmb(it.precio)>0&&((it.modo||"viaje")==="viaje"||nmb(it.cantidad)>0));
     if(itemsValidos.length===0){alert("Cargá al menos un ítem con descripción, precio y cantidad.");return;}
     setEnviando(true);
     try{
@@ -3478,12 +3478,12 @@ function VistaFlete({usuario,notif}){
         descuento_valor:cotF.usarDesc?nmb(cotF.descValor):null,
         iva_porcentaje:cotF.usarIva?nmb(cotF.ivaPct):null,
         tiempo_entrega:cotF.tiempo,
-        presupuesto_items:itemsValidos.map((it)=>({descripcion:it.descripcion.trim(),precio:nmb(it.precio),cantidad:nmb(it.cantidad),importe:nmb(it.precio)*nmb(it.cantidad)}))
+        presupuesto_items:itemsValidos.map((it)=>{const modo=it.modo||"viaje";const cant=modo==="viaje"?1:nmb(it.cantidad);const desc=modo==="hora"?`${it.descripcion.trim()} (por hora × ${cant} hs)`:`${it.descripcion.trim()} (por viaje)`;return{descripcion:desc,precio:nmb(it.precio),cantidad:cant,importe:nmb(it.precio)*cant};})
       };
       await db.insert("cotizaciones_flete",datos);
       // NO se toca ningún estado global del pedido: sobre cerrado — cada flete ve solo su propio estado.
       notif("¡Cotización enviada!");
-      setCotF({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
+      setCotF({items:[{descripcion:"",precio:"",cantidad:"1",modo:"viaje"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
       setYaEnvio(true);
       setMiCot({...datos,items:datos.presupuesto_items,created_at:new Date().toISOString()});
       setPedidos(ps=>ps.map(p=>p.id===sel.id?{...p,_miEstado:"cotizado"}:p));
@@ -3587,28 +3587,41 @@ function VistaFlete({usuario,notif}){
           {(() => {
             const calc=calcularPresup(cotF.items,cotF);
             const setItem=(i,campo,val)=>setCotF(f=>{const its=[...f.items];its[i]={...its[i],[campo]:val};return{...f,items:its};});
-            const addItem=()=>setCotF(f=>({...f,items:[...f.items,{descripcion:"",precio:"",cantidad:"1"}]}));
+            const addItem=()=>setCotF(f=>({...f,items:[...f.items,{descripcion:"",precio:"",cantidad:"1",modo:"viaje"}]}));
             const delItem=(i)=>setCotF(f=>({...f,items:f.items.length>1?f.items.filter((_,j)=>j!==i):f.items}));
             return(
             <div>
-              <div style={{fontSize:14,color:C.textoSuave,marginBottom:10}}>Agregá un renglón por cada concepto: flete, ayudante extra, embalaje/empaquetado, etc.</div>
+              <div style={{fontSize:14,color:C.textoSuave,marginBottom:10}}>Agregá un renglón por cada concepto: flete, ayudante extra, embalaje/empaquetado, etc. Cada renglón puede cobrarse por hora o por viaje.</div>
               {cotF.items.map((it,i)=>{
-                const imp=nmb(it.precio)*nmb(it.cantidad);
+                const modo=it.modo||"viaje";
+                const cant=modo==="viaje"?1:nmb(it.cantidad);
+                const imp=nmb(it.precio)*cant;
                 return(
                 <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:10,marginBottom:8,background:C.suave}}>
                   <div style={{marginBottom:8}}>
                     <label style={S.label}>Descripción</label>
                     <input value={it.descripcion} onChange={e=>setItem(i,"descripcion",e.target.value)} placeholder="Ej: Flete camioneta, Ayudante extra, Embalaje" style={S.input}/>
                   </div>
+                  <div style={{marginBottom:8}}>
+                    <label style={S.label}>Modalidad</label>
+                    <div style={{display:"flex",gap:6}}>
+                      {[["viaje","Por viaje"],["hora","Por hora"]].map(([m,l])=>(
+                        <button key={m} type="button" onClick={()=>setItem(i,"modo",m)}
+                          style={{flex:1,padding:"8px 10px",borderRadius:8,cursor:"pointer",fontSize:15,fontWeight:700,fontFamily:"'Lato',sans-serif",border:`1px solid ${modo===m?C.marron:C.borde}`,background:modo===m?C.marron:"transparent",color:modo===m?C.crema:C.textoSuave}}>{l}</button>
+                      ))}
+                    </div>
+                  </div>
                   <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}}>
                     <div style={{flex:1,minWidth:110}}>
-                      <label style={S.label}>Precio ($)</label>
+                      <label style={S.label}>{modo==="hora"?"Precio por hora ($)":"Precio ($)"}</label>
                       <input type="number" value={it.precio} onChange={e=>setItem(i,"precio",e.target.value)} placeholder="0" style={S.input}/>
                     </div>
+                    {modo==="hora"&&(
                     <div style={{flex:"0 0 90px"}}>
-                      <label style={S.label}>Cantidad</label>
+                      <label style={S.label}>Horas</label>
                       <input type="number" value={it.cantidad} onChange={e=>setItem(i,"cantidad",e.target.value)} placeholder="1" style={S.input}/>
                     </div>
+                    )}
                     <div style={{flex:1,minWidth:110,textAlign:"right"}}>
                       <label style={S.label}>Importe</label>
                       <div style={{fontWeight:800,color:C.marron,fontSize:17,padding:"10px 0"}}>{fmtPeso(imp)}</div>
@@ -3621,8 +3634,8 @@ function VistaFlete({usuario,notif}){
               <button onClick={addItem} style={{...S.btn("ghost"),width:"100%",justifyContent:"center",marginBottom:14}}>＋ Agregar renglón</button>
 
               <div style={{marginBottom:12}}>
-                <label style={S.label}>Tiempo estimado <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
-                <input value={cotF.tiempo} onChange={e=>setCotF(f=>({...f,tiempo:e.target.value}))} placeholder="Ej: mismo día, 24hs" style={S.input}/>
+                <label style={S.label}>Fecha y horario que proponés <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
+                <input value={cotF.tiempo} onChange={e=>setCotF(f=>({...f,tiempo:e.target.value}))} placeholder="Ej: Jueves 15 a la mañana, o 'a coordinar'" style={S.input}/>
               </div>
 
               <div style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:10,marginBottom:10}}>
@@ -4933,7 +4946,7 @@ function App(){
 
   const {usuario}=sesion;
   const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🎨"};
-  const navPrincipal=usuario.tipo==="cliente"?"🪑 Mis pedidos":usuario.tipo==="carpinteria"?"🔨 Pedidos":usuario.tipo==="aserradero"?"🪵 Pedidos":usuario.tipo==="ferreteria"?"🔩 Pedidos":usuario.tipo==="pintureria"?"🎨 Pedidos":"📅 Mi agenda";
+  const navPrincipal=usuario.tipo==="cliente"?"🪑 Mis pedidos":usuario.tipo==="carpinteria"?"🔨 Pedidos":usuario.tipo==="aserradero"?"🪵 Pedidos":usuario.tipo==="ferreteria"?"🔩 Pedidos":usuario.tipo==="pintureria"?"🎨 Pedidos":"🚚 Pedidos";
 
   return(
     <div style={S.app}>
