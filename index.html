@@ -1353,6 +1353,14 @@ const cmToIn = c=>(c/2.54).toFixed(2);
 const inToCm = i=>(i*2.54).toFixed(1);
 const ftToCm = f=>(f*30.48).toFixed(1);
 
+// ─── HELPERS DE VALIDACIÓN DE FORMULARIOS (globales) ────────────────────────
+const marcaErr=(activo,cond)=>(activo&&cond)?{border:`2px solid ${C.rojo}`}:{};
+const AvisoErr=({activo,cond,texto})=>(activo&&cond)?<div style={{color:C.rojo,fontSize:15,marginTop:4,fontWeight:600}}>⚠️ {texto||"Falta completar"}</div>:null;
+const BannerFalta=({activo,lista})=>{
+  const f=(lista||[]).filter(x=>x[0]).map(x=>x[1]);
+  return (activo&&f.length>0)?<div style={{marginTop:12,padding:"10px 14px",background:"#FDECEA",border:`1px solid ${C.rojo}`,borderRadius:10,color:C.rojo,fontSize:16,fontWeight:600}}>⚠️ Para enviar te falta completar: {f.join(", ")}.</div>:null;
+};
+
 // ─── PRESUPUESTOS: cálculo de totales ───────────────────────────────────────
 const nmb = v => { const n=Number(v); return isFinite(n)?n:0; };
 const fmtPeso = v => "$ "+nmb(v).toLocaleString("es-AR",{minimumFractionDigits:0,maximumFractionDigits:2});
@@ -1731,7 +1739,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-09.1</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-09.2</div>
     </div>
   );
 }
@@ -3411,147 +3419,422 @@ function VistaAserradero({usuario,notif}){
 
 // ─── VISTA FLETE ──────────────────────────────────────────────────────────────
 function VistaFlete({usuario,notif}){
-  const [tab,setTab]=useState(usuario.tipo==="flete"?"agenda":"buscar");
-  const [agenda,setAgenda]=useState([]);
-  const [fletes,setFletes]=useState([]);
-  const [pedF,setPedF]=useState({origen:"",destino:"",descripcion:"",fecha:""});
+  const esFlete=usuario.tipo==="flete";
 
-  const cargarAgenda=useCallback(async()=>{
-    if(usuario.tipo!=="flete")return;
+  // ---- Lado fletero: recibe pedidos y cotiza ----
+  const [pedidos,setPedidos]=useState([]);
+  const [sel,setSel]=useState(null);
+  const [cotF,setCotF]=useState({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
+  const [miCot,setMiCot]=useState(null);
+  const [solSel,setSolSel]=useState({});
+  const [enviando,setEnviando]=useState(false);
+  const [yaEnvio,setYaEnvio]=useState(false);
+  const [filtro,setFiltro]=useState("cotizar");
+
+  const cargar=useCallback(async()=>{
+    if(!esFlete)return;
     try{
-      const hoy=new Date();
-      const dias=Array.from({length:7},(_,i)=>{const d=new Date(hoy);d.setDate(d.getDate()+i);return d.toISOString().slice(0,10);});
-      const data=await db.select("agenda_flete",`?flete_id=eq.${usuario.id}&order=fecha.asc`);
-      const mapa=Object.fromEntries(data.map(d=>[d.fecha,d]));
-      setAgenda(dias.map(f=>mapa[f]||{flete_id:usuario.id,fecha:f,estado:"disponible",nuevo:true}));
+      const d=await db.select("pedidos_flete","?order=created_at.desc");
+      let mias={};
+      try{
+        const mc=await db.select("cotizaciones_flete",`?flete_id=eq.${usuario.id}&select=pedido_id`);
+        mc.forEach(c=>{mias[c.pedido_id]=true;});
+      }catch{}
+      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null})));
     }catch{}
-  },[usuario]);
+  },[usuario.id,esFlete]);
+  useEffect(()=>{cargar();const t=setInterval(cargar,15000);return()=>clearInterval(t);},[cargar]);
 
-  const cargarFletes=useCallback(async()=>{
+  const abrirPedido=async(p)=>{
+    setSel(p); setYaEnvio(false); setMiCot(null);
     try{
-      const data=await db.select("usuarios","?tipo=eq.flete");
-      const con=await Promise.all(data.map(async fl=>{
-        const ag=await db.select("agenda_flete",`?flete_id=eq.${fl.id}&order=fecha.asc&limit=5`);
-        return{...fl,agenda:ag};
+      const d=await db.select("cotizaciones_flete",`?pedido_id=eq.${p.id}&flete_id=eq.${usuario.id}&limit=1`);
+      if(d&&d.length>0){
+        let items=[];
+        try{ items=Array.isArray(d[0].presupuesto_items)?d[0].presupuesto_items:JSON.parse(d[0].presupuesto_items||"[]"); }catch{items=[];}
+        setMiCot({...d[0],items});
+        setYaEnvio(true);
+      }
+      try{ const so=await db.select("usuarios",`?id=eq.${p.solicitante_id}&limit=1`); setSolSel(so[0]||{}); }catch{}
+    }catch{}
+  };
+
+  const enviarCot=async()=>{
+    if(!sel||enviando||yaEnvio)return;
+    const itemsValidos=(cotF.items||[]).filter(it=>it.descripcion.trim()&&nmb(it.precio)>0&&nmb(it.cantidad)>0);
+    if(itemsValidos.length===0){alert("Cargá al menos un ítem con descripción, precio y cantidad.");return;}
+    setEnviando(true);
+    try{
+      let numero=1;
+      try{
+        const prev=await db.select("cotizaciones_flete",`?flete_id=eq.${usuario.id}&select=numero_presupuesto&order=numero_presupuesto.desc.nullslast&limit=1`);
+        if(prev&&prev.length>0&&prev[0].numero_presupuesto!=null) numero=Number(prev[0].numero_presupuesto)+1;
+      }catch{}
+      const calc=calcularPresup(itemsValidos,cotF);
+      const datos={
+        pedido_id:sel.id, flete_id:usuario.id, numero_presupuesto:numero,
+        precio_total:calc.total,
+        descuento_tipo:cotF.usarDesc?cotF.descTipo:null,
+        descuento_valor:cotF.usarDesc?nmb(cotF.descValor):null,
+        iva_porcentaje:cotF.usarIva?nmb(cotF.ivaPct):null,
+        tiempo_entrega:cotF.tiempo,
+        presupuesto_items:itemsValidos.map((it)=>({descripcion:it.descripcion.trim(),precio:nmb(it.precio),cantidad:nmb(it.cantidad),importe:nmb(it.precio)*nmb(it.cantidad)}))
+      };
+      await db.insert("cotizaciones_flete",datos);
+      // NO se toca ningún estado global del pedido: sobre cerrado — cada flete ve solo su propio estado.
+      notif("¡Cotización enviada!");
+      setCotF({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
+      setYaEnvio(true);
+      setMiCot({...datos,items:datos.presupuesto_items,created_at:new Date().toISOString()});
+      setPedidos(ps=>ps.map(p=>p.id===sel.id?{...p,_miEstado:"cotizado"}:p));
+    }catch(e){alert("Error: "+e.message);}
+    setEnviando(false);
+  };
+
+  // ---- Lado solicitante: pide flete y ve cotizaciones ----
+  const [subFl,setSubFl]=useState("pedir");
+  const [pedF,setPedF]=useState({origen:"",destino:"",descripcion:"",fecha:"",notas:""});
+  const [misPedidos,setMisPedidos]=useState([]);
+  const [selPedido,setSelPedido]=useState(null);
+  const [cotizacionesFlete,setCotizacionesFlete]=useState([]);
+  const [fleteAbierto,setFleteAbierto]=useState(null);
+  const [intFl,setIntFl]=useState(false);
+
+  const cargarMisPedidos=useCallback(async()=>{
+    if(esFlete)return;
+    try{
+      const d=await db.select("pedidos_flete",`?solicitante_id=eq.${usuario.id}&order=created_at.desc`);
+      let conteo={};
+      if(d.length){
+        try{
+          const ids=d.map(p=>p.id).join(",");
+          const cots=await db.select("cotizaciones_flete",`?pedido_id=in.(${ids})&select=pedido_id`);
+          cots.forEach(c=>{conteo[c.pedido_id]=(conteo[c.pedido_id]||0)+1;});
+        }catch{}
+      }
+      setMisPedidos(d.map(p=>({...p,_cantCot:conteo[p.id]||0})));
+    }catch{}
+  },[usuario.id,esFlete]);
+  useEffect(()=>{cargarMisPedidos();},[cargarMisPedidos]);
+
+  const abrirMiPedido=async(p)=>{
+    setSelPedido(p);
+    setFleteAbierto(null);
+    try{
+      const d=await db.select("cotizaciones_flete",`?pedido_id=eq.${p.id}&order=created_at.asc`);
+      const enr=await Promise.all(d.map(async ct=>{
+        const fl=await db.select("usuarios",`?id=eq.${ct.flete_id}&limit=1`);
+        let items=[];
+        try{ items=Array.isArray(ct.presupuesto_items)?ct.presupuesto_items:JSON.parse(ct.presupuesto_items||"[]"); }catch{items=[];}
+        return{...ct,fleteNombre:fl[0]?.nombre||"Flete",fleteObj:fl[0]||{},items};
       }));
-      setFletes(con);
-    }catch{}
-  },[]);
-
-  useEffect(()=>{cargarAgenda();cargarFletes();},[cargarAgenda,cargarFletes]);
-
-  const cambiarEstado=async(item,nuevoEstado)=>{
-    try{
-      if(item.nuevo||!item.id){await db.insert("agenda_flete",{flete_id:usuario.id,fecha:item.fecha,estado:nuevoEstado});}
-      else{await db.update("agenda_flete",{estado:nuevoEstado},`id=eq.${item.id}`);}
-      notif("Agenda actualizada");cargarAgenda();
+      setCotizacionesFlete(enr);
     }catch{}
   };
 
-  const solicitarFlete=async(fleteId)=>{
-    if(!pedF.origen||!pedF.destino){alert("Completá origen y destino");return;}
+  const enviarPedido=async()=>{
+    if(!(pedF.origen&&pedF.destino)){setIntFl(true);return;}
     try{
-      await db.insert("pedidos_flete",{solicitante_id:usuario.id,flete_id:fleteId,...pedF});
-      notif("¡Solicitud enviada!");
-      setPedF({origen:"",destino:"",descripcion:"",fecha:""});
-    }catch{}
+      await db.insert("pedidos_flete",{solicitante_id:usuario.id,origen:pedF.origen,destino:pedF.destino,descripcion_carga:pedF.descripcion,fecha_deseada:pedF.fecha||null,notas:pedF.notas});
+      notif("¡Solicitud enviada a los fletes!");
+      setPedF({origen:"",destino:"",descripcion:"",fecha:"",notas:""});
+      setIntFl(false);
+      cargarMisPedidos();
+      setSubFl("mis");
+    }catch(e){alert("Error: "+e.message);}
   };
 
-  const tabStyle=(id)=>({background:tab===id?C.marron:"transparent",color:tab===id?C.crema:C.textoSuave,border:tab===id?"none":`1px solid ${C.borde}`,borderRadius:8,padding:"7px 14px",cursor:"pointer",fontSize:17,fontWeight:700,fontFamily:"'Lato',sans-serif"});
+  const tabStyle=(id)=>({background:filtro===id?C.marron:"transparent",color:filtro===id?C.crema:C.textoSuave,border:filtro===id?"none":`1px solid ${C.borde}`,borderRadius:8,padding:"7px 14px",cursor:"pointer",fontSize:17,fontWeight:700,fontFamily:"'Lato',sans-serif"});
 
-  return(
-    <div>
-      {usuario.tipo==="flete"&&(
-        <div style={{display:"flex",gap:7,marginBottom:16}}>
-          {[["agenda","📅 Mi agenda"],["buscar","🚚 Ver todos"]].map(([id,l])=>(
-            <button key={id} style={tabStyle(id)} onClick={()=>setTab(id)}>{l}</button>
-          ))}
-        </div>
-      )}
-
-      {tab==="agenda"&&usuario.tipo==="flete"&&(
+  // ================= VISTA FLETERO =================
+  if(esFlete){
+    if(sel){
+      return(
+      <div className="fade">
+        <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSel(null)}>← Volver</button>
         <div style={S.card}>
-          <div style={S.cardTitle}>📅 Mi disponibilidad — próximos 7 días</div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(120px,1fr))",gap:10}}>
-            {agenda.map((d,i)=>(
-              <div key={i} style={{background:C.input,border:`2px solid ${EC[d.estado||"disponible"]}44`,borderRadius:10,padding:10,textAlign:"center"}}>
-                <div style={{fontSize:17,color:C.textoSuave,marginBottom:6,fontWeight:700}}>{new Date(d.fecha+"T12:00").toLocaleDateString("es-AR",{weekday:"short",day:"numeric",month:"short"})}</div>
-                <Badge e={d.estado||"disponible"}/>
-                <div style={{display:"flex",gap:4,justifyContent:"center",marginTop:8}}>
-                  {["disponible","en_viaje","ocupado"].map(e=>(
-                    <button key={e} style={{...S.tag((d.estado||"disponible")===e),padding:"3px 6px",fontSize:15}} onClick={()=>cambiarEstado(d,e)}>
-                      {e==="disponible"?"✅":e==="en_viaje"?"🚚":"❌"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
+          <div style={S.cardTitle}>Pedido de flete</div>
+          <div style={{background:C.suave,borderRadius:8,padding:12,border:`1px solid ${C.borde}`}}>
+            <div style={S.row}>
+              <div style={S.col()}><div style={S.label}>Origen</div><div style={{fontWeight:700,color:C.marron}}>{sel.origen}</div></div>
+              <div style={S.col()}><div style={S.label}>Destino</div><div style={{fontWeight:700,color:C.marron}}>{sel.destino}</div></div>
+            </div>
+            {sel.fecha_deseada&&<div style={{fontSize:17,color:C.textoSuave,marginTop:8}}>📅 Fecha deseada: {new Date(sel.fecha_deseada+"T12:00").toLocaleDateString("es-AR")}</div>}
+            {sel.descripcion_carga&&<div style={{fontSize:17,color:C.textoSuave,marginTop:6,fontStyle:"italic"}}>📦 {sel.descripcion_carga}</div>}
+            {sel.notas&&<div style={{fontSize:17,color:C.textoSuave,marginTop:6,fontStyle:"italic"}}>📝 {sel.notas}</div>}
           </div>
         </div>
-      )}
 
-      {(tab==="buscar"||usuario.tipo!=="flete")&&(
-        <div>
-          <div style={S.secTitle}>🚚 Servicios de flete</div>
-          <div style={{...S.card,marginBottom:14}}>
-            <div style={S.cardTitle}>📤 Solicitar presupuesto de flete</div>
-            <div style={S.row}>
-              <div style={S.col()}><label style={S.label}>Origen</label><input value={pedF.origen} onChange={e=>setPedF(f=>({...f,origen:e.target.value}))} placeholder="Dirección de origen" style={S.input}/></div>
-              <div style={S.col()}><label style={S.label}>Destino</label><input value={pedF.destino} onChange={e=>setPedF(f=>({...f,destino:e.target.value}))} placeholder="Dirección de destino" style={S.input}/></div>
+        {miCot?(
+        <div style={S.card}>
+          <div style={S.cardTitle}>✅ Cotización enviada</div>
+          <div style={{fontSize:15,color:C.textoSuave,marginBottom:10}}>Así la ve quien pidió el flete:</div>
+          <PresupuestoFormato
+            empresa={usuario}
+            cliente={{...solSel,mostrar_telefono:true,mostrar_direccion:true}}
+            items={miCot.items||[]}
+            opts={{descuento_tipo:miCot.descuento_tipo,descuento_valor:miCot.descuento_valor,iva_pct:miCot.iva_porcentaje}}
+            numero={miCot.numero_presupuesto!=null?miCot.numero_presupuesto:""}
+            fecha={miCot.created_at?new Date(miCot.created_at).toLocaleDateString("es-AR"):null}
+            tiempoEntrega={miCot.tiempo_entrega}
+            esEmpresa={true}
+            aceptado={false}
+          />
+        </div>
+        ):(
+        <div style={S.card}>
+          <div style={S.cardTitle}>💰 Tu cotización</div>
+          {(() => {
+            const calc=calcularPresup(cotF.items,cotF);
+            const setItem=(i,campo,val)=>setCotF(f=>{const its=[...f.items];its[i]={...its[i],[campo]:val};return{...f,items:its};});
+            const addItem=()=>setCotF(f=>({...f,items:[...f.items,{descripcion:"",precio:"",cantidad:"1"}]}));
+            const delItem=(i)=>setCotF(f=>({...f,items:f.items.length>1?f.items.filter((_,j)=>j!==i):f.items}));
+            return(
+            <div>
+              <div style={{fontSize:14,color:C.textoSuave,marginBottom:10}}>Agregá un renglón por cada concepto: flete, ayudante extra, embalaje/empaquetado, etc.</div>
+              {cotF.items.map((it,i)=>{
+                const imp=nmb(it.precio)*nmb(it.cantidad);
+                return(
+                <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:10,marginBottom:8,background:C.suave}}>
+                  <div style={{marginBottom:8}}>
+                    <label style={S.label}>Descripción</label>
+                    <input value={it.descripcion} onChange={e=>setItem(i,"descripcion",e.target.value)} placeholder="Ej: Flete camioneta, Ayudante extra, Embalaje" style={S.input}/>
+                  </div>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}}>
+                    <div style={{flex:1,minWidth:110}}>
+                      <label style={S.label}>Precio ($)</label>
+                      <input type="number" value={it.precio} onChange={e=>setItem(i,"precio",e.target.value)} placeholder="0" style={S.input}/>
+                    </div>
+                    <div style={{flex:"0 0 90px"}}>
+                      <label style={S.label}>Cantidad</label>
+                      <input type="number" value={it.cantidad} onChange={e=>setItem(i,"cantidad",e.target.value)} placeholder="1" style={S.input}/>
+                    </div>
+                    <div style={{flex:1,minWidth:110,textAlign:"right"}}>
+                      <label style={S.label}>Importe</label>
+                      <div style={{fontWeight:800,color:C.marron,fontSize:17,padding:"10px 0"}}>{fmtPeso(imp)}</div>
+                    </div>
+                  </div>
+                  {cotF.items.length>1&&<button onClick={()=>delItem(i)} style={{...S.btn("ghost"),color:C.error,borderColor:C.error,fontSize:14,padding:"5px 10px",marginTop:6,minHeight:"auto"}}>🗑️ Quitar renglón</button>}
+                </div>
+                );
+              })}
+              <button onClick={addItem} style={{...S.btn("ghost"),width:"100%",justifyContent:"center",marginBottom:14}}>＋ Agregar renglón</button>
+
+              <div style={{marginBottom:12}}>
+                <label style={S.label}>Tiempo estimado <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
+                <input value={cotF.tiempo} onChange={e=>setCotF(f=>({...f,tiempo:e.target.value}))} placeholder="Ej: mismo día, 24hs" style={S.input}/>
+              </div>
+
+              <div style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:10,marginBottom:10}}>
+                <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:16,color:C.marron,fontWeight:700}}>
+                  <input type="checkbox" checked={cotF.usarDesc} onChange={e=>setCotF(f=>({...f,usarDesc:e.target.checked}))}/>
+                  Aplicar descuento
+                </label>
+                {cotF.usarDesc&&(
+                  <div style={{display:"flex",gap:8,marginTop:8,alignItems:"flex-end"}}>
+                    <div style={{flex:"0 0 140px"}}>
+                      <label style={S.label}>Tipo</label>
+                      <select value={cotF.descTipo} onChange={e=>setCotF(f=>({...f,descTipo:e.target.value}))} style={S.input}>
+                        <option value="porcentaje">Porcentaje (%)</option>
+                        <option value="monto">Monto fijo ($)</option>
+                      </select>
+                    </div>
+                    <div style={{flex:1}}>
+                      <label style={S.label}>{cotF.descTipo==="porcentaje"?"% de descuento":"Monto ($)"}</label>
+                      <input type="number" value={cotF.descValor} onChange={e=>setCotF(f=>({...f,descValor:e.target.value}))} placeholder="0" style={S.input}/>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:10,marginBottom:14}}>
+                <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:16,color:C.marron,fontWeight:700}}>
+                  <input type="checkbox" checked={cotF.usarIva} onChange={e=>setCotF(f=>({...f,usarIva:e.target.checked}))}/>
+                  Agregar IVA
+                </label>
+                {cotF.usarIva&&(
+                  <div style={{marginTop:8}}>
+                    <label style={S.label}>% de IVA</label>
+                    <input type="number" value={cotF.ivaPct} onChange={e=>setCotF(f=>({...f,ivaPct:e.target.value}))} placeholder="21" style={{...S.input,maxWidth:160}}/>
+                  </div>
+                )}
+              </div>
+
+              <div style={{marginBottom:12}}><label style={S.label}>Detalle / condiciones <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
+                <textarea value={cotF.detalle||""} onChange={e=>setCotF(f=>({...f,detalle:e.target.value}))} placeholder="Horario estimado, condiciones, observaciones..." style={{...S.input,minHeight:56,resize:"vertical"}}/>
+              </div>
+
+              <div style={{background:C.suave,borderRadius:10,padding:12,border:`1px solid ${C.borde}`,marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:6,fontSize:16}}><span style={{color:C.textoSuave}}>Subtotal</span><b>{fmtPeso(calc.subtotal)}</b></div>
+                {cotF.usarDesc&&calc.descuento>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:6,fontSize:16,color:C.error}}><span>Descuento{cotF.descTipo==="porcentaje"?` (${nmb(cotF.descValor)}%)`:""}</span><b>− {fmtPeso(calc.descuento)}</b></div>}
+                {cotF.usarIva&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:6,fontSize:16}}><span style={{color:C.textoSuave}}>IVA ({nmb(cotF.ivaPct)}%)</span><b>{fmtPeso(calc.iva)}</b></div>}
+                <div style={{display:"flex",justifyContent:"space-between",borderTop:`2px solid ${C.verde}`,paddingTop:8,marginTop:4}}><span style={{fontWeight:800,fontSize:19,color:C.marron}}>TOTAL</span><b style={{fontWeight:800,fontSize:22,color:C.verde}}>{fmtPeso(calc.total)}</b></div>
+              </div>
+
+              <button style={{...S.btn("dark"),opacity:enviando||yaEnvio?0.6:1}} onClick={enviarCot} disabled={enviando||yaEnvio}>
+                {enviando?"⟳ Enviando...":(yaEnvio?"✅ Cotización enviada":"📤 Enviar cotización")}
+              </button>
             </div>
-            <div style={{...S.row,marginTop:10}}>
-              <div style={S.col()}><label style={S.label}>Descripción de la carga</label><input value={pedF.descripcion} onChange={e=>setPedF(f=>({...f,descripcion:e.target.value}))} placeholder="Ej: Mesa de roble 220×100, 80kg" style={S.input}/></div>
-              <div style={{flex:.5}}><label style={S.label}>Fecha deseada</label><input type="date" value={pedF.fecha} onChange={e=>setPedF(f=>({...f,fecha:e.target.value}))} style={S.input}/></div>
+            );
+          })()}
+        </div>
+        )}
+
+        <div style={S.card}>
+          <div style={S.cardTitle}>💬 Chat con solicitante</div>
+          <Chat pedidoId={sel.id} tipoPedido="flete" miUsuario={usuario} otroUsuario={{id:sel.solicitante_id}}/>
+        </div>
+      </div>
+      );
+    }
+
+    const cuenta={
+      cotizar:pedidos.filter(p=>!p._miEstado).length,
+      cotizados:pedidos.filter(p=>p._miEstado).length,
+      todos:pedidos.length,
+    };
+    const lista=pedidos.filter(p=>{
+      if(filtro==="cotizar")return !p._miEstado;
+      if(filtro==="cotizados")return !!p._miEstado;
+      return true;
+    });
+
+    return(
+      <div>
+        <div style={S.secTitle}>🚚 Pedidos de flete</div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
+          {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["todos","Todos"]].map(([id,l])=>(
+            <button key={id} style={tabStyle(id)} onClick={()=>setFiltro(id)}>{l} ({cuenta[id]})</button>
+          ))}
+        </div>
+        {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
+        {pedidos.length>0&&lista.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría</div>}
+        {lista.map(p=>{
+          const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
+          return(
+          <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>abrirPedido(p)}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor=C.borde;e.currentTarget.style.transform="none";}}>
+            <div style={{display:"flex",justifyContent:"space-between"}}>
+              <div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:17}}>{p.origen} → {p.destino}</div>
+                <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{p.fecha_deseada?new Date(p.fecha_deseada+"T12:00").toLocaleDateString("es-AR"):"Sin fecha definida"} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+              </div>
+              <span style={{alignSelf:"flex-start",whiteSpace:"nowrap",background:et.bg,color:et.fg,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:20,fontFamily:"'Lato',sans-serif"}}>{et.t}</span>
             </div>
+          </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // ================= VISTA SOLICITANTE (cualquier tipo que no sea flete) =================
+  return(
+    <div>
+      <div style={{display:"flex",gap:7,marginBottom:16}}>
+        {[["pedir","📤 Pedir flete"],["mis","📋 Mis pedidos"]].map(([id,l])=>(
+          <button key={id} style={{background:subFl===id?C.marron:"transparent",color:subFl===id?C.crema:C.textoSuave,border:subFl===id?"none":`1px solid ${C.borde}`,borderRadius:8,padding:"7px 14px",cursor:"pointer",fontSize:17,fontWeight:700,fontFamily:"'Lato',sans-serif"}} onClick={()=>setSubFl(id)}>{l}</button>
+        ))}
+      </div>
+
+      {subFl==="pedir"&&(
+        <div style={S.card}>
+          <div style={S.cardTitle}>🚚 Solicitar flete</div>
+          <div style={{fontSize:14,color:C.textoSuave,marginBottom:10}}>Se envía a todos los fletes registrados. Cada uno cotiza por su cuenta, sin ver las cotizaciones de los demás.</div>
+          <div style={S.row}>
+            <div style={S.col()}><label style={S.label}>Origen</label><input value={pedF.origen} onChange={e=>setPedF(f=>({...f,origen:e.target.value}))} placeholder="Dirección de origen" style={{...S.input,...marcaErr(intFl,!pedF.origen)}}/></div>
+            <div style={S.col()}><label style={S.label}>Destino</label><input value={pedF.destino} onChange={e=>setPedF(f=>({...f,destino:e.target.value}))} placeholder="Dirección de destino" style={{...S.input,...marcaErr(intFl,!pedF.destino)}}/></div>
+          </div>
+          <BannerFalta activo={intFl} lista={[[!pedF.origen,"el origen"],[!pedF.destino,"el destino"]]}/>
+          <div style={{...S.row,marginTop:10}}>
+            <div style={S.col()}><label style={S.label}>Descripción de la carga <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label><input value={pedF.descripcion} onChange={e=>setPedF(f=>({...f,descripcion:e.target.value}))} placeholder="Ej: Mesa de roble 220×100, 80kg" style={S.input}/></div>
+            <div style={{flex:.5}}><label style={S.label}>Fecha deseada <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label><input type="date" value={pedF.fecha} onChange={e=>setPedF(f=>({...f,fecha:e.target.value}))} style={S.input}/></div>
+          </div>
+          <div style={{marginTop:10}}>
+            <label style={S.label}>Notas adicionales <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
+            <input value={pedF.notas} onChange={e=>setPedF(f=>({...f,notas:e.target.value}))} placeholder="¿Necesita ayudante, embalaje, acceso difícil, etc.?" style={S.input}/>
           </div>
           {pedF.origen&&pedF.destino&&(
             <a href={`https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${encodeURIComponent(pedF.origen)};${encodeURIComponent(pedF.destino)}`}
                target="_blank" rel="noopener noreferrer"
-               style={{display:"inline-flex",alignItems:"center",gap:6,background:C.input,border:`1px solid ${C.borde}`,borderRadius:8,padding:"8px 14px",color:C.marron,fontSize:17,fontWeight:700,textDecoration:"none",marginTop:8}}>
+               style={{display:"inline-flex",alignItems:"center",gap:6,background:C.suave,border:`1px solid ${C.borde}`,borderRadius:8,padding:"8px 14px",color:C.marron,fontSize:17,fontWeight:700,textDecoration:"none",marginTop:12}}>
               🗺️ Ver ruta en el mapa
             </a>
           )}
+          <button style={{...S.btn("dark"),marginTop:14}} onClick={enviarPedido}>📤 Solicitar a todos los fletes</button>
+        </div>
+      )}
 
-          <button style={{...S.btn("dark"),marginTop:12}} onClick={async()=>{
-            if(!pedF.origen||!pedF.destino){alert("Completá origen y destino");return;}
-            try{
-              await Promise.all(fletes.map(fl=>
-                db.insert("pedidos_flete",{solicitante_id:usuario.id,flete_id:fl.id,origen:pedF.origen,destino:pedF.destino,descripcion_carga:pedF.descripcion,fecha_deseada:pedF.fecha||null})
-              ));
-              notif("¡Solicitud enviada a todos los fletes!");
-              setPedF({origen:"",destino:"",descripcion:"",fecha:""});
-            }catch(e){alert("Error: "+e.message);}
-          }}>📤 Solicitar a todos los fletes</button>
-
-          {fletes.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay fletes registrados aún</div>}
-          {fletes.map(fl=>(
-            <div key={fl.id} style={S.card}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+      {subFl==="mis"&&(
+        <div>
+          {misPedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hiciste pedidos de flete todavía</div>}
+          {misPedidos.map(p=>{
+            const abierto=selPedido&&selPedido.id===p.id;
+            return(
+            <div key={p.id} style={S.card}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}
+                onClick={()=>{ if(abierto){setSelPedido(null);} else {abrirMiPedido(p);} }}>
                 <div>
-                  <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:17,color:C.marron}}>{fl.nombre}</div>
-                  <Stars v={fl.calificacion_promedio}/>
-                  {fl.zonas&&<div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>📍 {fl.zonas}</div>}
-                  {fl.capacidad&&<div style={{fontSize:17,color:C.textoSuave}}>⚖️ {fl.capacidad}</div>}
+                  <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:18}}>{p.origen} → {p.destino}</div>
+                  <div style={{fontSize:17,color:C.textoSuave}}>{p.fecha_deseada?new Date(p.fecha_deseada+"T12:00").toLocaleDateString("es-AR"):"Sin fecha definida"} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
                 </div>
-                <Badge e={fl.estado_flete||"disponible"}/>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{whiteSpace:"nowrap",background:p._cantCot>0?C.verde:C.suave,color:p._cantCot>0?"#fff":C.textoSuave,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:20,fontFamily:"'Lato',sans-serif"}}>
+                    {p._cantCot>0?`${p._cantCot} cotización${p._cantCot>1?"es":""}`:"Sin cotizaciones"}
+                  </span>
+                  <span style={{color:C.textoSuave,fontSize:18}}>{abierto?"▲":"▼"}</span>
+                </div>
               </div>
-              {fl.agenda?.length>0&&(
-                <div style={{marginBottom:12}}>
-                  <div style={{...S.label,marginBottom:8}}>Agenda</div>
-                  <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-                    {fl.agenda.map((d,i)=>(
-                      <div key={i} style={{background:C.input,border:`1px solid ${EC[d.estado]||C.borde}44`,borderRadius:6,padding:"5px 9px",textAlign:"center"}}>
-                        <div style={{fontSize:17,color:C.textoSuave}}>{new Date(d.fecha+"T12:00").toLocaleDateString("es-AR",{weekday:"short",day:"numeric"})}</div>
-                        <Badge e={d.estado}/>
+              {abierto&&(
+                <div style={{marginTop:12,borderTop:`1px dashed ${C.borde}`,paddingTop:12}} className="fade">
+                  <div style={{fontWeight:700,color:C.marron,marginBottom:8}}>💰 Cotizaciones de fletes</div>
+                  {cotizacionesFlete.length===0?(
+                    <div style={{color:C.textoSuave,textAlign:"center",padding:20,fontStyle:"italic"}}>⏳ Esperando cotizaciones...</div>
+                  ):(
+                    cotizacionesFlete.map((ct,i)=>{
+                      const key=ct.id||i;
+                      const abiertaCot=fleteAbierto===key;
+                      return(
+                      <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:10,marginBottom:10,overflow:"hidden",background:C.input}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
+                          onClick={()=>setFleteAbierto(abiertaCot?null:key)}>
+                          <b style={{color:C.marron,fontSize:17}}>🚚 {ct.fleteNombre||"Flete"}</b>
+                          <div style={{display:"flex",alignItems:"center",gap:10}}>
+                            <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
+                            <span style={{color:C.textoSuave,fontSize:16}}>{abiertaCot?"▲":"▼"}</span>
+                          </div>
+                        </div>
+                        {abiertaCot&&(
+                        <div style={{padding:"0 14px 14px",borderTop:`1px dashed ${C.borde}`}} className="fade">
+                          <div style={{marginTop:12}}>
+                            <PresupuestoFormato
+                              empresa={ct.fleteObj||{}}
+                              cliente={{...usuario,mostrar_telefono:true,mostrar_direccion:true}}
+                              items={ct.items||[]}
+                              opts={{descuento_tipo:ct.descuento_tipo,descuento_valor:ct.descuento_valor,iva_pct:ct.iva_porcentaje}}
+                              numero={ct.numero_presupuesto!=null?ct.numero_presupuesto:""}
+                              fecha={ct.created_at?new Date(ct.created_at).toLocaleDateString("es-AR"):null}
+                              tiempoEntrega={ct.tiempo_entrega}
+                              esEmpresa={false}
+                              aceptado={false}
+                            />
+                          </div>
+                          <div style={{marginTop:10}}>
+                            <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>💬 Chat con {ct.fleteNombre||"flete"}</div>
+                            <Chat key={ct.flete_id} pedidoId={selPedido.id} tipoPedido="flete" miUsuario={usuario} otroUsuario={{id:ct.flete_id}}/>
+                          </div>
+                        </div>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                      );
+                    })
+                  )}
                 </div>
               )}
-              <button style={S.btn("dark")} onClick={()=>solicitarFlete(fl.id)}>📤 Solicitar a este flete</button>
-              <Calificar deUsuario={usuario} paraUsuario={fl} pedidoId={null}/>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
