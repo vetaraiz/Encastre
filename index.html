@@ -1586,14 +1586,14 @@ function AuthScreen({onAuth}){
         if(entidad==="persona"&&!validarDNI(documento)){setErr("El DNI no parece válido. Debe tener 7 u 8 números, sin puntos.");setCargando(false);return;}
         const tipoDoc=entidad==="empresa"?"CUIT":"DNI";
         const docLimpio=soloDigitos(documento);
-        const signUpRes=await db.signUp(email,pass);
+        const signUpRes=await db.signUp(email.trim().toLowerCase(),pass);
         const error=signUpRes.error;
         if(error){setErr(error.message||"Error al registrar");setCargando(false);return;}
         let tokenReg=signUpRes.access_token?{token:signUpRes.access_token,refresh:signUpRes.refresh_token,expira:Date.now()+((signUpRes.expires_in||3600)*1000)}:null;
         let userId=(signUpRes.data?.user||signUpRes.user||signUpRes)?.id||signUpRes?.id;
         if(!tokenReg){
           // El mail ya tenía credencial (intento anterior). Probamos entrar con esa clave para completar la ficha.
-          const reIn=await db.signIn(email,pass);
+          const reIn=await db.signIn(email.trim().toLowerCase(),pass);
           if(reIn.access_token){
             tokenReg={token:reIn.access_token,refresh:reIn.refresh_token,expira:Date.now()+((reIn.expires_in||3600)*1000)};
             userId=reIn.user?.id||userId;
@@ -1622,7 +1622,7 @@ function AuthScreen({onAuth}){
         setOk("¡Cuenta creada! Ahora iniciá sesión.");
         setModo("login");
       }else{
-        const signInRes=await db.signIn(email,pass);
+        const signInRes=await db.signIn(email.trim().toLowerCase(),pass);
         const access_token=signInRes.access_token;
         const error=signInRes.error;
         if(error||!access_token){setErr("Email o contraseña incorrectos");setCargando(false);return;}
@@ -1699,7 +1699,7 @@ function AuthScreen({onAuth}){
 
         <div style={{marginBottom:12}}>
           <label style={S.label}>Email</label>
-          <input type="email" value={email} onChange={e=>setEmail(e.target.value.replace(/\s+/g,""))} placeholder="tu@email.com" style={S.input}/>
+          <input type="email" autoCapitalize="none" autoCorrect="off" spellCheck="false" value={email} onChange={e=>setEmail(e.target.value.replace(/\s+/g,""))} placeholder="tu@email.com" style={S.input}/>
         </div>
         <div style={{marginBottom:16}}>
           <label style={S.label}>Contraseña</label>
@@ -1720,7 +1720,7 @@ function AuthScreen({onAuth}){
             <button onClick={async()=>{
               if(!email){setErr("Escribí tu email primero");return;}
               try{
-                await fetch(`${SUPABASE_URL}/auth/v1/recover`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({email})});
+                await fetch(`${SUPABASE_URL}/auth/v1/recover`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:email.trim().toLowerCase()})});
                 setOk("✅ Te enviamos un email para restablecer tu contraseña");
               }catch{setErr("Error al enviar el email");}
             }} style={{background:"none",border:"none",color:C.textoSuave,fontSize:17,cursor:"pointer",textDecoration:"underline"}}>
@@ -1731,7 +1731,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-06.5</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-07.1</div>
     </div>
   );
 }
