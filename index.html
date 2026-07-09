@@ -1739,7 +1739,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-09.3</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-09.4</div>
     </div>
   );
 }
@@ -3440,7 +3440,15 @@ function VistaFlete({usuario,notif}){
         const mc=await db.select("cotizaciones_flete",`?flete_id=eq.${usuario.id}&select=pedido_id`);
         mc.forEach(c=>{mias[c.pedido_id]=true;});
       }catch{}
-      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null})));
+      let nombres={};
+      try{
+        const ids=[...new Set(d.map(p=>p.solicitante_id).filter(Boolean))];
+        if(ids.length){
+          const us=await db.select("usuarios",`?id=in.(${ids.join(",")})&select=id,nombre`);
+          us.forEach(u=>{nombres[u.id]=u.nombre;});
+        }
+      }catch{}
+      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null,_solNombre:nombres[p.solicitante_id]||"Solicitante"})));
     }catch{}
   },[usuario.id,esFlete]);
   useEffect(()=>{cargar();const t=setInterval(cargar,15000);return()=>clearInterval(t);},[cargar]);
@@ -3553,6 +3561,9 @@ function VistaFlete({usuario,notif}){
       <div className="fade">
         <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSel(null)}>← Volver</button>
         <div style={S.card}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:18,color:C.marron}}>👤 {solSel.nombre||sel._solNombre||"Solicitante"}</div>
+          </div>
           <div style={S.cardTitle}>Pedido de flete</div>
           <div style={{background:C.suave,borderRadius:8,padding:12,border:`1px solid ${C.borde}`}}>
             <div style={S.row}>
@@ -3730,7 +3741,8 @@ function VistaFlete({usuario,notif}){
             onMouseLeave={e=>{e.currentTarget.style.borderColor=C.borde;e.currentTarget.style.transform="none";}}>
             <div style={{display:"flex",justifyContent:"space-between"}}>
               <div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:17}}>{p.origen} → {p.destino}</div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:17}}>👤 {p._solNombre||"Solicitante"}</div>
+                <div style={{fontSize:16,color:C.marron,marginTop:2}}>{p.origen} → {p.destino}</div>
                 <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{p.fecha_deseada?new Date(p.fecha_deseada+"T12:00").toLocaleDateString("es-AR"):"Sin fecha definida"} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
               </div>
               <span style={{alignSelf:"flex-start",whiteSpace:"nowrap",background:et.bg,color:et.fg,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:20,fontFamily:"'Lato',sans-serif"}}>{et.t}</span>
