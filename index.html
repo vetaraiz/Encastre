@@ -1353,6 +1353,77 @@ const cmToIn = c=>(c/2.54).toFixed(2);
 const inToCm = i=>(i*2.54).toFixed(1);
 const ftToCm = f=>(f*30.48).toFixed(1);
 
+// ─── CONTADORES DE NOVEDADES (cotizaciones sin abrir + mensajes sin leer) ───
+function useBadges(usuario){
+  const [badges,setBadges]=useState({aserradero:0,ferreteria:0,pintureria:0,flete:0,pedidos:0});
+  const calc=useCallback(async()=>{
+    if(!usuario||!usuario.id)return;
+    const cuenta={aserradero:0,ferreteria:0,pintureria:0,flete:0,pedidos:0};
+    // Paso 1 - Mensajes sin leer, agrupados por tipo_pedido
+    try{
+      const ms=await db.select("mensajes",`?para_usuario_id=eq.${usuario.id}&leido=eq.false&select=tipo_pedido`);
+      ms.forEach(m=>{
+        const t=m.tipo_pedido;
+        if(t==="aserradero")cuenta.aserradero++;
+        else if(t==="ferreteria")cuenta.ferreteria++;
+        else if(t==="pintureria")cuenta.pintureria++;
+        else if(t==="flete")cuenta.flete++;
+        else cuenta.pedidos++; // chat del circuito cliente↔carpintería
+      });
+    }catch{}
+    // Paso 2 - Cotizaciones sin abrir en los pedidos que YO hice
+    const rubros=[
+      ["pedidos_aserradero","cotizaciones_aserradero","visto_carpinteria","carpinteria_id","aserradero"],
+      ["pedidos_ferreteria","cotizaciones_ferreteria","visto_carpinteria","carpinteria_id","ferreteria"],
+      ["pedidos_pintureria","cotizaciones_pintureria","visto_carpinteria","carpinteria_id","pintureria"],
+      ["pedidos_flete","cotizaciones_flete","visto_solicitante","solicitante_id","flete"],
+    ];
+    for(const [tPed,tCot,campo,dueño,clave] of rubros){
+      try{
+        const ps=await db.select(tPed,`?${dueño}=eq.${usuario.id}&select=id`);
+        if(!ps.length)continue;
+        const ids=ps.map(p=>p.id).join(",");
+        const cs=await db.select(tCot,`?pedido_id=in.(${ids})&${campo}=eq.false&select=id`);
+        cuenta[clave]+=cs.length;
+      }catch{}
+    }
+    // Paso 3 - Presupuestos sin ver, para el cliente que pidio a carpinterias
+    if(usuario.tipo==="cliente"){
+      try{
+        const ps=await db.select("pedidos",`?cliente_id=eq.${usuario.id}&select=id`);
+        if(ps.length){
+          const ids=ps.map(p=>p.id).join(",");
+          const prs=await db.select("presupuestos",`?pedido_id=in.(${ids})&visto_cliente=eq.false&select=id`);
+          cuenta.pedidos+=prs.length;
+        }
+      }catch{}
+    }
+    setBadges(cuenta);
+  },[usuario]);
+  useEffect(()=>{
+    calc();
+    const t=setInterval(calc,20000);
+    if(typeof window!=="undefined") window.__refrescarBadges=calc;
+    return()=>{clearInterval(t); if(typeof window!=="undefined") delete window.__refrescarBadges;};
+  },[calc]);
+  return badges;
+}
+
+// Pastilla verde con el número de novedades
+function Badge9({n}){
+  if(!n||n<=0)return null;
+  return <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:20,height:20,padding:"0 6px",marginLeft:6,borderRadius:10,background:"#009966",color:"#fff",fontSize:12,fontWeight:800,fontFamily:"'Lato',sans-serif",lineHeight:1}}>{n>99?"99+":n}</span>;
+}
+
+// ─── VISTO / NO VISTO: marcar cotizaciones al abrirlas ──────────────────────
+async function marcarCotVista(tabla,campo,ct){
+  if(!ct||!ct.id||ct[campo])return;
+  try{
+    await db.update(tabla,{[campo]:true},`id=eq.${ct.id}`);
+    if(typeof window!=="undefined"&&window.__refrescarBadges) window.__refrescarBadges();
+  }catch{}
+}
+
 // ─── HELPERS DE VALIDACIÓN DE FORMULARIOS (globales) ────────────────────────
 const marcaErr=(activo,cond)=>(activo&&cond)?{border:`2px solid ${C.rojo}`}:{};
 const AvisoErr=({activo,cond,texto})=>(activo&&cond)?<div style={{color:C.rojo,fontSize:15,marginTop:4,fontWeight:600}}>⚠️ {texto||"Falta completar"}</div>:null;
@@ -1747,7 +1818,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-11.4</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-11.5</div>
     </div>
   );
 }
@@ -1766,6 +1837,14 @@ function Chat({pedidoId,tipoPedido,miUsuario,otroUsuario}){
       const filtroPareja=otroId?`&or=(and(de_usuario_id.eq.${miUsuario.id},para_usuario_id.eq.${otroId}),and(de_usuario_id.eq.${otroId},para_usuario_id.eq.${miUsuario.id}))`:"";
       const d=await db.select("mensajes",`?pedido_id=eq.${pedidoId}&tipo_pedido=eq.${tipoPedido}${filtroPareja}&order=created_at.asc`);
       setMsgs(d);
+      // Marcar como leídos los que me llegaron a mí y todavía no lo estaban
+      const noLeidos=d.filter(m=>m.para_usuario_id===miUsuario.id&&!m.leido);
+      if(noLeidos.length>0){
+        try{
+          await db.update("mensajes",{leido:true},`pedido_id=eq.${pedidoId}&tipo_pedido=eq.${tipoPedido}&para_usuario_id=eq.${miUsuario.id}&leido=eq.false`);
+          if(typeof window!=="undefined"&&window.__refrescarBadges) window.__refrescarBadges();
+        }catch{}
+      }
     }catch{}
   },[pedidoId,tipoPedido,otroId,miUsuario.id]);
 
@@ -2226,9 +2305,9 @@ function VistaCliente({usuario,notif}){
             <div style={{fontWeight:700,color:C.marron,marginBottom:8}}>💰 Presupuestos recibidos ({presups.length})</div>
             {presups.map((pr,i)=>(
               <div key={i}>
-                <div onClick={()=>setSelPresup(selPresup&&selPresup.id===pr.id?null:pr)} style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:12,marginBottom:8,background:C.input,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div onClick={()=>{const ab=selPresup&&selPresup.id===pr.id?null:pr;setSelPresup(ab);if(ab&&!pr.visto_cliente){marcarCotVista("presupuestos","visto_cliente",pr);setPresups(ps=>ps.map(x=>x.id===pr.id?{...x,visto_cliente:true}:x));}}} style={{border:`1px solid ${pr.visto_cliente===false?"#009966":C.borde}`,borderRadius:10,padding:12,marginBottom:8,background:C.input,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <div>
-                    <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,color:C.marron,fontSize:22}}>🔨 {pr.carpNombre}</div>
+                    <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,color:C.marron,fontSize:22}}>🔨 {pr.carpNombre}{pr.visto_cliente===false&&<span style={{marginLeft:8,fontSize:13,fontWeight:800,color:"#fff",background:"#009966",borderRadius:10,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</div>
                     {pr.estado&&pr.estado!=="enviado"&&<div style={{marginTop:6}}><Badge e={pr.estado}/></div>}
                   </div>
                   <div style={{textAlign:"right"}}>
@@ -2308,6 +2387,7 @@ function VistaCliente({usuario,notif}){
 
 // ─── VISTA CARPINTERÍA ────────────────────────────────────────────────────────
 function VistaCarpinteria({usuario,notif}){
+  const badges=useBadges(usuario);
   const [tab,setTab]=useState("pedidos");
   const [pedidos,setPedidos]=useState([]);
   const [sel,setSel]=useState(null);
@@ -2705,9 +2785,13 @@ function VistaCarpinteria({usuario,notif}){
   return(
     <div>
       <div style={{display:"flex",gap:7,marginBottom:18,flexWrap:"wrap"}}>
-        {[["pedidos","📋 Pedidos recibidos"],["aserradero","🪵 Aserraderos"],["ferreteria","🔩 Ferreterías"],["pintureria","🎨 Pinturerías"]].map(([id,l])=>(
-          <button key={id} style={tabStyle(id)} onClick={()=>setTab(id)}>{l}</button>
-        ))}
+        {[["pedidos","📋 Pedidos recibidos"],["aserradero","🪵 Aserraderos"],["ferreteria","🔩 Ferreterías"],["pintureria","🎨 Pinturerías"]].map(([id,l])=>{
+          const n=badges[id]||0;
+          const est=tabStyle(id);
+          return(
+          <button key={id} style={{...est,fontWeight:n>0?900:est.fontWeight}} onClick={()=>setTab(id)}>{l}<Badge9 n={n}/></button>
+          );
+        })}
       </div>
 
       {tab==="pedidos"&&(
@@ -2849,8 +2933,8 @@ function VistaCarpinteria({usuario,notif}){
                       return(
                       <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:10,marginBottom:10,overflow:"hidden",background:C.input}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
-                          onClick={()=>setCotAserrAbierta(abiertaCot?null:key)}>
-                          <b style={{color:C.marron,fontSize:17}}>🏭 {ct.aserraderoNombre||"Aserradero"}</b>
+                          onClick={()=>{const ab=abiertaCot?null:key;setCotAserrAbierta(ab);if(ab){marcarCotVista("cotizaciones_aserradero","visto_carpinteria",ct);setCotizacionesAserr(cs=>cs.map(x=>x.id===ct.id?{...x,visto_carpinteria:true}:x));cargarMisPedidosAserr();}}}>
+                          <b style={{color:C.marron,fontSize:17}}>🏭 {ct.aserraderoNombre||"Aserradero"}{ct.visto_carpinteria===false&&<span style={{marginLeft:8,fontSize:12,fontWeight:800,color:"#fff",background:"#009966",borderRadius:10,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</b>
                           <div style={{display:"flex",alignItems:"center",gap:10}}>
                             <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
                             <span style={{color:C.textoSuave,fontSize:16}}>{abiertaCot?"▲":"▼"}</span>
@@ -2986,8 +3070,8 @@ function VistaCarpinteria({usuario,notif}){
                           return(
                           <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:10,marginBottom:10,overflow:"hidden",background:C.input}}>
                             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
-                              onClick={()=>setFerrAbierta(abiertaCot?null:key)}>
-                              <b style={{color:C.marron,fontSize:17}}>🔩 {ct.ferrNombre||"Ferretería"}</b>
+                              onClick={()=>{const ab=abiertaCot?null:key;setFerrAbierta(ab);if(ab){marcarCotVista("cotizaciones_ferreteria","visto_carpinteria",ct);setCotizacionesFerr(cs=>cs.map(x=>x.id===ct.id?{...x,visto_carpinteria:true}:x));cargarMisPedidosFerreria();}}}>
+                              <b style={{color:C.marron,fontSize:17}}>🔩 {ct.ferrNombre||"Ferretería"}{ct.visto_carpinteria===false&&<span style={{marginLeft:8,fontSize:12,fontWeight:800,color:"#fff",background:"#009966",borderRadius:10,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</b>
                               <div style={{display:"flex",alignItems:"center",gap:10}}>
                                 <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
                                 <span style={{color:C.textoSuave,fontSize:16}}>{abiertaCot?"▲":"▼"}</span>
@@ -3125,8 +3209,8 @@ function VistaCarpinteria({usuario,notif}){
                           return(
                           <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:10,marginBottom:10,overflow:"hidden",background:C.input}}>
                             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
-                              onClick={()=>setPintAbierta(abiertaCot?null:key)}>
-                              <b style={{color:C.marron,fontSize:17}}>🎨 {ct.pintNombre||"Pinturería"}</b>
+                              onClick={()=>{const ab=abiertaCot?null:key;setPintAbierta(ab);if(ab){marcarCotVista("cotizaciones_pintureria","visto_carpinteria",ct);setCotizacionesPint(cs=>cs.map(x=>x.id===ct.id?{...x,visto_carpinteria:true}:x));cargarMisPedidosPint();}}}>
+                              <b style={{color:C.marron,fontSize:17}}>🎨 {ct.pintNombre||"Pinturería"}{ct.visto_carpinteria===false&&<span style={{marginLeft:8,fontSize:12,fontWeight:800,color:"#fff",background:"#009966",borderRadius:10,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</b>
                               <div style={{display:"flex",alignItems:"center",gap:10}}>
                                 <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
                                 <span style={{color:C.textoSuave,fontSize:16}}>{abiertaCot?"▲":"▼"}</span>
@@ -3895,8 +3979,8 @@ function VistaFlete({usuario,notif}){
                       return(
                       <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:10,marginBottom:10,overflow:"hidden",background:C.input}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
-                          onClick={()=>setFleteAbierto(abiertaCot?null:key)}>
-                          <b style={{color:C.marron,fontSize:17}}>🚚 {ct.fleteNombre||"Flete"}</b>
+                          onClick={()=>{const ab=abiertaCot?null:key;setFleteAbierto(ab);if(ab){marcarCotVista("cotizaciones_flete","visto_solicitante",ct);setCotizacionesFlete(cs=>cs.map(x=>x.id===ct.id?{...x,visto_solicitante:true}:x));cargarMisPedidos();}}}>
+                          <b style={{color:C.marron,fontSize:17}}>🚚 {ct.fleteNombre||"Flete"}{ct.visto_solicitante===false&&<span style={{marginLeft:8,fontSize:12,fontWeight:800,color:"#fff",background:"#009966",borderRadius:10,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</b>
                           <div style={{display:"flex",alignItems:"center",gap:10}}>
                             <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
                             <span style={{color:C.textoSuave,fontSize:16}}>{abiertaCot?"▲":"▼"}</span>
@@ -4995,6 +5079,27 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja}){
   );
 }
 
+function NavBar({usuario,navPrincipal,navTab,setNavTab}){
+  const badges=useBadges(usuario);
+  // El badge de "principal" depende del tipo: los proveedores ven ahí sus propios pedidos
+  const nPrincipal=usuario.tipo==="flete"?badges.flete
+    :usuario.tipo==="aserradero"?badges.aserradero
+    :usuario.tipo==="ferreteria"?badges.ferreteria
+    :usuario.tipo==="pintureria"?badges.pintureria
+    :usuario.tipo==="cliente"?badges.pedidos
+    :(badges.pedidos+badges.aserradero+badges.ferreteria+badges.pintureria); // carpintería: todo lo suyo
+  const items=[["principal",navPrincipal,nPrincipal]];
+  if(usuario.tipo!=="flete") items.push(["flete","🚚 Fletes",badges.flete]);
+  if(usuario.tipo==="cliente"||usuario.tipo==="carpinteria") items.push(["conversor","📐 Conversor",0]);
+  return(
+    <nav style={{display:"flex",gap:6}}>
+      {items.map(([id,l,n])=>(
+        <button key={id} style={{background:navTab===id?C.acento:"transparent",color:navTab===id?C.marron:C.suave,border:navTab===id?"none":`1px solid ${C.acento}44`,borderRadius:8,padding:"10px 20px",cursor:"pointer",fontSize:18,fontWeight:n>0?900:700,fontFamily:"'Lato',sans-serif",transition:"all .15s"}} onClick={()=>setNavTab(id)}>{l}<Badge9 n={n}/></button>
+      ))}
+    </nav>
+  );
+}
+
 function App(){
   const [sesion,setSesion]=useState(null);
   const [navTab,setNavTab]=useState("principal");
@@ -5065,11 +5170,7 @@ function App(){
             <span className="encastre-logo-sub">La Comunidad de la Madera</span>
           </div>
         </div>
-        <nav style={{display:"flex",gap:6}}>
-          {[["principal",navPrincipal],...(usuario.tipo!=="flete"?[["flete","🚚 Fletes"]]:[]),...((usuario.tipo==="cliente"||usuario.tipo==="carpinteria")?[["conversor","📐 Conversor"]]:[])].map(([id,l])=>(
-            <button key={id} style={{background:navTab===id?C.acento:"transparent",color:navTab===id?C.marron:C.suave,border:navTab===id?"none":`1px solid ${C.acento}44`,borderRadius:8,padding:"10px 20px",cursor:"pointer",fontSize:18,fontWeight:700,fontFamily:"'Lato',sans-serif",transition:"all .15s"}} onClick={()=>setNavTab(id)}>{l}</button>
-          ))}
-        </nav>
+        <NavBar usuario={usuario} navPrincipal={navPrincipal} navTab={navTab} setNavTab={setNavTab}/>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <div style={{textAlign:"right"}}>
             <div style={{fontSize:16,color:C.crema,fontWeight:700}}>{EMOJIS[usuario.tipo]} {usuario.nombre}</div>
