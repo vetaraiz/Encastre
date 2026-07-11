@@ -1747,7 +1747,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-11.3</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-11.4</div>
     </div>
   );
 }
@@ -5066,7 +5066,7 @@ function App(){
           </div>
         </div>
         <nav style={{display:"flex",gap:6}}>
-          {[["principal",navPrincipal],["flete","🚚 Fletes"],...((usuario.tipo==="cliente"||usuario.tipo==="carpinteria")?[["conversor","📐 Conversor"]]:[])].map(([id,l])=>(
+          {[["principal",navPrincipal],...(usuario.tipo!=="flete"?[["flete","🚚 Fletes"]]:[]),...((usuario.tipo==="cliente"||usuario.tipo==="carpinteria")?[["conversor","📐 Conversor"]]:[])].map(([id,l])=>(
             <button key={id} style={{background:navTab===id?C.acento:"transparent",color:navTab===id?C.marron:C.suave,border:navTab===id?"none":`1px solid ${C.acento}44`,borderRadius:8,padding:"10px 20px",cursor:"pointer",fontSize:18,fontWeight:700,fontFamily:"'Lato',sans-serif",transition:"all .15s"}} onClick={()=>setNavTab(id)}>{l}</button>
           ))}
         </nav>
