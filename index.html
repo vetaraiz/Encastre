@@ -1747,7 +1747,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-11.1</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-11.3</div>
     </div>
   );
 }
@@ -1931,19 +1931,23 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
   };
   const ok=f.descripcion&&f.alto&&f.ancho&&f.profundidad&&f.material&&f.terminacion;
 
+  const [guardando,setGuardando]=useState(false);
   const guardar=async()=>{
+    if(guardando)return;
+    setGuardando(true);
     try{
-      if(!usuario||!usuario.id){alert("Error: no se encontró tu usuario. Cerrá sesión y volvé a entrar.");return;}
+      if(!usuario||!usuario.id){alert("Error: no se encontró tu usuario. Cerrá sesión y volvé a entrar.");setGuardando(false);return;}
       // Verificar que el usuario existe en la tabla antes de insertar
       const verificar=await db.select("usuarios",`?id=eq.${usuario.id}&limit=1`);
       if(!verificar||verificar.length===0){
         alert("Error: tu perfil no está en la base de datos. Cerrá sesión y volvé a entrar.");
+        setGuardando(false);
         return;
       }
       await db.insert("pedidos",{cliente_id:usuario.id,descripcion:f.descripcion,alto:Number(f.alto),ancho:Number(f.ancho),profundidad:Number(f.profundidad),material:f.material,especie:f.especie||null,terminacion:f.terminacion,color:f.color,notas_croquis:f.notasCroquis||"",tiene_cajones:f.tieneCajones==="Sí",cantidad_cajones:Number(f.cantidadCajones)||0,medidas_cajones:f.medidasCajones||"",croquis_imagen:f.croquisImg||"",fecha_limite:f.fechaLimite?new Date(f.fechaLimite+"T23:59:59").toISOString():null});
       notif("¡Pedido enviado a todas las carpinterías!");
       onGuardar();
-    }catch(e){alert("Error al guardar pedido: "+e.message);}
+    }catch(e){alert("Error al guardar pedido: "+e.message);setGuardando(false);}
   };
 
   return(
@@ -2060,7 +2064,7 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
         </div>
       )}
       <div style={{display:"flex",gap:10,marginTop:intento&&!ok?10:20}}>
-        <button style={S.btn("dark")} onClick={()=>{ if(!ok){ setIntento(true); return; } guardar(); }}>📤 Enviar pedido</button>
+        <button style={{...S.btn("dark"),opacity:guardando?0.6:1}} disabled={guardando} onClick={()=>{ if(!ok){ setIntento(true); return; } guardar(); }}>{guardando?"⟳ Enviando...":"📤 Enviar pedido"}</button>
         <button style={S.btn("ghost")} onClick={onCancelar}>Cancelar</button>
       </div>
     </div>
@@ -2312,7 +2316,6 @@ function VistaCarpinteria({usuario,notif}){
   const [clienteSel,setClienteSel]=useState({});
   const [enviando,setEnviando]=useState(false);
   const [yaEnvio,setYaEnvio]=useState(false);
-  const [convF,setConvF]=useState({valor:"",unidad:"cm"});
   const [asF,setAsF]=useState({material:"",pies:"",pulgadas:"",espesor:"",cantidad:"",descripcion:"",fechaLimite:""});
   const [misPedidosAserr,setMisPedidosAserr]=useState([]);
   const [subAserr,setSubAserr]=useState("pedir");
@@ -2508,8 +2511,11 @@ function VistaCarpinteria({usuario,notif}){
       setCotizacionesAserr(enr);
     }catch{}
   };
+  const [enviandoPed,setEnviandoPed]=useState(false);
   const enviarAserr=async()=>{
+    if(enviandoPed)return;
     if(!(asF.material&&asF.pies&&asF.pulgadas&&asF.cantidad)){setIntAs(true);return;}
+    setEnviandoPed(true);
     try{
       await db.insert("pedidos_aserradero",{carpinteria_id:usuario.id,material:asF.material,pies:Number(asF.pies),pulgadas:Number(asF.pulgadas),espesor:Number(asF.espesor||0),cantidad:Number(asF.cantidad),descripcion:asF.descripcion,fecha_limite:fechaLimiteISO(asF.fechaLimite)});
       notif("¡Pedido enviado a los aserraderos!");
@@ -2518,6 +2524,7 @@ function VistaCarpinteria({usuario,notif}){
       cargarMisPedidosAserr();
       setSubAserr("mis");
     }catch(e){alert("Error: "+e.message);}
+    setEnviandoPed(false);
   };
 
   if(sel){
@@ -2698,7 +2705,7 @@ function VistaCarpinteria({usuario,notif}){
   return(
     <div>
       <div style={{display:"flex",gap:7,marginBottom:18,flexWrap:"wrap"}}>
-        {[["pedidos","📋 Pedidos recibidos"],["aserradero","🪵 Aserraderos"],["ferreteria","🔩 Ferreterías"],["pintureria","🎨 Pinturerías"],["conversion","📐 Conversor"]].map(([id,l])=>(
+        {[["pedidos","📋 Pedidos recibidos"],["aserradero","🪵 Aserraderos"],["ferreteria","🔩 Ferreterías"],["pintureria","🎨 Pinturerías"]].map(([id,l])=>(
           <button key={id} style={tabStyle(id)} onClick={()=>setTab(id)}>{l}</button>
         ))}
       </div>
@@ -2798,7 +2805,7 @@ function VistaCarpinteria({usuario,notif}){
             <input type="date" min={minFechaLimite()} value={asF.fechaLimite||""} onChange={e=>setAsF(f=>({...f,fechaLimite:e.target.value}))} style={{...S.input,maxWidth:220}}/>
             <div style={{fontSize:14,color:C.textoSuave,marginTop:4}}>Pasada esa fecha el pedido se marca vencido y ya no se puede cotizar.</div>
           </div>
-          <button style={{...S.btn("dark"),marginTop:12}} onClick={enviarAserr}>📤 Enviar a aserraderos</button>
+          <button style={{...S.btn("dark"),marginTop:12,opacity:enviandoPed?0.6:1}} disabled={enviandoPed} onClick={enviarAserr}>{enviandoPed?"⟳ Enviando...":"📤 Enviar a aserraderos"}</button>
         </div>
       )}
 
@@ -2920,9 +2927,11 @@ function VistaCarpinteria({usuario,notif}){
               <div style={{fontSize:14,color:C.textoSuave,marginTop:4}}>Pasada esa fecha el pedido se marca vencido y ya no se puede cotizar.</div>
             </div>
             <BannerFalta activo={intFe} lista={[[ferrF.items.every(it=>!it.descripcion.trim()||!nmb(it.cantidad)),"al menos un herraje con cantidad"]]}/>
-            <button style={{...S.btn("dark"),marginTop:12}} onClick={async()=>{
+            <button style={{...S.btn("dark"),marginTop:12,opacity:enviandoPed?0.6:1}} disabled={enviandoPed} onClick={async()=>{
+              if(enviandoPed)return;
               const itemsValidos=ferrF.items.filter(it=>it.descripcion.trim()&&nmb(it.cantidad)>0);
               if(itemsValidos.length===0){setIntFe(true);return;}
+              setEnviandoPed(true);
               try{
                 const itemsLimpios=itemsValidos.map(it=>({descripcion:it.descripcion.trim(),cantidad:nmb(it.cantidad)}));
                 const resumen=itemsLimpios.map(it=>it.descripcion).join(", ");
@@ -2933,7 +2942,8 @@ function VistaCarpinteria({usuario,notif}){
                 cargarMisPedidosFerreria();
                 setSubFerr("mis");
               }catch(e){alert("Error: "+e.message);}
-            }}>📤 Enviar a ferreterías</button>
+              setEnviandoPed(false);
+            }}>{enviandoPed?"⟳ Enviando...":"📤 Enviar a ferreterías"}</button>
           </div>
           )}
 
@@ -3056,9 +3066,11 @@ function VistaCarpinteria({usuario,notif}){
               <div style={{fontSize:14,color:C.textoSuave,marginTop:4}}>Pasada esa fecha el pedido se marca vencido y ya no se puede cotizar.</div>
             </div>
             <BannerFalta activo={intPi} lista={[[pintF.items.every(it=>!it.descripcion.trim()||!nmb(it.litros)),"al menos un producto con litros"]]}/>
-            <button style={{...S.btn("dark"),marginTop:12}} onClick={async()=>{
+            <button style={{...S.btn("dark"),marginTop:12,opacity:enviandoPed?0.6:1}} disabled={enviandoPed} onClick={async()=>{
+              if(enviandoPed)return;
               const itemsValidos=pintF.items.filter(it=>it.descripcion.trim()&&nmb(it.litros)>0);
               if(itemsValidos.length===0){setIntPi(true);return;}
+              setEnviandoPed(true);
               try{
                 const itemsLimpios=itemsValidos.map(it=>({descripcion:it.descripcion.trim(),litros:nmb(it.litros)}));
                 const resumen=itemsLimpios.map(it=>it.descripcion).join(", ");
@@ -3069,7 +3081,8 @@ function VistaCarpinteria({usuario,notif}){
                 cargarMisPedidosPint();
                 setSubPint("mis");
               }catch(e){alert("Error: "+e.message);}
-            }}>📤 Enviar a pinturerías</button>
+              setEnviandoPed(false);
+            }}>{enviandoPed?"⟳ Enviando...":"📤 Enviar a pinturerías"}</button>
           </div>
           )}
 
@@ -3151,36 +3164,6 @@ function VistaCarpinteria({usuario,notif}){
               })}
             </div>
           )}
-        </div>
-      )}
-
-      {tab==="conversion"&&(
-        <div style={S.card}>
-          <div style={S.cardTitle}>📐 Conversor de medidas</div>
-          <div style={S.row}>
-            <div style={S.col()}><label style={S.label}>Valor</label><input type="number" value={convF.valor} onChange={e=>setConvF(f=>({...f,valor:e.target.value}))} style={S.input} placeholder="0"/></div>
-            <div style={S.col()}><label style={S.label}>Unidad</label>
-              <select value={convF.unidad} onChange={e=>setConvF(f=>({...f,unidad:e.target.value}))} style={S.input}>
-                {[["cm","Centímetros"],["mm","Milímetros"],["in","Pulgadas"],["ft","Pies"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}
-              </select>
-            </div>
-          </div>
-          {convF.valor&&(()=>{
-            const v=parseFloat(convF.valor);
-            const cm=convF.unidad==="cm"?v:convF.unidad==="mm"?v/10:convF.unidad==="in"?v*2.54:v*30.48;
-            return(
-              <div style={{marginTop:14,background:C.suave,borderRadius:10,padding:16,border:`1px solid ${C.borde}`}}>
-                <div style={S.row}>
-                  {[["cm",cm.toFixed(2)],["mm",(cm*10).toFixed(0)],["pulgadas",(cm/2.54).toFixed(3)],["pies",(cm/30.48).toFixed(3)]].map(([u,val])=>(
-                    <div key={u} style={{flex:1,textAlign:"center",padding:"10px 0",borderRight:`1px solid ${C.borde}`}}>
-                      <div style={{fontFamily:"'Playfair Display',serif",fontSize:21,fontWeight:800,color:C.marron}}>{val}</div>
-                      <div style={{fontSize:17,color:C.textoSuave,textTransform:"uppercase",letterSpacing:.8}}>{u}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
         </div>
       )}
     </div>
@@ -3454,6 +3437,39 @@ function VistaAserradero({usuario,notif}){
 }
 
 // ─── VISTA FLETE ──────────────────────────────────────────────────────────────
+function VistaConversor(){
+  const [convF,setConvF]=useState({valor:"",unidad:"cm"});
+  return(
+    <div style={S.card}>
+      <div style={S.cardTitle}>📐 Conversor de medidas</div>
+      <div style={S.row}>
+        <div style={S.col()}><label style={S.label}>Valor</label><input type="number" value={convF.valor} onChange={e=>setConvF(f=>({...f,valor:e.target.value}))} style={S.input} placeholder="0"/></div>
+        <div style={S.col()}><label style={S.label}>Unidad</label>
+          <select value={convF.unidad} onChange={e=>setConvF(f=>({...f,unidad:e.target.value}))} style={S.input}>
+            {[["cm","Centímetros"],["mm","Milímetros"],["in","Pulgadas"],["ft","Pies"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}
+          </select>
+        </div>
+      </div>
+      {convF.valor&&(()=>{
+        const v=parseFloat(convF.valor);
+        const cm=convF.unidad==="cm"?v:convF.unidad==="mm"?v/10:convF.unidad==="in"?v*2.54:v*30.48;
+        return(
+          <div style={{marginTop:14,background:C.suave,borderRadius:10,padding:16,border:`1px solid ${C.borde}`}}>
+            <div style={S.row}>
+              {[["cm",cm.toFixed(2)],["mm",(cm*10).toFixed(0)],["pulgadas",(cm/2.54).toFixed(3)],["pies",(cm/30.48).toFixed(3)]].map(([u,val])=>(
+                <div key={u} style={{flex:1,textAlign:"center",padding:"10px 0",borderRight:`1px solid ${C.borde}`}}>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:21,fontWeight:800,color:C.marron}}>{val}</div>
+                  <div style={{fontSize:17,color:C.textoSuave,textTransform:"uppercase",letterSpacing:.8}}>{u}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+    </div>
+  );
+}
+
 function VistaFlete({usuario,notif}){
   const esFlete=usuario.tipo==="flete";
 
@@ -3577,8 +3593,11 @@ function VistaFlete({usuario,notif}){
     }catch{}
   };
 
+  const [enviandoPed,setEnviandoPed]=useState(false);
   const enviarPedido=async()=>{
+    if(enviandoPed)return;
     if(!(pedF.origen&&pedF.destino)){setIntFl(true);return;}
+    setEnviandoPed(true);
     try{
       await db.insert("pedidos_flete",{solicitante_id:usuario.id,origen:pedF.origen,destino:pedF.destino,descripcion_carga:pedF.descripcion,fecha_deseada:pedF.fecha||null,notas:pedF.notas,fecha_limite:fechaLimiteISO(pedF.fechaLimite)});
       notif("¡Solicitud enviada a los fletes!");
@@ -3587,6 +3606,7 @@ function VistaFlete({usuario,notif}){
       cargarMisPedidos();
       setSubFl("mis");
     }catch(e){alert("Error: "+e.message);}
+    setEnviandoPed(false);
   };
 
   const tabStyle=(id)=>({background:filtro===id?C.marron:"transparent",color:filtro===id?C.crema:C.textoSuave,border:filtro===id?"none":`1px solid ${C.borde}`,borderRadius:8,padding:"7px 14px",cursor:"pointer",fontSize:17,fontWeight:700,fontFamily:"'Lato',sans-serif"});
@@ -3838,7 +3858,7 @@ function VistaFlete({usuario,notif}){
             <input type="date" min={minFechaLimite()} value={pedF.fechaLimite||""} onChange={e=>setPedF(f=>({...f,fechaLimite:e.target.value}))} style={{...S.input,maxWidth:220}}/>
             <div style={{fontSize:14,color:C.textoSuave,marginTop:4}}>Pasada esa fecha el pedido se marca vencido y ya no se puede cotizar.</div>
           </div>
-          <button style={{...S.btn("dark"),marginTop:14}} onClick={enviarPedido}>📤 Solicitar a todos los fletes</button>
+          <button style={{...S.btn("dark"),marginTop:14,opacity:enviandoPed?0.6:1}} disabled={enviandoPed} onClick={enviarPedido}>{enviandoPed?"⟳ Enviando...":"📤 Solicitar a todos los fletes"}</button>
         </div>
       )}
 
@@ -5046,7 +5066,7 @@ function App(){
           </div>
         </div>
         <nav style={{display:"flex",gap:6}}>
-          {[["principal",navPrincipal],["flete","🚚 Fletes"]].map(([id,l])=>(
+          {[["principal",navPrincipal],["flete","🚚 Fletes"],...((usuario.tipo==="cliente"||usuario.tipo==="carpinteria")?[["conversor","📐 Conversor"]]:[])].map(([id,l])=>(
             <button key={id} style={{background:navTab===id?C.acento:"transparent",color:navTab===id?C.marron:C.suave,border:navTab===id?"none":`1px solid ${C.acento}44`,borderRadius:8,padding:"10px 20px",cursor:"pointer",fontSize:18,fontWeight:700,fontFamily:"'Lato',sans-serif",transition:"all .15s"}} onClick={()=>setNavTab(id)}>{l}</button>
           ))}
         </nav>
@@ -5083,6 +5103,7 @@ function App(){
             {navTab==="principal"&&usuario.tipo==="ferreteria"&&<VistaFerreteria usuario={usuario} notif={setNotifMsg}/>}
             {navTab==="principal"&&usuario.tipo==="pintureria"&&<VistaPintureria usuario={usuario} notif={setNotifMsg}/>}
             {navTab==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg}/>}
+            {navTab==="conversor"&&<VistaConversor/>}
           </>
         )}
       </div>
