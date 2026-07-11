@@ -1387,24 +1387,21 @@ const S = {
   logoSub:{ fontSize:17, color:C.acento, letterSpacing:3, textTransform:"uppercase", display:"block", lineHeight:1, className:"logo-sub-mobile" },
   main:{ maxWidth:1100, margin:"0 auto", padding:"18px 16px" },
   card:{ background:C.card, border:`1px solid ${C.borde}`, borderRadius:12, padding:22, marginBottom:16, boxShadow:"0 2px 8px #5C2E0A11" },
-  cardTitle:{ fontFamily:"'Playfair Display',serif", fontSize:23, fontWeight:700, color:C.marron, marginBottom:14 },
+  cardTitle:{ fontFamily:"'Playfair Display',serif", fontSize:21, fontWeight:700, color:C.marron, marginBottom:14 },
   btn:(v="gold")=>({
     background:v==="gold"?C.acento:v==="dark"?C.marron:v==="red"?C.rojo:"transparent",
     color:v==="ghost"?C.marron:C.crema,
     border:v==="ghost"?`2px solid ${C.marron}`:"none",
-    borderRadius:9, padding:"13px 24px", cursor:"pointer", fontSize:18, fontWeight:700, minHeight:48,
+    borderRadius:9, padding:"13px 24px", cursor:"pointer", fontSize:17, fontWeight:700, minHeight:48,
     transition:"all .15s", display:"inline-flex", alignItems:"center", gap:6,
     fontFamily:"'Lato',sans-serif",
   }),
   btnAi:{ background:`linear-gradient(135deg,#3D1A6E,#1A3D6E)`, color:"#E8D5FF", border:"1px solid #6B3AAA55", borderRadius:9, padding:"13px 24px", cursor:"pointer", fontSize:17, fontWeight:700, minHeight:48, display:"inline-flex", alignItems:"center", gap:6, boxShadow:"0 0 16px #6B3AAA22", fontFamily:"'Lato',sans-serif" },
-  input:{ background:C.input, border:`1px solid ${C.borde}`, borderRadius:8, color:C.texto, padding:"13px 15px", fontSize:18, width:"100%", outline:"none", fontFamily:"'Lato',sans-serif", transition:"border .15s" },
-  label:{ fontSize:"18px", color:C.marron, marginBottom:7, display:"block", fontWeight:700, letterSpacing:.3, lineHeight:1.4 },
-  valor:{ fontSize:20, fontWeight:700, color:C.marron, lineHeight:1.4 },
-  valorMono:{ fontSize:20, fontWeight:700, color:C.marron, fontFamily:"monospace", lineHeight:1.4 },
-  textoSecundario:{ fontSize:16, fontWeight:400, color:C.textoSuave, lineHeight:1.4 },
+  input:{ background:C.input, border:`1px solid ${C.borde}`, borderRadius:8, color:C.texto, padding:"13px 15px", fontSize:17, width:"100%", outline:"none", fontFamily:"'Lato',sans-serif", transition:"border .15s" },
+  label:{ fontSize:"17px", color:C.marron, marginBottom:7, display:"block", fontWeight:700, letterSpacing:.3 },
   row:{ display:"flex", gap:10, flexWrap:"wrap", width:"100%" },
   col:(f=1)=>({ flex:f, minWidth:"140px" }),
-  secTitle:{ fontSize:"23px", color:C.marron, fontWeight:700, letterSpacing:.3, marginBottom:14, paddingBottom:8, borderBottom:`2px solid ${C.acento}`, fontFamily:"'Playfair Display',serif" },
+  secTitle:{ fontSize:"21px", color:C.marron, fontWeight:700, letterSpacing:.3, marginBottom:14, paddingBottom:8, borderBottom:`2px solid ${C.acento}`, fontFamily:"'Playfair Display',serif" },
   tag:(on)=>({ background:on?C.marron:C.input, color:on?C.crema:C.textoSuave, border:`1px solid ${on?C.marron:C.borde}`, borderRadius:7, padding:"11px 18px", cursor:"pointer", fontSize:17, fontWeight:on?700:400, transition:"all .15s", fontFamily:"'Lato',sans-serif" }),
   badge:(e)=>({ background:EC[e]+"22", color:EC[e], border:`1px solid ${EC[e]}55`, borderRadius:5, padding:"3px 10px", fontSize:17, fontWeight:700, letterSpacing:.8, textTransform:"uppercase", display:"inline-block" }),
   aiPanel:{ background:"linear-gradient(135deg,#1E0A3C,#0A1E3C)", border:"1px solid #6B3AAA44", borderRadius:12, padding:18, marginBottom:14, boxShadow:"0 0 20px #6B3AAA22" },
@@ -1414,6 +1411,14 @@ const S = {
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 function Badge({e}){ return <span style={S.badge(e)}>{EL[e]||e}</span>; }
+
+// Fechas en horario LOCAL (evita el corrimiento de un día que daba toISOString en UTC-3)
+const aISO=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const masDias=n=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()+n);return aISO(d);};
+const minFechaLimite=()=>masDias(1); // mínimo: mañana (un pedido no puede vencer hoy)
+// Convierte el valor del input date a timestamp de fin de día
+const fechaLimiteISO=v=>v?new Date(v+"T23:59:59").toISOString():null;
+const estaVencido=p=>!!(p.fecha_limite&&new Date(p.fecha_limite)<new Date());
 
 // Calcula el estado de vencimiento de un pedido a partir de su fecha_limite
 function estadoVence(fechaLimite){
@@ -1742,7 +1747,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-11.2</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-11.1</div>
     </div>
   );
 }
@@ -2203,9 +2208,9 @@ function VistaCliente({usuario,notif}){
     return(
       <div style={{marginTop:12,borderTop:`1px dashed ${C.borde}`,paddingTop:12}} className="fade">
         <div style={S.row}>
-          <div style={S.col()}><div style={S.label}>Medidas</div><div style={S.valorMono}>Alto {sel.alto} · Ancho {sel.ancho} · Prof {sel.profundidad} cm</div></div>
-          <div style={S.col()}><div style={S.label}>Material</div><div style={S.valor}>{mat?.label}{sel.especie?` · ${sel.especie}`:""}</div></div>
-          <div style={S.col()}><div style={S.label}>Terminación</div><div style={S.valor}>{ter?.label}{sel.color?` · ${sel.color}`:""}</div></div>
+          <div style={S.col()}><div style={S.label}>Medidas</div><div style={{fontSize:16,fontFamily:"monospace",color:C.marron}}>Alto {sel.alto} · Ancho {sel.ancho} · Prof {sel.profundidad} cm</div></div>
+          <div style={S.col()}><div style={S.label}>Material</div><div>{mat?.label}{sel.especie?` · ${sel.especie}`:""}</div></div>
+          <div style={S.col()}><div style={S.label}>Terminación</div><div>{ter?.label}{sel.color?` · ${sel.color}`:""}</div></div>
         </div>
         {presups.length===0?(
           <div style={{textAlign:"center",color:C.textoSuave,padding:20}}>
@@ -2308,7 +2313,7 @@ function VistaCarpinteria({usuario,notif}){
   const [enviando,setEnviando]=useState(false);
   const [yaEnvio,setYaEnvio]=useState(false);
   const [convF,setConvF]=useState({valor:"",unidad:"cm"});
-  const [asF,setAsF]=useState({material:"",pies:"",pulgadas:"",espesor:"",cantidad:"",descripcion:""});
+  const [asF,setAsF]=useState({material:"",pies:"",pulgadas:"",espesor:"",cantidad:"",descripcion:"",fechaLimite:""});
   const [misPedidosAserr,setMisPedidosAserr]=useState([]);
   const [subAserr,setSubAserr]=useState("pedir");
   const [subFerr,setSubFerr]=useState("pedir");
@@ -2325,11 +2330,11 @@ function VistaCarpinteria({usuario,notif}){
   const [selAserr,setSelAserr]=useState(null);
   const [cotizacionesAserr,setCotizacionesAserr]=useState([]);
   const [cotAserrAbierta,setCotAserrAbierta]=useState(null);
-  const [ferrF,setFerrF]=useState({items:[{descripcion:"",cantidad:"1"}],notas:""});
+  const [ferrF,setFerrF]=useState({items:[{descripcion:"",cantidad:"1"}],notas:"",fechaLimite:""});
   const [misPedidosFerreria,setMisPedidosFerreria]=useState([]);
   const [selFerr,setSelFerr]=useState(null);
   const [cotizacionesFerr,setCotizacionesFerr]=useState([]);
-  const [pintF,setPintF]=useState({items:[{descripcion:"",litros:"1"}],notas:""});
+  const [pintF,setPintF]=useState({items:[{descripcion:"",litros:"1"}],notas:"",fechaLimite:""});
   const [buscarPedido,setBuscarPedido]=useState("");
   const [filtroCarp,setFiltroCarp]=useState("cotizar");
   const [misPedidosPint,setMisPedidosPint]=useState([]);
@@ -2506,9 +2511,9 @@ function VistaCarpinteria({usuario,notif}){
   const enviarAserr=async()=>{
     if(!(asF.material&&asF.pies&&asF.pulgadas&&asF.cantidad)){setIntAs(true);return;}
     try{
-      await db.insert("pedidos_aserradero",{carpinteria_id:usuario.id,material:asF.material,pies:Number(asF.pies),pulgadas:Number(asF.pulgadas),espesor:Number(asF.espesor||0),cantidad:Number(asF.cantidad),descripcion:asF.descripcion});
+      await db.insert("pedidos_aserradero",{carpinteria_id:usuario.id,material:asF.material,pies:Number(asF.pies),pulgadas:Number(asF.pulgadas),espesor:Number(asF.espesor||0),cantidad:Number(asF.cantidad),descripcion:asF.descripcion,fecha_limite:fechaLimiteISO(asF.fechaLimite)});
       notif("¡Pedido enviado a los aserraderos!");
-      setAsF({material:"",pies:"",pulgadas:"",espesor:"",cantidad:"",descripcion:""});
+      setAsF({material:"",pies:"",pulgadas:"",espesor:"",cantidad:"",descripcion:"",fechaLimite:""});
       setIntAs(false);
       cargarMisPedidosAserr();
       setSubAserr("mis");
@@ -2534,8 +2539,8 @@ function VistaCarpinteria({usuario,notif}){
             ))}
           </div>
           <div style={S.row,{marginTop:10}}>
-            <div style={S.col()}><div style={S.label}>Material</div><div style={S.valor}>{mat?.label}{sel.especie?` · ${sel.especie}`:""}</div></div>
-            <div style={S.col()}><div style={S.label}>Terminación</div><div style={S.valor}>{ter?.label}{sel.color?` · ${sel.color}`:""}</div></div>
+            <div style={S.col()}><div style={S.label}>Material</div><div style={{fontWeight:700}}>{mat?.label}{sel.especie?` · ${sel.especie}`:""}</div></div>
+            <div style={S.col()}><div style={S.label}>Terminación</div><div>{ter?.label}{sel.color?` · ${sel.color}`:""}</div></div>
           </div>
           {sel.notas_croquis&&<div style={{marginTop:12}}>
             <div style={S.label}>📝 Notas del croquis</div>
@@ -2788,6 +2793,11 @@ function VistaCarpinteria({usuario,notif}){
           </div>
           <div style={{marginTop:12}}><label style={S.label}>Observaciones</label><textarea value={asF.descripcion} onChange={e=>setAsF(f=>({...f,descripcion:e.target.value}))} placeholder="Calidad, secado, escuadría..." style={{...S.input,minHeight:56,resize:"vertical"}}/></div>
           <BannerFalta activo={intAs} lista={[[!asF.material,"el tipo de madera"],[!asF.pies,"el largo"],[!asF.pulgadas,"el ancho"],[!asF.cantidad,"la cantidad"]]}/>
+          <div style={{marginTop:12}}>
+            <label style={S.label}>Fecha límite para recibir cotizaciones <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
+            <input type="date" min={minFechaLimite()} value={asF.fechaLimite||""} onChange={e=>setAsF(f=>({...f,fechaLimite:e.target.value}))} style={{...S.input,maxWidth:220}}/>
+            <div style={{fontSize:14,color:C.textoSuave,marginTop:4}}>Pasada esa fecha el pedido se marca vencido y ya no se puede cotizar.</div>
+          </div>
           <button style={{...S.btn("dark"),marginTop:12}} onClick={enviarAserr}>📤 Enviar a aserraderos</button>
         </div>
       )}
@@ -2811,6 +2821,7 @@ function VistaCarpinteria({usuario,notif}){
                   <div style={{fontWeight:700,color:C.marron}}>{p.material}</div>
                   <div style={{fontSize:17,color:C.textoSuave}}>{p.pies}' largo · {p.pulgadas}" ancho · {p.espesor}" espesor · {p.cantidad} piezas</div>
                   <div style={{fontSize:17,color:C.textoSuave}}>{new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                  {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <span style={{whiteSpace:"nowrap",background:p._cantCot>0?C.verde:C.suave,color:p._cantCot>0?"#fff":C.textoSuave,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:20,fontFamily:"'Lato',sans-serif"}}>
@@ -2903,6 +2914,11 @@ function VistaCarpinteria({usuario,notif}){
               <label style={S.label}>Notas adicionales <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
               <input value={ferrF.notas} onChange={e=>setFerrF(f=>({...f,notas:e.target.value}))} placeholder="Marca preferida, color, etc." style={S.input}/>
             </div>
+            <div style={{marginTop:12}}>
+              <label style={S.label}>Fecha límite para recibir cotizaciones <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
+              <input type="date" min={minFechaLimite()} value={ferrF.fechaLimite||""} onChange={e=>setFerrF(f=>({...f,fechaLimite:e.target.value}))} style={{...S.input,maxWidth:220}}/>
+              <div style={{fontSize:14,color:C.textoSuave,marginTop:4}}>Pasada esa fecha el pedido se marca vencido y ya no se puede cotizar.</div>
+            </div>
             <BannerFalta activo={intFe} lista={[[ferrF.items.every(it=>!it.descripcion.trim()||!nmb(it.cantidad)),"al menos un herraje con cantidad"]]}/>
             <button style={{...S.btn("dark"),marginTop:12}} onClick={async()=>{
               const itemsValidos=ferrF.items.filter(it=>it.descripcion.trim()&&nmb(it.cantidad)>0);
@@ -2910,9 +2926,9 @@ function VistaCarpinteria({usuario,notif}){
               try{
                 const itemsLimpios=itemsValidos.map(it=>({descripcion:it.descripcion.trim(),cantidad:nmb(it.cantidad)}));
                 const resumen=itemsLimpios.map(it=>it.descripcion).join(", ");
-                await db.insert("pedidos_ferreteria",{carpinteria_id:usuario.id,items:itemsLimpios,descripcion:resumen,cantidad:itemsLimpios.reduce((a,it)=>a+it.cantidad,0),notas:ferrF.notas});
+                await db.insert("pedidos_ferreteria",{carpinteria_id:usuario.id,items:itemsLimpios,descripcion:resumen,cantidad:itemsLimpios.reduce((a,it)=>a+it.cantidad,0),notas:ferrF.notas,fecha_limite:fechaLimiteISO(ferrF.fechaLimite)});
                 notif("¡Pedido enviado a las ferreterías!");
-                setFerrF({items:[{descripcion:"",cantidad:"1"}],notas:""});
+                setFerrF({items:[{descripcion:"",cantidad:"1"}],notas:"",fechaLimite:""});
                 setIntFe(false);
                 cargarMisPedidosFerreria();
                 setSubFerr("mis");
@@ -2939,6 +2955,7 @@ function VistaCarpinteria({usuario,notif}){
                     <div>
                       <div style={{fontWeight:700,fontSize:18,color:C.marron}}>{p.descripcion}</div>
                       <div style={{fontSize:17,color:C.textoSuave}}>{Array.isArray(p.items)&&p.items.length>0?`${p.items.length} ítem${p.items.length>1?"s":""}`:`Cantidad: ${p.cantidad}`} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                      {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
                     </div>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <span style={{whiteSpace:"nowrap",background:p._cantCot>0?C.verde:C.suave,color:p._cantCot>0?"#fff":C.textoSuave,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:20,fontFamily:"'Lato',sans-serif"}}>
@@ -3033,6 +3050,11 @@ function VistaCarpinteria({usuario,notif}){
               <label style={S.label}>Otros materiales / notas <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
               <input value={pintF.notas} onChange={e=>setPintF(f=>({...f,notas:e.target.value}))} placeholder="Pinceles, brochas, lijas, cintas..." style={S.input}/>
             </div>
+            <div style={{marginTop:12}}>
+              <label style={S.label}>Fecha límite para recibir cotizaciones <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
+              <input type="date" min={minFechaLimite()} value={pintF.fechaLimite||""} onChange={e=>setPintF(f=>({...f,fechaLimite:e.target.value}))} style={{...S.input,maxWidth:220}}/>
+              <div style={{fontSize:14,color:C.textoSuave,marginTop:4}}>Pasada esa fecha el pedido se marca vencido y ya no se puede cotizar.</div>
+            </div>
             <BannerFalta activo={intPi} lista={[[pintF.items.every(it=>!it.descripcion.trim()||!nmb(it.litros)),"al menos un producto con litros"]]}/>
             <button style={{...S.btn("dark"),marginTop:12}} onClick={async()=>{
               const itemsValidos=pintF.items.filter(it=>it.descripcion.trim()&&nmb(it.litros)>0);
@@ -3040,9 +3062,9 @@ function VistaCarpinteria({usuario,notif}){
               try{
                 const itemsLimpios=itemsValidos.map(it=>({descripcion:it.descripcion.trim(),litros:nmb(it.litros)}));
                 const resumen=itemsLimpios.map(it=>it.descripcion).join(", ");
-                await db.insert("pedidos_pintureria",{carpinteria_id:usuario.id,items:itemsLimpios,descripcion:resumen,litros:itemsLimpios.reduce((a,it)=>a+it.litros,0),notas:pintF.notas});
+                await db.insert("pedidos_pintureria",{carpinteria_id:usuario.id,items:itemsLimpios,descripcion:resumen,litros:itemsLimpios.reduce((a,it)=>a+it.litros,0),notas:pintF.notas,fecha_limite:fechaLimiteISO(pintF.fechaLimite)});
                 notif("¡Pedido enviado a las pinturerías!");
-                setPintF({items:[{descripcion:"",litros:"1"}],notas:""});
+                setPintF({items:[{descripcion:"",litros:"1"}],notas:"",fechaLimite:""});
                 setIntPi(false);
                 cargarMisPedidosPint();
                 setSubPint("mis");
@@ -3069,6 +3091,7 @@ function VistaCarpinteria({usuario,notif}){
                     <div>
                       <div style={{fontWeight:700,fontSize:18,color:C.marron}}>{p.descripcion}</div>
                       <div style={{fontSize:17,color:C.textoSuave}}>{Array.isArray(p.items)&&p.items.length>0?`${p.items.length} ítem${p.items.length>1?"s":""}`:([p.color&&`🎨 ${p.color}`,p.tono,p.litros&&`${p.litros} L`].filter(Boolean).join(" · ")||"Sin detalle")} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                      {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
                     </div>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <span style={{whiteSpace:"nowrap",background:p._cantCot>0?C.verde:C.suave,color:p._cantCot>0?"#fff":C.textoSuave,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:20,fontFamily:"'Lato',sans-serif"}}>
@@ -3205,6 +3228,7 @@ function VistaAserradero({usuario,notif}){
 
   const enviarCot=async()=>{
     if(!sel||enviando||yaEnvio)return;
+    if(estaVencido(sel)){alert("Este pedido venció: ya no se pueden enviar cotizaciones.");return;}
     const itemsValidos=(cotF.items||[]).filter(it=>it.descripcion.trim()&&nmb(it.precio)>0&&nmb(it.cantidad)>0);
     if(itemsValidos.length===0){alert("Cargá al menos un ítem con descripción, precio y cantidad.");return;}
     setEnviando(true);
@@ -3243,15 +3267,15 @@ function VistaAserradero({usuario,notif}){
         <div style={S.cardTitle}>Pedido de carpintería</div>
         <div style={{background:C.suave,borderRadius:8,padding:12,border:`1px solid ${C.borde}`}}>
           <div style={S.row}>
-            <div style={S.col()}><div style={S.label}>Material</div><div style={S.valor}>{sel.material}</div></div>
+            <div style={S.col()}><div style={S.label}>Material</div><div style={{fontWeight:700,fontSize:17,color:C.marron}}>{sel.material}</div></div>
             <div style={S.col()}>
               <div style={S.label}>Medidas</div>
-              <div style={S.valorMono}>{sel.pies}' largo · {sel.pulgadas}" sección</div>
-              <div style={S.textoSecundario}>= {ftToCm(sel.pies)}cm · {inToCm(sel.pulgadas)}cm</div>
+              <div style={{fontFamily:"monospace",color:C.marron}}>{sel.pies}' largo · {sel.pulgadas}" sección</div>
+              <div style={{fontSize:17,color:C.textoSuave}}>= {ftToCm(sel.pies)}cm · {inToCm(sel.pulgadas)}cm</div>
             </div>
-            <div style={S.col()}><div style={S.label}>Cantidad</div><div style={S.valor}>{sel.cantidad} piezas</div></div>
+            <div style={S.col()}><div style={S.label}>Cantidad</div><div style={{fontWeight:700,fontSize:17,color:C.marron}}>{sel.cantidad} piezas</div></div>
           </div>
-          {sel.descripcion&&<div style={{...S.textoSecundario,marginTop:8,fontStyle:"italic"}}>{sel.descripcion}</div>}
+          {sel.descripcion&&<div style={{fontSize:17,color:C.textoSuave,marginTop:8,fontStyle:"italic"}}>{sel.descripcion}</div>}
         </div>
       </div>
 
@@ -3270,6 +3294,12 @@ function VistaAserradero({usuario,notif}){
           esEmpresa={true}
           aceptado={false}
         />
+      </div>
+      ):estaVencido(sel)?(
+      <div style={{...S.card,textAlign:"center",borderColor:"#B23A2E"}}>
+        <div style={{fontSize:32,marginBottom:8}}>⛔</div>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,color:"#B23A2E",fontWeight:700}}>Este pedido venció</div>
+        <div style={{fontSize:16,color:C.textoSuave,marginTop:6}}>Se puso una fecha límite que ya pasó, así que no se pueden enviar cotizaciones.</div>
       </div>
       ):(
       <div style={S.card}>
@@ -3379,13 +3409,15 @@ function VistaAserradero({usuario,notif}){
   }
 
   const cuenta={
-    cotizar:pedidos.filter(p=>!p._miEstado).length,
+    cotizar:pedidos.filter(p=>!p._miEstado&&!estaVencido(p)).length,
     cotizados:pedidos.filter(p=>p._miEstado).length,
+    vencido:pedidos.filter(p=>estaVencido(p)&&!p._miEstado).length,
     todos:pedidos.length,
   };
   const lista=pedidos.filter(p=>{
-    if(filtro==="cotizar")return !p._miEstado;
+    if(filtro==="cotizar")return !p._miEstado&&!estaVencido(p);
     if(filtro==="cotizados")return !!p._miEstado;
+    if(filtro==="vencido")return estaVencido(p)&&!p._miEstado;
     return true;
   });
 
@@ -3394,14 +3426,14 @@ function VistaAserradero({usuario,notif}){
       <div style={S.secTitle}>Pedidos de madera de carpinterías</div>
       <div style={{fontSize:17,color:C.textoSuave,marginBottom:14,fontStyle:"italic"}}>Medidas en pulgadas y pies con equivalencia en cm</div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
-        {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["todos","Todos"]].map(([id,l])=>(
+        {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]].map(([id,l])=>(
           <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} ({cuenta[id]})</button>
         ))}
       </div>
       {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
       {pedidos.length>0&&lista.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría</div>}
       {lista.map(p=>{
-        const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
+        const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
         return(
         <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>abrirPedido(p)}
           onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
@@ -3410,6 +3442,7 @@ function VistaAserradero({usuario,notif}){
             <div>
               <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:17}}>{p.material}</div>
               <div style={{fontSize:17,color:C.textoSuave,marginTop:3,fontFamily:"monospace"}}>{p.pies}' × {p.pulgadas}" · {p.cantidad} piezas · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+              {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
             </div>
             <span style={{alignSelf:"flex-start",whiteSpace:"nowrap",background:et.bg,color:et.fg,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:20,fontFamily:"'Lato',sans-serif"}}>{et.t}</span>
           </div>
@@ -3472,6 +3505,7 @@ function VistaFlete({usuario,notif}){
 
   const enviarCot=async()=>{
     if(!sel||enviando||yaEnvio)return;
+    if(estaVencido(sel)){alert("Este pedido venció: ya no se pueden enviar cotizaciones.");return;}
     const itemsValidos=(cotF.items||[]).filter(it=>it.descripcion.trim()&&nmb(it.precio)>0&&((it.modo||"viaje")==="viaje"||nmb(it.cantidad)>0));
     if(itemsValidos.length===0){alert("Cargá al menos un ítem con descripción, precio y cantidad.");return;}
     setEnviando(true);
@@ -3504,7 +3538,7 @@ function VistaFlete({usuario,notif}){
 
   // ---- Lado solicitante: pide flete y ve cotizaciones ----
   const [subFl,setSubFl]=useState("pedir");
-  const [pedF,setPedF]=useState({origen:"",destino:"",descripcion:"",fecha:"",notas:""});
+  const [pedF,setPedF]=useState({origen:"",destino:"",descripcion:"",fecha:"",notas:"",fechaLimite:""});
   const [misPedidos,setMisPedidos]=useState([]);
   const [selPedido,setSelPedido]=useState(null);
   const [cotizacionesFlete,setCotizacionesFlete]=useState([]);
@@ -3546,9 +3580,9 @@ function VistaFlete({usuario,notif}){
   const enviarPedido=async()=>{
     if(!(pedF.origen&&pedF.destino)){setIntFl(true);return;}
     try{
-      await db.insert("pedidos_flete",{solicitante_id:usuario.id,origen:pedF.origen,destino:pedF.destino,descripcion_carga:pedF.descripcion,fecha_deseada:pedF.fecha||null,notas:pedF.notas});
+      await db.insert("pedidos_flete",{solicitante_id:usuario.id,origen:pedF.origen,destino:pedF.destino,descripcion_carga:pedF.descripcion,fecha_deseada:pedF.fecha||null,notas:pedF.notas,fecha_limite:fechaLimiteISO(pedF.fechaLimite)});
       notif("¡Solicitud enviada a los fletes!");
-      setPedF({origen:"",destino:"",descripcion:"",fecha:"",notas:""});
+      setPedF({origen:"",destino:"",descripcion:"",fecha:"",notas:"",fechaLimite:""});
       setIntFl(false);
       cargarMisPedidos();
       setSubFl("mis");
@@ -3570,8 +3604,8 @@ function VistaFlete({usuario,notif}){
           <div style={S.cardTitle}>Pedido de flete</div>
           <div style={{background:C.suave,borderRadius:8,padding:12,border:`1px solid ${C.borde}`}}>
             <div style={S.row}>
-              <div style={S.col()}><div style={S.label}>Origen</div><div style={S.valor}>{sel.origen}</div></div>
-              <div style={S.col()}><div style={S.label}>Destino</div><div style={S.valor}>{sel.destino}</div></div>
+              <div style={S.col()}><div style={S.label}>Origen</div><div style={{fontWeight:700,color:C.marron}}>{sel.origen}</div></div>
+              <div style={S.col()}><div style={S.label}>Destino</div><div style={{fontWeight:700,color:C.marron}}>{sel.destino}</div></div>
             </div>
             {sel.fecha_deseada&&<div style={{fontSize:17,color:C.textoSuave,marginTop:8}}>📅 Fecha deseada: {new Date(sel.fecha_deseada+"T12:00").toLocaleDateString("es-AR")}</div>}
             {sel.descripcion_carga&&<div style={{fontSize:17,color:C.textoSuave,marginTop:6,fontStyle:"italic"}}>📦 {sel.descripcion_carga}</div>}
@@ -3594,6 +3628,12 @@ function VistaFlete({usuario,notif}){
             esEmpresa={true}
             aceptado={false}
           />
+        </div>
+        ):estaVencido(sel)?(
+        <div style={{...S.card,textAlign:"center",borderColor:"#B23A2E"}}>
+          <div style={{fontSize:32,marginBottom:8}}>⛔</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,color:"#B23A2E",fontWeight:700}}>Este pedido venció</div>
+          <div style={{fontSize:16,color:C.textoSuave,marginTop:6}}>Se puso una fecha límite que ya pasó, así que no se pueden enviar cotizaciones.</div>
         </div>
         ):(
         <div style={S.card}>
@@ -3716,13 +3756,15 @@ function VistaFlete({usuario,notif}){
     }
 
     const cuenta={
-      cotizar:pedidos.filter(p=>!p._miEstado).length,
+      cotizar:pedidos.filter(p=>!p._miEstado&&!estaVencido(p)).length,
       cotizados:pedidos.filter(p=>p._miEstado).length,
+      vencido:pedidos.filter(p=>estaVencido(p)&&!p._miEstado).length,
       todos:pedidos.length,
     };
     const lista=pedidos.filter(p=>{
-      if(filtro==="cotizar")return !p._miEstado;
+      if(filtro==="cotizar")return !p._miEstado&&!estaVencido(p);
       if(filtro==="cotizados")return !!p._miEstado;
+      if(filtro==="vencido")return estaVencido(p)&&!p._miEstado;
       return true;
     });
 
@@ -3730,14 +3772,14 @@ function VistaFlete({usuario,notif}){
       <div>
         <div style={S.secTitle}>🚚 Pedidos de flete</div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
-          {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["todos","Todos"]].map(([id,l])=>(
+          {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]].map(([id,l])=>(
             <button key={id} style={tabStyle(id)} onClick={()=>setFiltro(id)}>{l} ({cuenta[id]})</button>
           ))}
         </div>
         {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
         {pedidos.length>0&&lista.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría</div>}
         {lista.map(p=>{
-          const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
+          const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
           return(
           <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>abrirPedido(p)}
             onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
@@ -3747,6 +3789,7 @@ function VistaFlete({usuario,notif}){
                 <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:17}}>👤 {p._solNombre||"Solicitante"}</div>
                 <div style={{fontSize:16,color:C.marron,marginTop:2}}>{p.origen} → {p.destino}</div>
                 <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{p.fecha_deseada?new Date(p.fecha_deseada+"T12:00").toLocaleDateString("es-AR"):"Sin fecha definida"} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+              {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
               </div>
               <span style={{alignSelf:"flex-start",whiteSpace:"nowrap",background:et.bg,color:et.fg,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:20,fontFamily:"'Lato',sans-serif"}}>{et.t}</span>
             </div>
@@ -3790,6 +3833,11 @@ function VistaFlete({usuario,notif}){
               🗺️ Ver ruta en el mapa
             </a>
           )}
+          <div style={{marginTop:12}}>
+            <label style={S.label}>Fecha límite para recibir cotizaciones <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
+            <input type="date" min={minFechaLimite()} value={pedF.fechaLimite||""} onChange={e=>setPedF(f=>({...f,fechaLimite:e.target.value}))} style={{...S.input,maxWidth:220}}/>
+            <div style={{fontSize:14,color:C.textoSuave,marginTop:4}}>Pasada esa fecha el pedido se marca vencido y ya no se puede cotizar.</div>
+          </div>
           <button style={{...S.btn("dark"),marginTop:14}} onClick={enviarPedido}>📤 Solicitar a todos los fletes</button>
         </div>
       )}
@@ -3806,6 +3854,7 @@ function VistaFlete({usuario,notif}){
                 <div>
                   <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:18}}>{p.origen} → {p.destino}</div>
                   <div style={{fontSize:17,color:C.textoSuave}}>{p.fecha_deseada?new Date(p.fecha_deseada+"T12:00").toLocaleDateString("es-AR"):"Sin fecha definida"} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                  {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <span style={{whiteSpace:"nowrap",background:p._cantCot>0?C.verde:C.suave,color:p._cantCot>0?"#fff":C.textoSuave,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:20,fontFamily:"'Lato',sans-serif"}}>
@@ -3910,6 +3959,7 @@ function VistaFerreteria({usuario,notif}){
 
   const enviarCot=async()=>{
     if(!sel||enviando||yaEnvio)return;
+    if(estaVencido(sel)){alert("Este pedido venció: ya no se pueden enviar cotizaciones.");return;}
     const itemsValidos=(cotF.items||[]).filter(it=>it.descripcion.trim()&&nmb(it.precio)>0&&nmb(it.cantidad)>0);
     if(itemsValidos.length===0){alert("Cargá al menos un ítem con descripción, precio y cantidad.");return;}
     setEnviando(true);
@@ -3980,6 +4030,12 @@ function VistaFerreteria({usuario,notif}){
           esEmpresa={true}
           aceptado={false}
         />
+      </div>
+      ):estaVencido(sel)?(
+      <div style={{...S.card,textAlign:"center",borderColor:"#B23A2E"}}>
+        <div style={{fontSize:32,marginBottom:8}}>⛔</div>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,color:"#B23A2E",fontWeight:700}}>Este pedido venció</div>
+        <div style={{fontSize:16,color:C.textoSuave,marginTop:6}}>Se puso una fecha límite que ya pasó, así que no se pueden enviar cotizaciones.</div>
       </div>
       ):(
       <div style={S.card}>
@@ -4089,13 +4145,15 @@ function VistaFerreteria({usuario,notif}){
   }
 
   const cuenta={
-    cotizar:pedidos.filter(p=>!p._miEstado).length,
+    cotizar:pedidos.filter(p=>!p._miEstado&&!estaVencido(p)).length,
     cotizados:pedidos.filter(p=>p._miEstado).length,
+    vencido:pedidos.filter(p=>estaVencido(p)&&!p._miEstado).length,
     todos:pedidos.length,
   };
   const lista=pedidos.filter(p=>{
-    if(filtro==="cotizar")return !p._miEstado;
+    if(filtro==="cotizar")return !p._miEstado&&!estaVencido(p);
     if(filtro==="cotizados")return !!p._miEstado;
+    if(filtro==="vencido")return estaVencido(p)&&!p._miEstado;
     return true;
   });
 
@@ -4103,14 +4161,14 @@ function VistaFerreteria({usuario,notif}){
     <div>
       <div style={S.secTitle}>Pedidos de herrajes de carpinterías</div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
-        {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["todos","Todos"]].map(([id,l])=>(
+        {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]].map(([id,l])=>(
           <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} ({cuenta[id]})</button>
         ))}
       </div>
       {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
       {pedidos.length>0&&lista.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría</div>}
       {lista.map(p=>{
-        const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
+        const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
         return(
         <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>abrirPedido(p)}
           onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
@@ -4119,6 +4177,7 @@ function VistaFerreteria({usuario,notif}){
             <div>
               <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:21}}>{p.descripcion}</div>
               <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{Array.isArray(p.items)&&p.items.length>0?`${p.items.length} ítem${p.items.length>1?"s":""}`:`Cantidad: ${p.cantidad}`} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+              {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
             </div>
             <span style={{alignSelf:"flex-start",whiteSpace:"nowrap",background:et.bg,color:et.fg,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:20,fontFamily:"'Lato',sans-serif"}}>{et.t}</span>
           </div>
@@ -4169,6 +4228,7 @@ function VistaPintureria({usuario,notif}){
 
   const enviarCot=async()=>{
     if(!sel||enviando||yaEnvio)return;
+    if(estaVencido(sel)){alert("Este pedido venció: ya no se pueden enviar cotizaciones.");return;}
     const itemsValidos=(cotF.items||[]).filter(it=>it.descripcion.trim()&&nmb(it.precio)>0&&nmb(it.cantidad)>0);
     if(itemsValidos.length===0){alert("Cargá al menos un ítem con descripción, precio y cantidad.");return;}
     setEnviando(true);
@@ -4239,6 +4299,12 @@ function VistaPintureria({usuario,notif}){
           esEmpresa={true}
           aceptado={false}
         />
+      </div>
+      ):estaVencido(sel)?(
+      <div style={{...S.card,textAlign:"center",borderColor:"#B23A2E"}}>
+        <div style={{fontSize:32,marginBottom:8}}>⛔</div>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,color:"#B23A2E",fontWeight:700}}>Este pedido venció</div>
+        <div style={{fontSize:16,color:C.textoSuave,marginTop:6}}>Se puso una fecha límite que ya pasó, así que no se pueden enviar cotizaciones.</div>
       </div>
       ):(
       <div style={S.card}>
@@ -4348,13 +4414,15 @@ function VistaPintureria({usuario,notif}){
   }
 
   const cuenta={
-    cotizar:pedidos.filter(p=>!p._miEstado).length,
+    cotizar:pedidos.filter(p=>!p._miEstado&&!estaVencido(p)).length,
     cotizados:pedidos.filter(p=>p._miEstado).length,
+    vencido:pedidos.filter(p=>estaVencido(p)&&!p._miEstado).length,
     todos:pedidos.length,
   };
   const lista=pedidos.filter(p=>{
-    if(filtro==="cotizar")return !p._miEstado;
+    if(filtro==="cotizar")return !p._miEstado&&!estaVencido(p);
     if(filtro==="cotizados")return !!p._miEstado;
+    if(filtro==="vencido")return estaVencido(p)&&!p._miEstado;
     return true;
   });
 
@@ -4362,14 +4430,14 @@ function VistaPintureria({usuario,notif}){
     <div>
       <div style={S.secTitle}>Pedidos de pinturas de carpinterías</div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
-        {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["todos","Todos"]].map(([id,l])=>(
+        {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]].map(([id,l])=>(
           <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} ({cuenta[id]})</button>
         ))}
       </div>
       {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
       {pedidos.length>0&&lista.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría</div>}
       {lista.map(p=>{
-        const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
+        const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
         return(
         <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>abrirPedido(p)}
           onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
@@ -4378,6 +4446,7 @@ function VistaPintureria({usuario,notif}){
             <div>
               <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:21}}>{p.descripcion}</div>
               <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{Array.isArray(p.items)&&p.items.length>0?`${p.items.length} ítem${p.items.length>1?"s":""}`:[p.color&&`Color: ${p.color}`,p.litros&&`${p.litros} L`].filter(Boolean).join(" · ")} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+              {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
             </div>
             <span style={{alignSelf:"flex-start",whiteSpace:"nowrap",background:et.bg,color:et.fg,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:20,fontFamily:"'Lato',sans-serif"}}>{et.t}</span>
           </div>
