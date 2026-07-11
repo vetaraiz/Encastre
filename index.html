@@ -15,9 +15,7 @@
   <meta name="theme-color" content="#5C2E0A"/>
   <meta name="description" content="Encastre — La Comunidad de la Madera"/>
   <link rel="manifest" href="/manifest.json"/>
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
   <!-- Open Graph -->
   <meta property="og:title" content="Encastre"/>
   <meta property="og:description" content="La Comunidad de la Madera"/>
@@ -1400,7 +1398,10 @@ const S = {
   }),
   btnAi:{ background:`linear-gradient(135deg,#3D1A6E,#1A3D6E)`, color:"#E8D5FF", border:"1px solid #6B3AAA55", borderRadius:9, padding:"13px 24px", cursor:"pointer", fontSize:17, fontWeight:700, minHeight:48, display:"inline-flex", alignItems:"center", gap:6, boxShadow:"0 0 16px #6B3AAA22", fontFamily:"'Lato',sans-serif" },
   input:{ background:C.input, border:`1px solid ${C.borde}`, borderRadius:8, color:C.texto, padding:"13px 15px", fontSize:17, width:"100%", outline:"none", fontFamily:"'Lato',sans-serif", transition:"border .15s" },
-  label:{ fontSize:"17px", color:C.marron, marginBottom:7, display:"block", fontWeight:700, letterSpacing:.3 },
+  label:{ fontSize:"14px", color:C.marron, marginBottom:7, display:"block", fontWeight:700, letterSpacing:.3, lineHeight:1.4 },
+  valor:{ fontSize:16, fontWeight:700, color:C.marron, lineHeight:1.4 },
+  valorMono:{ fontSize:16, fontWeight:700, color:C.marron, fontFamily:"monospace", lineHeight:1.4 },
+  textoSecundario:{ fontSize:14, fontWeight:400, color:C.textoSuave, lineHeight:1.4 },
   row:{ display:"flex", gap:10, flexWrap:"wrap", width:"100%" },
   col:(f=1)=>({ flex:f, minWidth:"140px" }),
   secTitle:{ fontSize:"21px", color:C.marron, fontWeight:700, letterSpacing:.3, marginBottom:14, paddingBottom:8, borderBottom:`2px solid ${C.acento}`, fontFamily:"'Playfair Display',serif" },
@@ -2202,9 +2203,9 @@ function VistaCliente({usuario,notif}){
     return(
       <div style={{marginTop:12,borderTop:`1px dashed ${C.borde}`,paddingTop:12}} className="fade">
         <div style={S.row}>
-          <div style={S.col()}><div style={S.label}>Medidas</div><div style={{fontSize:16,fontFamily:"monospace",color:C.marron}}>Alto {sel.alto} · Ancho {sel.ancho} · Prof {sel.profundidad} cm</div></div>
-          <div style={S.col()}><div style={S.label}>Material</div><div>{mat?.label}{sel.especie?` · ${sel.especie}`:""}</div></div>
-          <div style={S.col()}><div style={S.label}>Terminación</div><div>{ter?.label}{sel.color?` · ${sel.color}`:""}</div></div>
+          <div style={S.col()}><div style={S.label}>Medidas</div><div style={S.valorMono}>Alto {sel.alto} · Ancho {sel.ancho} · Prof {sel.profundidad} cm</div></div>
+          <div style={S.col()}><div style={S.label}>Material</div><div style={S.valor}>{mat?.label}{sel.especie?` · ${sel.especie}`:""}</div></div>
+          <div style={S.col()}><div style={S.label}>Terminación</div><div style={S.valor}>{ter?.label}{sel.color?` · ${sel.color}`:""}</div></div>
         </div>
         {presups.length===0?(
           <div style={{textAlign:"center",color:C.textoSuave,padding:20}}>
@@ -2533,8 +2534,8 @@ function VistaCarpinteria({usuario,notif}){
             ))}
           </div>
           <div style={S.row,{marginTop:10}}>
-            <div style={S.col()}><div style={S.label}>Material</div><div style={{fontWeight:700}}>{mat?.label}{sel.especie?` · ${sel.especie}`:""}</div></div>
-            <div style={S.col()}><div style={S.label}>Terminación</div><div>{ter?.label}{sel.color?` · ${sel.color}`:""}</div></div>
+            <div style={S.col()}><div style={S.label}>Material</div><div style={S.valor}>{mat?.label}{sel.especie?` · ${sel.especie}`:""}</div></div>
+            <div style={S.col()}><div style={S.label}>Terminación</div><div style={S.valor}>{ter?.label}{sel.color?` · ${sel.color}`:""}</div></div>
           </div>
           {sel.notas_croquis&&<div style={{marginTop:12}}>
             <div style={S.label}>📝 Notas del croquis</div>
@@ -3242,15 +3243,15 @@ function VistaAserradero({usuario,notif}){
         <div style={S.cardTitle}>Pedido de carpintería</div>
         <div style={{background:C.suave,borderRadius:8,padding:12,border:`1px solid ${C.borde}`}}>
           <div style={S.row}>
-            <div style={S.col()}><div style={S.label}>Material</div><div style={{fontWeight:700,fontSize:17,color:C.marron}}>{sel.material}</div></div>
+            <div style={S.col()}><div style={S.label}>Material</div><div style={S.valor}>{sel.material}</div></div>
             <div style={S.col()}>
               <div style={S.label}>Medidas</div>
-              <div style={{fontFamily:"monospace",color:C.marron}}>{sel.pies}' largo · {sel.pulgadas}" sección</div>
-              <div style={{fontSize:17,color:C.textoSuave}}>= {ftToCm(sel.pies)}cm · {inToCm(sel.pulgadas)}cm</div>
+              <div style={S.valorMono}>{sel.pies}' largo · {sel.pulgadas}" sección</div>
+              <div style={S.textoSecundario}>= {ftToCm(sel.pies)}cm · {inToCm(sel.pulgadas)}cm</div>
             </div>
-            <div style={S.col()}><div style={S.label}>Cantidad</div><div style={{fontWeight:700,fontSize:17,color:C.marron}}>{sel.cantidad} piezas</div></div>
+            <div style={S.col()}><div style={S.label}>Cantidad</div><div style={S.valor}>{sel.cantidad} piezas</div></div>
           </div>
-          {sel.descripcion&&<div style={{fontSize:17,color:C.textoSuave,marginTop:8,fontStyle:"italic"}}>{sel.descripcion}</div>}
+          {sel.descripcion&&<div style={{...S.textoSecundario,marginTop:8,fontStyle:"italic"}}>{sel.descripcion}</div>}
         </div>
       </div>
 
@@ -3569,8 +3570,8 @@ function VistaFlete({usuario,notif}){
           <div style={S.cardTitle}>Pedido de flete</div>
           <div style={{background:C.suave,borderRadius:8,padding:12,border:`1px solid ${C.borde}`}}>
             <div style={S.row}>
-              <div style={S.col()}><div style={S.label}>Origen</div><div style={{fontWeight:700,color:C.marron}}>{sel.origen}</div></div>
-              <div style={S.col()}><div style={S.label}>Destino</div><div style={{fontWeight:700,color:C.marron}}>{sel.destino}</div></div>
+              <div style={S.col()}><div style={S.label}>Origen</div><div style={S.valor}>{sel.origen}</div></div>
+              <div style={S.col()}><div style={S.label}>Destino</div><div style={S.valor}>{sel.destino}</div></div>
             </div>
             {sel.fecha_deseada&&<div style={{fontSize:17,color:C.textoSuave,marginTop:8}}>📅 Fecha deseada: {new Date(sel.fecha_deseada+"T12:00").toLocaleDateString("es-AR")}</div>}
             {sel.descripcion_carga&&<div style={{fontSize:17,color:C.textoSuave,marginTop:6,fontStyle:"italic"}}>📦 {sel.descripcion_carga}</div>}
