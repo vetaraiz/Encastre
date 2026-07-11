@@ -1387,24 +1387,24 @@ const S = {
   logoSub:{ fontSize:17, color:C.acento, letterSpacing:3, textTransform:"uppercase", display:"block", lineHeight:1, className:"logo-sub-mobile" },
   main:{ maxWidth:1100, margin:"0 auto", padding:"18px 16px" },
   card:{ background:C.card, border:`1px solid ${C.borde}`, borderRadius:12, padding:22, marginBottom:16, boxShadow:"0 2px 8px #5C2E0A11" },
-  cardTitle:{ fontFamily:"'Playfair Display',serif", fontSize:21, fontWeight:700, color:C.marron, marginBottom:14 },
+  cardTitle:{ fontFamily:"'Playfair Display',serif", fontSize:23, fontWeight:700, color:C.marron, marginBottom:14 },
   btn:(v="gold")=>({
     background:v==="gold"?C.acento:v==="dark"?C.marron:v==="red"?C.rojo:"transparent",
     color:v==="ghost"?C.marron:C.crema,
     border:v==="ghost"?`2px solid ${C.marron}`:"none",
-    borderRadius:9, padding:"13px 24px", cursor:"pointer", fontSize:17, fontWeight:700, minHeight:48,
+    borderRadius:9, padding:"13px 24px", cursor:"pointer", fontSize:18, fontWeight:700, minHeight:48,
     transition:"all .15s", display:"inline-flex", alignItems:"center", gap:6,
     fontFamily:"'Lato',sans-serif",
   }),
   btnAi:{ background:`linear-gradient(135deg,#3D1A6E,#1A3D6E)`, color:"#E8D5FF", border:"1px solid #6B3AAA55", borderRadius:9, padding:"13px 24px", cursor:"pointer", fontSize:17, fontWeight:700, minHeight:48, display:"inline-flex", alignItems:"center", gap:6, boxShadow:"0 0 16px #6B3AAA22", fontFamily:"'Lato',sans-serif" },
-  input:{ background:C.input, border:`1px solid ${C.borde}`, borderRadius:8, color:C.texto, padding:"13px 15px", fontSize:17, width:"100%", outline:"none", fontFamily:"'Lato',sans-serif", transition:"border .15s" },
-  label:{ fontSize:"14px", color:C.marron, marginBottom:7, display:"block", fontWeight:700, letterSpacing:.3, lineHeight:1.4 },
-  valor:{ fontSize:16, fontWeight:700, color:C.marron, lineHeight:1.4 },
-  valorMono:{ fontSize:16, fontWeight:700, color:C.marron, fontFamily:"monospace", lineHeight:1.4 },
-  textoSecundario:{ fontSize:14, fontWeight:400, color:C.textoSuave, lineHeight:1.4 },
+  input:{ background:C.input, border:`1px solid ${C.borde}`, borderRadius:8, color:C.texto, padding:"13px 15px", fontSize:18, width:"100%", outline:"none", fontFamily:"'Lato',sans-serif", transition:"border .15s" },
+  label:{ fontSize:"18px", color:C.marron, marginBottom:7, display:"block", fontWeight:700, letterSpacing:.3, lineHeight:1.4 },
+  valor:{ fontSize:20, fontWeight:700, color:C.marron, lineHeight:1.4 },
+  valorMono:{ fontSize:20, fontWeight:700, color:C.marron, fontFamily:"monospace", lineHeight:1.4 },
+  textoSecundario:{ fontSize:16, fontWeight:400, color:C.textoSuave, lineHeight:1.4 },
   row:{ display:"flex", gap:10, flexWrap:"wrap", width:"100%" },
   col:(f=1)=>({ flex:f, minWidth:"140px" }),
-  secTitle:{ fontSize:"21px", color:C.marron, fontWeight:700, letterSpacing:.3, marginBottom:14, paddingBottom:8, borderBottom:`2px solid ${C.acento}`, fontFamily:"'Playfair Display',serif" },
+  secTitle:{ fontSize:"23px", color:C.marron, fontWeight:700, letterSpacing:.3, marginBottom:14, paddingBottom:8, borderBottom:`2px solid ${C.acento}`, fontFamily:"'Playfair Display',serif" },
   tag:(on)=>({ background:on?C.marron:C.input, color:on?C.crema:C.textoSuave, border:`1px solid ${on?C.marron:C.borde}`, borderRadius:7, padding:"11px 18px", cursor:"pointer", fontSize:17, fontWeight:on?700:400, transition:"all .15s", fontFamily:"'Lato',sans-serif" }),
   badge:(e)=>({ background:EC[e]+"22", color:EC[e], border:`1px solid ${EC[e]}55`, borderRadius:5, padding:"3px 10px", fontSize:17, fontWeight:700, letterSpacing:.8, textTransform:"uppercase", display:"inline-block" }),
   aiPanel:{ background:"linear-gradient(135deg,#1E0A3C,#0A1E3C)", border:"1px solid #6B3AAA44", borderRadius:12, padding:18, marginBottom:14, boxShadow:"0 0 20px #6B3AAA22" },
@@ -1742,7 +1742,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-11.1</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-11.2</div>
     </div>
   );
 }
