@@ -1398,6 +1398,27 @@ function useBadges(usuario){
         }
       }catch{}
     }
+    // Paso 4 - Pedidos NUEVOS que le llegaron a este proveedor y todavia no abrio
+    const comoProveedor={
+      carpinteria:["pedidos","pedidos"],
+      aserradero:["pedidos_aserradero","aserradero"],
+      ferreteria:["pedidos_ferreteria","ferreteria"],
+      pintureria:["pedidos_pintureria","pintureria"],
+      flete:["pedidos_flete","flete"],
+    }[usuario.tipo];
+    if(comoProveedor){
+      const [tabla,tipo]=comoProveedor;
+      try{
+        const ps=await db.select(tabla,"?select=id");
+        if(ps.length){
+          const vistas=await db.select("vistas_pedido",`?usuario_id=eq.${usuario.id}&tipo_pedido=eq.${tipo}&select=pedido_id`);
+          const yaVistos=new Set(vistas.map(v=>v.pedido_id));
+          const sinVer=ps.filter(p=>!yaVistos.has(p.id)).length;
+          const clave=usuario.tipo==="carpinteria"?"pedidos":usuario.tipo;
+          cuenta[clave]+=sinVer;
+        }
+      }catch{}
+    }
     setBadges(cuenta);
   },[usuario]);
   useEffect(()=>{
@@ -1409,10 +1430,25 @@ function useBadges(usuario){
   return badges;
 }
 
-// Pastilla verde con el número de novedades
+// Etiqueta NUEVO para pedidos/cotizaciones sin abrir
+function TagNuevo({on}){
+  if(!on)return null;
+  return <span style={{marginLeft:8,fontSize:12,fontWeight:800,color:"#fff",background:"#009966",borderRadius:10,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>;
+}
+
+// Punto verde: indica que hay novedades sin ver (sin contar cuántas)
 function Badge9({n}){
   if(!n||n<=0)return null;
-  return <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:20,height:20,padding:"0 6px",marginLeft:6,borderRadius:10,background:"#009966",color:"#fff",fontSize:12,fontWeight:800,fontFamily:"'Lato',sans-serif",lineHeight:1}}>{n>99?"99+":n}</span>;
+  return <span style={{display:"inline-block",width:9,height:9,marginLeft:7,borderRadius:"50%",background:"#009966",verticalAlign:"middle"}}/>;
+}
+
+// Marca un pedido como visto POR ESTE usuario (no global: cada proveedor tiene su propia marca)
+async function marcarPedidoVisto(tipoPedido,pedidoId,usuarioId){
+  if(!pedidoId||!usuarioId)return;
+  try{
+    await db.insert("vistas_pedido",{pedido_id:pedidoId,tipo_pedido:tipoPedido,usuario_id:usuarioId});
+    if(typeof window!=="undefined"&&window.__refrescarBadges) window.__refrescarBadges();
+  }catch{}  // si ya existe, el unique lo rechaza y no pasa nada
 }
 
 // ─── VISTO / NO VISTO: marcar cotizaciones al abrirlas ──────────────────────
@@ -1818,7 +1854,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-11.5</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-11.6</div>
     </div>
   );
 }
@@ -2438,7 +2474,12 @@ function VistaCarpinteria({usuario,notif}){
         const mp=await db.select("presupuestos",`?carpinteria_id=eq.${usuario.id}&select=pedido_id,estado`);
         mp.forEach(p=>{ mios[p.pedido_id]=p.estado||"enviado"; });
       }catch{}
-      setPedidos(d.map(p=>({...p,_clienteNombre:mapa[p.cliente_id]||"",_miEstado:mios[p.id]||null})));
+      let vistos=new Set();
+      try{
+        const vs=await db.select("vistas_pedido",`?usuario_id=eq.${usuario.id}&tipo_pedido=eq.pedidos&select=pedido_id`);
+        vs.forEach(v=>vistos.add(v.pedido_id));
+      }catch{}
+      setPedidos(d.map(p=>({...p,_clienteNombre:mapa[p.cliente_id]||"",_miEstado:mios[p.id]||null,_nuevo:!vistos.has(p.id)})));
     }catch{}
   },[usuario.id]);
   // Auto-refresh cada 15 segundos para ver pedidos nuevos
@@ -2560,6 +2601,7 @@ function VistaCarpinteria({usuario,notif}){
 
   const abrirPedidoCliente=async(p)=>{
     setSel(p); setYaEnvio(false); setMiPresupuesto(null);
+    if(p._nuevo){ marcarPedidoVisto("pedidos",p.id,usuario.id); setPedidos(ps=>ps.map(x=>x.id===p.id?{...x,_nuevo:false}:x)); }
     try{
       const d=await db.select("presupuestos",`?pedido_id=eq.${p.id}&carpinteria_id=eq.${usuario.id}&limit=1`);
       if(d&&d.length>0){
@@ -2841,12 +2883,12 @@ function VistaCarpinteria({usuario,notif}){
             else { et={t:"Para cotizar",bg:C.marron,fg:C.crema}; }
             const cerradoParaMi = p.estado==="aceptado" && p._miEstado!=="aceptado";
             return(
-              <div key={p.id} style={{...S.card,cursor:cerradoParaMi?"default":"pointer",transition:"all .15s",opacity:cerradoParaMi?0.7:1}} onClick={()=>{ if(!cerradoParaMi) abrirPedidoCliente(p); }}
+              <div key={p.id} style={{...S.card,cursor:cerradoParaMi?"default":"pointer",transition:"all .15s",opacity:cerradoParaMi?0.7:1,borderColor:p._nuevo?"#009966":C.borde,borderWidth:p._nuevo?2:1}} onClick={()=>{ if(!cerradoParaMi) abrirPedidoCliente(p); }}
                 onMouseEnter={e=>{if(!cerradoParaMi){e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}}
-                onMouseLeave={e=>{e.currentTarget.style.borderColor=C.borde;e.currentTarget.style.transform="none";}}>
+                onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
                 <div style={{display:"flex",justifyContent:"space-between",gap:10}}>
                   <div>
-                    <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:21}}>{p.descripcion}</div>
+                    <div style={{fontFamily:"'Playfair Display',serif",fontWeight:p._nuevo?900:700,color:C.marron,fontSize:21}}>{p.descripcion}<TagNuevo on={p._nuevo}/></div>
                     {p._clienteNombre&&<div style={{fontSize:16,color:C.marron,marginTop:2}}>👤 {p._clienteNombre}</div>}
                     <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{p.alto}×{p.ancho}×{p.profundidad}cm · {mat?.label} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
                     {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
@@ -3274,13 +3316,19 @@ function VistaAserradero({usuario,notif}){
         const mc=await db.select("cotizaciones_aserradero",`?aserradero_id=eq.${usuario.id}&select=pedido_id`);
         mc.forEach(c=>{mias[c.pedido_id]=true;});
       }catch{}
-      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null})));
+      let vistos=new Set();
+      try{
+        const vs=await db.select("vistas_pedido",`?usuario_id=eq.${usuario.id}&tipo_pedido=eq.aserradero&select=pedido_id`);
+        vs.forEach(v=>vistos.add(v.pedido_id));
+      }catch{}
+      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null,_nuevo:!vistos.has(p.id)})));
     }catch{}
   },[usuario.id]);
   useEffect(()=>{cargar();const t=setInterval(cargar,15000);return()=>clearInterval(t);},[cargar]);
 
   const abrirPedido=async(p)=>{
     setSel(p); setYaEnvio(false); setMiCot(null);
+    if(p._nuevo){ marcarPedidoVisto("aserradero",p.id,usuario.id); setPedidos(ps=>ps.map(x=>x.id===p.id?{...x,_nuevo:false}:x)); }
     try{
       const d=await db.select("cotizaciones_aserradero",`?pedido_id=eq.${p.id}&aserradero_id=eq.${usuario.id}&limit=1`);
       if(d&&d.length>0){
@@ -3502,12 +3550,12 @@ function VistaAserradero({usuario,notif}){
       {lista.map(p=>{
         const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
         return(
-        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>abrirPedido(p)}
+        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",borderColor:p._nuevo?"#009966":C.borde,borderWidth:p._nuevo?2:1}} onClick={()=>abrirPedido(p)}
           onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
-          onMouseLeave={e=>{e.currentTarget.style.borderColor=C.borde;e.currentTarget.style.transform="none";}}>
+          onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:17}}>{p.material}</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontWeight:p._nuevo?900:700,color:C.marron,fontSize:17}}>{p.material}<TagNuevo on={p._nuevo}/></div>
               <div style={{fontSize:17,color:C.textoSuave,marginTop:3,fontFamily:"monospace"}}>{p.pies}' × {p.pulgadas}" · {p.cantidad} piezas · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
               {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
             </div>
@@ -3584,13 +3632,19 @@ function VistaFlete({usuario,notif}){
           us.forEach(u=>{nombres[u.id]=u.nombre;});
         }
       }catch{}
-      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null,_solNombre:nombres[p.solicitante_id]||"Solicitante"})));
+      let vistos=new Set();
+      try{
+        const vs=await db.select("vistas_pedido",`?usuario_id=eq.${usuario.id}&tipo_pedido=eq.flete&select=pedido_id`);
+        vs.forEach(v=>vistos.add(v.pedido_id));
+      }catch{}
+      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null,_solNombre:nombres[p.solicitante_id]||"Solicitante",_nuevo:!vistos.has(p.id)})));
     }catch{}
   },[usuario.id,esFlete]);
   useEffect(()=>{cargar();const t=setInterval(cargar,15000);return()=>clearInterval(t);},[cargar]);
 
   const abrirPedido=async(p)=>{
     setSel(p); setYaEnvio(false); setMiCot(null);
+    if(p._nuevo){ marcarPedidoVisto("flete",p.id,usuario.id); setPedidos(ps=>ps.map(x=>x.id===p.id?{...x,_nuevo:false}:x)); }
     try{
       const d=await db.select("cotizaciones_flete",`?pedido_id=eq.${p.id}&flete_id=eq.${usuario.id}&limit=1`);
       if(d&&d.length>0){
@@ -3885,12 +3939,12 @@ function VistaFlete({usuario,notif}){
         {lista.map(p=>{
           const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
           return(
-          <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>abrirPedido(p)}
+          <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",borderColor:p._nuevo?"#009966":C.borde,borderWidth:p._nuevo?2:1}} onClick={()=>abrirPedido(p)}
             onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor=C.borde;e.currentTarget.style.transform="none";}}>
+            onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
             <div style={{display:"flex",justifyContent:"space-between"}}>
               <div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:17}}>👤 {p._solNombre||"Solicitante"}</div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontWeight:p._nuevo?900:700,color:C.marron,fontSize:17}}>👤 {p._solNombre||"Solicitante"}<TagNuevo on={p._nuevo}/></div>
                 <div style={{fontSize:16,color:C.marron,marginTop:2}}>{p.origen} → {p.destino}</div>
                 <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{p.fecha_deseada?new Date(p.fecha_deseada+"T12:00").toLocaleDateString("es-AR"):"Sin fecha definida"} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
               {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
@@ -4042,13 +4096,19 @@ function VistaFerreteria({usuario,notif}){
         const mc=await db.select("cotizaciones_ferreteria",`?ferreteria_id=eq.${usuario.id}&select=pedido_id`);
         mc.forEach(c=>{mias[c.pedido_id]=true;});
       }catch{}
-      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null})));
+      let vistos=new Set();
+      try{
+        const vs=await db.select("vistas_pedido",`?usuario_id=eq.${usuario.id}&tipo_pedido=eq.ferreteria&select=pedido_id`);
+        vs.forEach(v=>vistos.add(v.pedido_id));
+      }catch{}
+      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null,_nuevo:!vistos.has(p.id)})));
     }catch{}
   },[usuario.id]);
   useEffect(()=>{cargar();const t=setInterval(cargar,15000);return()=>clearInterval(t);},[cargar]);
 
   const abrirPedido=async(p)=>{
     setSel(p); setYaEnvio(false); setMiCot(null);
+    if(p._nuevo){ marcarPedidoVisto("ferreteria",p.id,usuario.id); setPedidos(ps=>ps.map(x=>x.id===p.id?{...x,_nuevo:false}:x)); }
     try{
       const d=await db.select("cotizaciones_ferreteria",`?pedido_id=eq.${p.id}&ferreteria_id=eq.${usuario.id}&limit=1`);
       if(d&&d.length>0){
@@ -4274,12 +4334,12 @@ function VistaFerreteria({usuario,notif}){
       {lista.map(p=>{
         const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
         return(
-        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>abrirPedido(p)}
+        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",borderColor:p._nuevo?"#009966":C.borde,borderWidth:p._nuevo?2:1}} onClick={()=>abrirPedido(p)}
           onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
-          onMouseLeave={e=>{e.currentTarget.style.borderColor=C.borde;e.currentTarget.style.transform="none";}}>
+          onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:21}}>{p.descripcion}</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontWeight:p._nuevo?900:700,color:C.marron,fontSize:21}}>{p.descripcion}<TagNuevo on={p._nuevo}/></div>
               <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{Array.isArray(p.items)&&p.items.length>0?`${p.items.length} ítem${p.items.length>1?"s":""}`:`Cantidad: ${p.cantidad}`} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
               {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
             </div>
@@ -4311,13 +4371,19 @@ function VistaPintureria({usuario,notif}){
         const mc=await db.select("cotizaciones_pintureria",`?pintureria_id=eq.${usuario.id}&select=pedido_id`);
         mc.forEach(c=>{mias[c.pedido_id]=true;});
       }catch{}
-      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null})));
+      let vistos=new Set();
+      try{
+        const vs=await db.select("vistas_pedido",`?usuario_id=eq.${usuario.id}&tipo_pedido=eq.pintureria&select=pedido_id`);
+        vs.forEach(v=>vistos.add(v.pedido_id));
+      }catch{}
+      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null,_nuevo:!vistos.has(p.id)})));
     }catch{}
   },[usuario.id]);
   useEffect(()=>{cargar();const t=setInterval(cargar,15000);return()=>clearInterval(t);},[cargar]);
 
   const abrirPedido=async(p)=>{
     setSel(p); setYaEnvio(false); setMiCot(null);
+    if(p._nuevo){ marcarPedidoVisto("pintureria",p.id,usuario.id); setPedidos(ps=>ps.map(x=>x.id===p.id?{...x,_nuevo:false}:x)); }
     try{
       const d=await db.select("cotizaciones_pintureria",`?pedido_id=eq.${p.id}&pintureria_id=eq.${usuario.id}&limit=1`);
       if(d&&d.length>0){
@@ -4543,12 +4609,12 @@ function VistaPintureria({usuario,notif}){
       {lista.map(p=>{
         const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
         return(
-        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s"}} onClick={()=>abrirPedido(p)}
+        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",borderColor:p._nuevo?"#009966":C.borde,borderWidth:p._nuevo?2:1}} onClick={()=>abrirPedido(p)}
           onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
-          onMouseLeave={e=>{e.currentTarget.style.borderColor=C.borde;e.currentTarget.style.transform="none";}}>
+          onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:C.marron,fontSize:21}}>{p.descripcion}</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontWeight:p._nuevo?900:700,color:C.marron,fontSize:21}}>{p.descripcion}<TagNuevo on={p._nuevo}/></div>
               <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{Array.isArray(p.items)&&p.items.length>0?`${p.items.length} ítem${p.items.length>1?"s":""}`:[p.color&&`Color: ${p.color}`,p.litros&&`${p.litros} L`].filter(Boolean).join(" · ")} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
               {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
             </div>
