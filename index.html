@@ -1862,7 +1862,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-15.3</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-15.5</div>
     </div>
   );
 }
@@ -2401,7 +2401,7 @@ function VistaCliente({usuario,notif}){
         return(
           <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
             {[["todos","Todos"],["abierto","Abiertos"],["aceptado","Aceptados"],["vencido","Vencidos"]].map(([id,l])=>(
-              <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} ({cuenta[id]})</button>
+              <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} {cuenta[id]}</button>
             ))}
           </div>
         );
@@ -2882,7 +2882,7 @@ function VistaCarpinteria({usuario,notif}){
             return(
               <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
                 {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["cerrados","Cerrados"],["vencido","Vencidos"],["todos","Todos"]].map(([id,l])=>(
-                  <button key={id} style={{...S.btn(filtroCarp===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltroCarp(id)}>{l} ({cuenta[id]})</button>
+                  <button key={id} style={{...S.btn(filtroCarp===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltroCarp(id)}>{l} {cuenta[id]}</button>
                 ))}
               </div>
             );
@@ -3570,7 +3570,7 @@ function VistaAserradero({usuario,notif}){
       <div style={{fontSize:17,color:C.textoSuave,marginBottom:14,fontStyle:"italic"}}>Medidas en pulgadas y pies con equivalencia en cm</div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
         {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]].map(([id,l])=>(
-          <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} ({cuenta[id]})</button>
+          <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} {cuenta[id]}</button>
         ))}
       </div>
       {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
@@ -3960,7 +3960,7 @@ function VistaFlete({usuario,notif}){
         <div style={S.secTitle}>🚚 Pedidos de flete</div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
           {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]].map(([id,l])=>(
-            <button key={id} style={tabStyle(id)} onClick={()=>setFiltro(id)}>{l} ({cuenta[id]})</button>
+            <button key={id} style={tabStyle(id)} onClick={()=>setFiltro(id)}>{l} {cuenta[id]}</button>
           ))}
         </div>
         {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
@@ -4355,7 +4355,7 @@ function VistaFerreteria({usuario,notif}){
       <div style={S.secTitle}>Pedidos de herrajes de carpinterías</div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
         {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]].map(([id,l])=>(
-          <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} ({cuenta[id]})</button>
+          <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} {cuenta[id]}</button>
         ))}
       </div>
       {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
@@ -4630,7 +4630,7 @@ function VistaPintureria({usuario,notif}){
       <div style={S.secTitle}>Pedidos de pinturas de carpinterías</div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
         {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]].map(([id,l])=>(
-          <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} ({cuenta[id]})</button>
+          <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} {cuenta[id]}</button>
         ))}
       </div>
       {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
