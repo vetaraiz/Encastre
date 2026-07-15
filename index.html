@@ -1307,6 +1307,13 @@ const db = {
   async signIn(e,p){ const r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:e,password:p})}); return r.json(); },
   async signOut(tk){ await fetch(`${SUPABASE_URL}/auth/v1/logout`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${tk}`}}); },
   async updatePassword(nueva){ const tk=await this.tokenActual(); const r=await fetch(`${SUPABASE_URL}/auth/v1/user`,{method:"PUT",headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${tk}`,"Content-Type":"application/json"},body:JSON.stringify({password:nueva})}); const d=await r.json(); if(!r.ok)throw new Error(d.msg||d.error_description||d.error||"No se pudo cambiar la contraseña"); return d; },
+  // Envía un aviso por mail vía la Edge Function. "Mejor esfuerzo": nunca lanza error ni bloquea el flujo.
+  async avisarPorMail(para,asunto,cuerpo){
+    try{
+      const tk=await this.tokenActual();
+      await fetch(`${SUPABASE_URL}/functions/v1/enviar-mail`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${tk}`,"Content-Type":"application/json"},body:JSON.stringify({para,asunto,cuerpo})});
+    }catch(e){ /* silencioso: el aviso es secundario */ }
+  },
 };
 
 async function pedirIA(prompt) {
@@ -1855,7 +1862,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-12.2</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-15.1</div>
     </div>
   );
 }
@@ -2061,6 +2068,14 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
         return;
       }
       await db.insert("pedidos",{cliente_id:usuario.id,descripcion:f.descripcion,alto:Number(f.alto),ancho:Number(f.ancho),profundidad:Number(f.profundidad),material:f.material,especie:f.especie||null,terminacion:f.terminacion,color:f.color,notas_croquis:f.notasCroquis||"",tiene_cajones:f.tieneCajones==="Sí",cantidad_cajones:Number(f.cantidadCajones)||0,medidas_cajones:f.medidasCajones||"",croquis_imagen:f.croquisImg||"",fecha_limite:f.fechaLimite?new Date(f.fechaLimite+"T23:59:59").toISOString():null});
+      // Aviso por mail a las carpinterías (mejor esfuerzo, sin bloquear ni revelar nada del pedido)
+      (async()=>{
+        try{
+          const carps=await db.select("usuarios","?tipo=eq.carpinteria&select=email");
+          const cuerpo="<p>Hola,</p><p>Tenés un <strong>nuevo pedido de presupuesto</strong> para cotizar en Encastre.</p><p>Ingresá a <a href=\"https://encastre.com.ar\">encastre.com.ar</a> para verlo y cotizarlo.</p><p>— Encastre, La Comunidad de la Madera</p>";
+          for(const c of (carps||[])){ if(c.email) db.avisarPorMail(c.email,"Nuevo pedido para cotizar - Encastre",cuerpo); }
+        }catch(e){}
+      })();
       notif("¡Pedido enviado a todas las carpinterías!");
       onGuardar();
     }catch(e){alert("Error al guardar pedido: "+e.message);setGuardando(false);}
