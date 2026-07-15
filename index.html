@@ -1862,7 +1862,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-15.5</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-15.6</div>
     </div>
   );
 }
@@ -2071,7 +2071,7 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
       // Aviso por mail a las carpinterías (mejor esfuerzo, sin bloquear ni revelar nada del pedido)
       (async()=>{
         try{
-          const carps=await db.select("usuarios","?tipo=eq.carpinteria&select=email");
+          const carps=await db.select("usuarios","?tipo=eq.carpinteria&recibir_avisos=eq.true&select=email");
           const cuerpo="<p>Hola,</p><p>Tenés un <strong>nuevo pedido de presupuesto</strong> para cotizar en Encastre.</p><p>Ingresá a <a href=\"https://encastre.com.ar\">encastre.com.ar</a> para verlo y cotizarlo.</p><p>— Encastre, La Comunidad de la Madera</p>";
           for(const c of (carps||[])){ if(c.email) db.avisarPorMail(c.email,"Nuevo pedido para cotizar - Encastre",cuerpo); }
         }catch(e){}
@@ -2666,7 +2666,7 @@ function VistaCarpinteria({usuario,notif}){
     try{
       await db.insert("pedidos_aserradero",{carpinteria_id:usuario.id,material:asF.material,pies:Number(asF.pies),pulgadas:Number(asF.pulgadas),espesor:Number(asF.espesor||0),cantidad:Number(asF.cantidad),descripcion:asF.descripcion,fecha_limite:fechaLimiteISO(asF.fechaLimite)});
       notif("¡Pedido enviado a los aserraderos!");
-      (async()=>{try{const ps=await db.select("usuarios","?tipo=eq.aserradero&select=email");const cuerpo="<p>Hola,</p><p>Tenés un <strong>nuevo pedido para cotizar</strong> en Encastre.</p><p>Ingresá a <a href=\"https://encastre.com.ar\">encastre.com.ar</a> para verlo y cotizarlo.</p><p>— Encastre, La Comunidad de la Madera</p>";for(const c of (ps||[])){if(c.email)db.avisarPorMail(c.email,"Nuevo pedido para cotizar - Encastre",cuerpo);}}catch(e){}})();
+      (async()=>{try{const ps=await db.select("usuarios","?tipo=eq.aserradero&recibir_avisos=eq.true&select=email");const cuerpo="<p>Hola,</p><p>Tenés un <strong>nuevo pedido para cotizar</strong> en Encastre.</p><p>Ingresá a <a href=\"https://encastre.com.ar\">encastre.com.ar</a> para verlo y cotizarlo.</p><p>— Encastre, La Comunidad de la Madera</p>";for(const c of (ps||[])){if(c.email)db.avisarPorMail(c.email,"Nuevo pedido para cotizar - Encastre",cuerpo);}}catch(e){}})();
       setAsF({material:"",pies:"",pulgadas:"",espesor:"",cantidad:"",descripcion:"",fechaLimite:""});
       setIntAs(false);
       cargarMisPedidosAserr();
@@ -3089,7 +3089,7 @@ function VistaCarpinteria({usuario,notif}){
                 const resumen=itemsLimpios.map(it=>it.descripcion).join(", ");
                 await db.insert("pedidos_ferreteria",{carpinteria_id:usuario.id,items:itemsLimpios,descripcion:resumen,cantidad:itemsLimpios.reduce((a,it)=>a+it.cantidad,0),notas:ferrF.notas,fecha_limite:fechaLimiteISO(ferrF.fechaLimite)});
                 notif("¡Pedido enviado a las ferreterías!");
-                (async()=>{try{const ps=await db.select("usuarios","?tipo=eq.ferreteria&select=email");const cuerpo="<p>Hola,</p><p>Tenés un <strong>nuevo pedido para cotizar</strong> en Encastre.</p><p>Ingresá a <a href=\"https://encastre.com.ar\">encastre.com.ar</a> para verlo y cotizarlo.</p><p>— Encastre, La Comunidad de la Madera</p>";for(const c of (ps||[])){if(c.email)db.avisarPorMail(c.email,"Nuevo pedido para cotizar - Encastre",cuerpo);}}catch(e){}})();
+                (async()=>{try{const ps=await db.select("usuarios","?tipo=eq.ferreteria&recibir_avisos=eq.true&select=email");const cuerpo="<p>Hola,</p><p>Tenés un <strong>nuevo pedido para cotizar</strong> en Encastre.</p><p>Ingresá a <a href=\"https://encastre.com.ar\">encastre.com.ar</a> para verlo y cotizarlo.</p><p>— Encastre, La Comunidad de la Madera</p>";for(const c of (ps||[])){if(c.email)db.avisarPorMail(c.email,"Nuevo pedido para cotizar - Encastre",cuerpo);}}catch(e){}})();
                 setFerrF({items:[{descripcion:"",cantidad:"1"}],notas:"",fechaLimite:""});
                 setIntFe(false);
                 cargarMisPedidosFerreria();
@@ -3229,7 +3229,7 @@ function VistaCarpinteria({usuario,notif}){
                 const resumen=itemsLimpios.map(it=>it.descripcion).join(", ");
                 await db.insert("pedidos_pintureria",{carpinteria_id:usuario.id,items:itemsLimpios,descripcion:resumen,litros:itemsLimpios.reduce((a,it)=>a+it.litros,0),notas:pintF.notas,fecha_limite:fechaLimiteISO(pintF.fechaLimite)});
                 notif("¡Pedido enviado a las pinturerías!");
-                (async()=>{try{const ps=await db.select("usuarios","?tipo=eq.pintureria&select=email");const cuerpo="<p>Hola,</p><p>Tenés un <strong>nuevo pedido para cotizar</strong> en Encastre.</p><p>Ingresá a <a href=\"https://encastre.com.ar\">encastre.com.ar</a> para verlo y cotizarlo.</p><p>— Encastre, La Comunidad de la Madera</p>";for(const c of (ps||[])){if(c.email)db.avisarPorMail(c.email,"Nuevo pedido para cotizar - Encastre",cuerpo);}}catch(e){}})();
+                (async()=>{try{const ps=await db.select("usuarios","?tipo=eq.pintureria&recibir_avisos=eq.true&select=email");const cuerpo="<p>Hola,</p><p>Tenés un <strong>nuevo pedido para cotizar</strong> en Encastre.</p><p>Ingresá a <a href=\"https://encastre.com.ar\">encastre.com.ar</a> para verlo y cotizarlo.</p><p>— Encastre, La Comunidad de la Madera</p>";for(const c of (ps||[])){if(c.email)db.avisarPorMail(c.email,"Nuevo pedido para cotizar - Encastre",cuerpo);}}catch(e){}})();
                 setPintF({items:[{descripcion:"",litros:"1"}],notas:"",fechaLimite:""});
                 setIntPi(false);
                 cargarMisPedidosPint();
@@ -3767,7 +3767,7 @@ function VistaFlete({usuario,notif}){
     try{
       await db.insert("pedidos_flete",{solicitante_id:usuario.id,origen:pedF.origen,destino:pedF.destino,descripcion_carga:pedF.descripcion,fecha_deseada:pedF.fecha||null,notas:pedF.notas,fecha_limite:fechaLimiteISO(pedF.fechaLimite)});
       notif("¡Solicitud enviada a los fletes!");
-      (async()=>{try{const ps=await db.select("usuarios","?tipo=eq.flete&select=email");const cuerpo="<p>Hola,</p><p>Tenés una <strong>nueva solicitud de flete para cotizar</strong> en Encastre.</p><p>Ingresá a <a href=\"https://encastre.com.ar\">encastre.com.ar</a> para verla y cotizarla.</p><p>— Encastre, La Comunidad de la Madera</p>";for(const c of (ps||[])){if(c.email)db.avisarPorMail(c.email,"Nueva solicitud de flete - Encastre",cuerpo);}}catch(e){}})();
+      (async()=>{try{const ps=await db.select("usuarios","?tipo=eq.flete&recibir_avisos=eq.true&select=email");const cuerpo="<p>Hola,</p><p>Tenés una <strong>nueva solicitud de flete para cotizar</strong> en Encastre.</p><p>Ingresá a <a href=\"https://encastre.com.ar\">encastre.com.ar</a> para verla y cotizarla.</p><p>— Encastre, La Comunidad de la Madera</p>";for(const c of (ps||[])){if(c.email)db.avisarPorMail(c.email,"Nueva solicitud de flete - Encastre",cuerpo);}}catch(e){}})();
       setPedF({origen:"",destino:"",descripcion:"",fecha:"",notas:"",fechaLimite:""});
       setIntFl(false);
       cargarMisPedidos();
@@ -4966,6 +4966,7 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja}){
   const [mostrarDir,setMostrarDir]=useState(usuario.mostrar_direccion===true);
   const [tipoDoc,setTipoDoc]=useState(usuario.tipo_documento||"DNI");
   const [documento,setDocumento]=useState(usuario.documento||"");
+  const [recibirAvisos,setRecibirAvisos]=useState(usuario.recibir_avisos!==false);
   const [guardandoPriv,setGuardandoPriv]=useState(false);
   const [okPriv,setOkPriv]=useState("");
   const [errPriv,setErrPriv]=useState("");
@@ -5002,7 +5003,7 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja}){
     setErrPriv(""); setOkPriv("");
     if(!nombre.trim()){ setErrPriv("El nombre no puede quedar vacío."); return; }
     setGuardandoPriv(true);
-    const campos={nombre:nombre.trim(),ciudad:ciudad.trim(),direccion:direccion.trim()||null,barrio:barrio.trim()||null,telefono:telefono.trim()||null,mostrar_telefono:mostrarTel,mostrar_direccion:mostrarDir,tipo_documento:tipoDoc,documento:documento.trim()};
+    const campos={nombre:nombre.trim(),ciudad:ciudad.trim(),direccion:direccion.trim()||null,barrio:barrio.trim()||null,telefono:telefono.trim()||null,mostrar_telefono:mostrarTel,mostrar_direccion:mostrarDir,tipo_documento:tipoDoc,documento:documento.trim(),recibir_avisos:recibirAvisos};
     try{
       await db.update("usuarios",campos,`id=eq.${usuario.id}`);
       parchearSesion(campos);
@@ -5136,6 +5137,13 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja}){
               </div>
             </div>
             {msg(okPriv,"ok")} {msg(errPriv,"err")}
+            <div style={{border:`1px solid ${C.borde}`,borderRadius:10,padding:12,marginTop:14,marginBottom:4,background:C.suave}}>
+              <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",fontSize:16,color:C.texto}}>
+                <input type="checkbox" checked={recibirAvisos} onChange={e=>setRecibirAvisos(e.target.checked)}/>
+                📧 Recibir avisos por mail
+              </label>
+              <div style={{fontSize:13,color:C.textoSuave,marginTop:8}}>{esCliente?"Te avisamos por mail cuando una carpintería te envía un presupuesto.":"Te avisamos por mail cuando hay un nuevo pedido para cotizar. Si recibís muchos, podés apagarlo."}</div>
+            </div>
             <button style={{...S.btn("gold"),marginTop:16,width:"100%",justifyContent:"center"}} onClick={guardarPrivado} disabled={guardandoPriv}>{guardandoPriv?"Guardando...":"Guardar cambios"}</button>
           </div>
 
