@@ -1862,7 +1862,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-15.2</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-15.3</div>
     </div>
   );
 }
@@ -2500,6 +2500,15 @@ function VistaCarpinteria({usuario,notif}){
   },[usuario.id]);
   // Auto-refresh cada 15 segundos para ver pedidos nuevos
   useEffect(()=>{const t=setInterval(cargar,15000);return()=>clearInterval(t);},[cargar]);
+  // Apaga el aviso NUEVO en pedidos que ya no se pueden abrir (cerrados o vencidos): se marcan vistos solos.
+  useEffect(()=>{
+    const noAccionable=p=>p._nuevo&&(p.estado==="aceptado"||(p.fecha_limite&&new Date(p.fecha_limite)<new Date()));
+    const pend=pedidos.filter(noAccionable);
+    if(pend.length){
+      pend.forEach(p=>marcarPedidoVisto("pedidos",p.id,usuario.id));
+      setPedidos(ps=>ps.map(x=>noAccionable(x)?{...x,_nuevo:false}:x));
+    }
+  },[pedidos,usuario.id]);
   const cargarMisPedidosAserr=useCallback(async()=>{
     try{
       const d=await db.select("pedidos_aserradero",`?carpinteria_id=eq.${usuario.id}&order=created_at.desc`);
