@@ -1862,7 +1862,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-15.6</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-16.1</div>
     </div>
   );
 }
@@ -2210,6 +2210,24 @@ function VistaCliente({usuario,notif}){
   const [presups,setPresups]=useState([]);
   const [selPresup,setSelPresup]=useState(null);
   const [filtro,setFiltro]=useState("todos");
+  const [archivados,setArchivados]=useState(new Set());
+
+  const cargarArchivados=useCallback(async()=>{
+    try{
+      const a=await db.select("elementos_archivados",`?usuario_id=eq.${usuario.id}&tipo_elemento=eq.presupuesto&select=elemento_id`);
+      setArchivados(new Set((a||[]).map(x=>x.elemento_id)));
+    }catch{}
+  },[usuario.id]);
+  useEffect(()=>{cargarArchivados();},[cargarArchivados]);
+
+  const archivarPresup=async(pr)=>{
+    try{
+      await db.insertMin("elementos_archivados",{usuario_id:usuario.id,tipo_elemento:"presupuesto",elemento_id:pr.id});
+      setArchivados(prev=>new Set(prev).add(pr.id));
+      if(selPresup&&selPresup.id===pr.id)setSelPresup(null);
+      notif("Presupuesto archivado");
+    }catch(e){ notif("No se pudo archivar"); }
+  };
 
   const cargar=useCallback(async()=>{
     try{const d=await db.select("pedidos",`?cliente_id=eq.${usuario.id}&order=created_at.desc`);setPedidos(d);}catch{}
@@ -2352,10 +2370,14 @@ function VistaCliente({usuario,notif}){
             <div style={{fontSize:28,marginBottom:6}}>⏳</div>
             <div style={{fontSize:16}}>Esperando presupuestos de las carpinterías...</div>
           </div>
-        ):(
+        ):(()=>{
+          const presupsVisibles=presups.filter(pr=>!archivados.has(pr.id));
+          return presupsVisibles.length===0?(
+            <div style={{textAlign:"center",color:C.textoSuave,padding:20,fontSize:15}}>Archivaste todos los presupuestos de este pedido.</div>
+          ):(
           <div style={{marginTop:6}}>
-            <div style={{fontWeight:700,color:C.marron,marginBottom:8}}>💰 Presupuestos recibidos ({presups.length})</div>
-            {presups.map((pr,i)=>(
+            <div style={{fontWeight:700,color:C.marron,marginBottom:8}}>💰 Presupuestos recibidos ({presupsVisibles.length})</div>
+            {presupsVisibles.map((pr,i)=>(
               <div key={i}>
                 <div onClick={()=>{const ab=selPresup&&selPresup.id===pr.id?null:pr;setSelPresup(ab);if(ab&&!pr.visto_cliente){marcarCotVista("presupuestos","visto_cliente",pr);setPresups(ps=>ps.map(x=>x.id===pr.id?{...x,visto_cliente:true}:x));}}} style={{border:`1px solid ${pr.visto_cliente===false?"#009966":C.borde}`,borderRadius:10,padding:12,marginBottom:8,background:C.input,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <div>
@@ -2367,11 +2389,15 @@ function VistaCliente({usuario,notif}){
                     <div style={{fontSize:15,color:C.textoSuave,marginTop:4}}>{selPresup&&selPresup.id===pr.id?"▲ ocultar":"ver todo ▼"}</div>
                   </div>
                 </div>
-                {selPresup&&selPresup.id===pr.id&&<DetallePresup pr={presups.find(x=>x.id===selPresup.id)||selPresup}/>}
+                {selPresup&&selPresup.id===pr.id&&<>
+                  <DetallePresup pr={presups.find(x=>x.id===selPresup.id)||selPresup}/>
+                  <div style={{textAlign:"right",marginTop:-4,marginBottom:8}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarPresup(pr);}}>🗑️ Archivar este presupuesto</button></div>
+                </>}
               </div>
             ))}
           </div>
-        )}
+          );
+        })()}
       </div>
     );
   };
