@@ -1863,7 +1863,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-16.6</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-16.7</div>
     </div>
   );
 }
@@ -2235,6 +2235,7 @@ function VistaCliente({usuario,notif}){
   },[usuario.id]);
 
   useEffect(()=>{cargar();},[cargar]);
+  useEffect(()=>{const h=()=>{setSel(null);setPresups([]);setSelPresup(null);setVista("lista");};window.addEventListener("encastre-ir-principal",h);return()=>window.removeEventListener("encastre-ir-principal",h);},[]);
 
   const enriquecerPresups=async(d)=>{
     return await Promise.all(d.map(async pr=>{
@@ -2475,6 +2476,7 @@ function VistaCarpinteria({usuario,notif}){
     }catch{}
   },[usuario.id]);
   useEffect(()=>{cargarArchivadosCot();},[cargarArchivadosCot]);
+  useEffect(()=>{const h=()=>{setSelAserr(null);setSelFerr(null);setSelPint(null);setTab("pedidos");};window.addEventListener("encastre-ir-principal",h);return()=>window.removeEventListener("encastre-ir-principal",h);},[]);
   const archivarCot=async(ct)=>{
     try{
       await db.insertMin("elementos_archivados",{usuario_id:usuario.id,tipo_elemento:"cotizacion",elemento_id:ct.id});
@@ -3373,6 +3375,7 @@ function VistaCarpinteria({usuario,notif}){
 function VistaAserradero({usuario,notif}){
   const [pedidos,setPedidos]=useState([]);
   const [sel,setSel]=useState(null);
+  useEffect(()=>{const h=()=>setSel(null);window.addEventListener("encastre-ir-principal",h);return()=>window.removeEventListener("encastre-ir-principal",h);},[]);
   const [cotF,setCotF]=useState({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
   const [miCot,setMiCot]=useState(null);
   const [carpSel,setCarpSel]=useState({});
@@ -3681,6 +3684,7 @@ function VistaFlete({usuario,notif}){
   // ---- Lado fletero: recibe pedidos y cotiza ----
   const [pedidos,setPedidos]=useState([]);
   const [sel,setSel]=useState(null);
+  useEffect(()=>{const h=()=>setSel(null);window.addEventListener("encastre-ir-principal",h);return()=>window.removeEventListener("encastre-ir-principal",h);},[]);
   const [cotF,setCotF]=useState({items:[{descripcion:"",precio:"",cantidad:"1",modo:"viaje"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
   const [miCot,setMiCot]=useState(null);
   const [solSel,setSolSel]=useState({});
@@ -4155,6 +4159,7 @@ function VistaFlete({usuario,notif}){
 function VistaFerreteria({usuario,notif}){
   const [pedidos,setPedidos]=useState([]);
   const [sel,setSel]=useState(null);
+  useEffect(()=>{const h=()=>setSel(null);window.addEventListener("encastre-ir-principal",h);return()=>window.removeEventListener("encastre-ir-principal",h);},[]);
   const [cotF,setCotF]=useState({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
   const [miCot,setMiCot]=useState(null);
   const [carpSel,setCarpSel]=useState({});
@@ -4430,6 +4435,7 @@ function VistaFerreteria({usuario,notif}){
 function VistaPintureria({usuario,notif}){
   const [pedidos,setPedidos]=useState([]);
   const [sel,setSel]=useState(null);
+  useEffect(()=>{const h=()=>setSel(null);window.addEventListener("encastre-ir-principal",h);return()=>window.removeEventListener("encastre-ir-principal",h);},[]);
   const [cotF,setCotF]=useState({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
   const [miCot,setMiCot]=useState(null);
   const [carpSel,setCarpSel]=useState({});
@@ -5368,6 +5374,14 @@ function App(){
   const [enContacto,setEnContacto]=useState(false);
   const [enPapelera,setEnPapelera]=useState(false);
 
+  // Volver a la pantalla principal cerrando todo lo que esté abierto encima
+  const irAPrincipal=(id)=>{
+    setEnMiCuenta(false); setEnContacto(false); setEnPapelera(false); setMenuAbierto(false);
+    setNavTab(id);
+    // aviso a las vistas hijas para que cierren cualquier pedido/cotización abierto
+    try{ window.dispatchEvent(new CustomEvent("encastre-ir-principal")); }catch{}
+  };
+
   const actualizarUsuario=(campos)=>{
     setSesion(s=>s?{...s,usuario:{...s.usuario,...campos}}:s);
   };
@@ -5430,7 +5444,7 @@ function App(){
             <span className="encastre-logo-sub">La Comunidad de la Madera</span>
           </div>
         </div>
-        <NavBar usuario={usuario} navPrincipal={navPrincipal} navTab={navTab} setNavTab={setNavTab}/>
+        <NavBar usuario={usuario} navPrincipal={navPrincipal} navTab={navTab} setNavTab={irAPrincipal}/>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <div style={{textAlign:"right"}}>
             <div style={{fontSize:16,color:C.crema,fontWeight:700}}>{EMOJIS[usuario.tipo]} {usuario.nombre}</div>
