@@ -1863,7 +1863,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-16.8</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-16.9</div>
     </div>
   );
 }
@@ -2726,8 +2726,8 @@ function VistaCarpinteria({usuario,notif}){
       <div className="fade">
         <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSel(null)}>← Volver</button>
         <div style={S.card}>
-          <div style={S.cardTitle}>Pedido recibido</div>
-          {sel._clienteNombre&&<div style={{fontSize:19,color:C.marron,fontWeight:700,marginBottom:4}}>👤 {sel._clienteNombre}</div>}
+          {sel._clienteNombre&&<div style={{fontFamily:"'Playfair Display',serif",fontSize:28,color:C.marron,fontWeight:800,marginBottom:2}}>👤 {sel._clienteNombre}</div>}
+          <div style={{fontSize:15,color:C.textoSuave,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Pedido recibido</div>
           <div style={{fontSize:17,color:C.textoSuave,marginBottom:10}}>{sel.descripcion} · {new Date(sel.created_at).toLocaleDateString("es-AR")}</div>
           <div style={{background:C.suave,borderRadius:0,padding:12,border:`1px solid ${C.borde}`}}>
             <div style={{...S.label,marginBottom:8}}>Medidas del cliente (en cm) con equivalencias</div>
