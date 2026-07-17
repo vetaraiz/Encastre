@@ -1863,7 +1863,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-16.9</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-16.10</div>
     </div>
   );
 }
@@ -5398,7 +5398,23 @@ function App(){
       alert("Tu sesión venció. Por favor, iniciá sesión de nuevo.");
     };
     window.addEventListener("encastre-sesion-vencida",vencida);
-    return ()=>window.removeEventListener("encastre-sesion-vencida",vencida);
+
+    // Interceptar el botón "atrás" para confirmar antes de salir de la app
+    try{ window.history.pushState({encastre:true},""); }catch{}
+    const alVolver=(ev)=>{
+      const salir=window.confirm("¿Desea salir de la aplicación?");
+      if(salir){
+        // dejar que el navegador vaya atrás de verdad
+        window.removeEventListener("popstate",alVolver);
+        window.history.back();
+      }else{
+        // re-empujar el estado para seguir interceptando
+        try{ window.history.pushState({encastre:true},""); }catch{}
+      }
+    };
+    window.addEventListener("popstate",alVolver);
+
+    return ()=>{ window.removeEventListener("encastre-sesion-vencida",vencida); window.removeEventListener("popstate",alVolver); };
   },[]);
 
   const handleAuth=(s)=>{
