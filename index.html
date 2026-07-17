@@ -1863,7 +1863,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-16.10</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-16.11</div>
     </div>
   );
 }
@@ -2469,10 +2469,15 @@ function VistaCliente({usuario,notif}){
 function VistaCarpinteria({usuario,notif}){
   const badges=useBadges(usuario);
   const [archivadosCot,setArchivadosCot]=useState(new Set());
+  const [archivadosPed,setArchivadosPed]=useState(new Set());
   const cargarArchivadosCot=useCallback(async()=>{
     try{
       const a=await db.select("elementos_archivados",`?usuario_id=eq.${usuario.id}&tipo_elemento=eq.cotizacion&select=elemento_id`);
       setArchivadosCot(new Set((a||[]).map(x=>x.elemento_id)));
+    }catch{}
+    try{
+      const b=await db.select("elementos_archivados",`?usuario_id=eq.${usuario.id}&tipo_elemento=eq.pedido_cliente&select=elemento_id`);
+      setArchivadosPed(new Set((b||[]).map(x=>x.elemento_id)));
     }catch{}
   },[usuario.id]);
   useEffect(()=>{cargarArchivadosCot();},[cargarArchivadosCot]);
@@ -2482,6 +2487,14 @@ function VistaCarpinteria({usuario,notif}){
       await db.insertMin("elementos_archivados",{usuario_id:usuario.id,tipo_elemento:"cotizacion",elemento_id:ct.id});
       setArchivadosCot(prev=>new Set(prev).add(ct.id));
       notif("Cotización archivada");
+    }catch(e){ notif("No se pudo archivar"); }
+  };
+  const archivarPedido=async(p)=>{
+    try{
+      await db.insertMin("elementos_archivados",{usuario_id:usuario.id,tipo_elemento:"pedido_cliente",elemento_id:p.id});
+      setArchivadosPed(prev=>new Set(prev).add(p.id));
+      setSel(null);
+      notif("Pedido archivado");
     }catch(e){ notif("No se pudo archivar"); }
   };
   const [tab,setTab]=useState("pedidos");
@@ -2889,6 +2902,7 @@ function VistaCarpinteria({usuario,notif}){
           <div style={S.cardTitle}>💬 Chat con cliente</div>
           <Chat pedidoId={sel.id} tipoPedido="cliente" miUsuario={usuario} otroUsuario={{id:sel.cliente_id}}/>
         </div>
+        <div style={{textAlign:"right",marginTop:12}}><button style={{...S.btn("ghost"),fontSize:14,padding:"8px 14px",color:C.textoSuave}} onClick={()=>archivarPedido(sel)}>🗑️ Archivar este pedido</button></div>
       </div>
     );
   }
@@ -2936,6 +2950,7 @@ function VistaCarpinteria({usuario,notif}){
             const q=buscarPedido.trim().toLowerCase();
             const venc=p=>p.fecha_limite&&new Date(p.fecha_limite)<new Date();
             let lista=pedidos.filter(p=>{
+              if(archivadosPed.has(p.id))return false;
               if(filtroCarp==="cotizar")return p.estado!=="aceptado"&&!venc(p)&&!p._miEstado;
               if(filtroCarp==="cotizados")return p._miEstado&&p.estado!=="aceptado";
               if(filtroCarp==="cerrados")return p.estado==="aceptado";
@@ -5017,6 +5032,9 @@ function Papelera({usuario,onCerrar}){
           if(r.tipo_elemento==="presupuesto"){
             const p=await db.select("presupuestos",`?id=eq.${r.elemento_id}&limit=1`);
             if(p&&p[0]){ const c=await db.select("usuarios",`?id=eq.${p[0].carpinteria_id}&select=nombre&limit=1`); titulo="Presupuesto de "+(c?.[0]?.nombre||"carpintería"); monto=p[0].monto; }
+          }else if(r.tipo_elemento==="pedido_cliente"){
+            const p=await db.select("pedidos",`?id=eq.${r.elemento_id}&limit=1`);
+            if(p&&p[0]){ const c=await db.select("usuarios",`?id=eq.${p[0].cliente_id}&select=nombre&limit=1`); titulo="Pedido de "+(c?.[0]?.nombre||"cliente")+(p[0].descripcion?" · "+p[0].descripcion:""); }
           }else if(r.tipo_elemento==="cotizacion"){
             for(const [tabla,campo] of [["cotizaciones_aserradero","aserradero_id"],["cotizaciones_ferreteria","ferreteria_id"],["cotizaciones_pintureria","pintureria_id"],["cotizaciones_flete","flete_id"]]){
               const q=await db.select(tabla,`?id=eq.${r.elemento_id}&limit=1`);
