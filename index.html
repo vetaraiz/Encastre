@@ -1862,7 +1862,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-16.2</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-16.4</div>
     </div>
   );
 }
@@ -2466,6 +2466,21 @@ function VistaCliente({usuario,notif}){
 // ─── VISTA CARPINTERÍA ────────────────────────────────────────────────────────
 function VistaCarpinteria({usuario,notif}){
   const badges=useBadges(usuario);
+  const [archivadosCot,setArchivadosCot]=useState(new Set());
+  const cargarArchivadosCot=useCallback(async()=>{
+    try{
+      const a=await db.select("elementos_archivados",`?usuario_id=eq.${usuario.id}&tipo_elemento=eq.cotizacion&select=elemento_id`);
+      setArchivadosCot(new Set((a||[]).map(x=>x.elemento_id)));
+    }catch{}
+  },[usuario.id]);
+  useEffect(()=>{cargarArchivadosCot();},[cargarArchivadosCot]);
+  const archivarCot=async(ct)=>{
+    try{
+      await db.insertMin("elementos_archivados",{usuario_id:usuario.id,tipo_elemento:"cotizacion",elemento_id:ct.id});
+      setArchivadosCot(prev=>new Set(prev).add(ct.id));
+      notif("Cotización archivada");
+    }catch(e){ notif("No se pudo archivar"); }
+  };
   const [tab,setTab]=useState("pedidos");
   const [pedidos,setPedidos]=useState([]);
   const [sel,setSel]=useState(null);
@@ -3021,7 +3036,7 @@ function VistaCarpinteria({usuario,notif}){
                   {cotizacionesAserr.length===0?(
                     <div style={{color:C.textoSuave,textAlign:"center",padding:20,fontStyle:"italic"}}>⏳ Esperando cotizaciones del aserradero...</div>
                   ):(
-                    cotizacionesAserr.map((ct,i)=>{
+                    cotizacionesAserr.filter(ct=>!archivadosCot.has(ct.id)).map((ct,i)=>{
                       const key=ct.id||i;
                       const abiertaCot=cotAserrAbierta===key;
                       return(
@@ -3053,6 +3068,7 @@ function VistaCarpinteria({usuario,notif}){
                             <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>💬 Chat con {ct.aserraderoNombre||"aserradero"}</div>
                             <Chat key={ct.aserradero_id} pedidoId={selAserr.id} tipoPedido="aserradero" miUsuario={usuario} otroUsuario={{id:ct.aserradero_id}}/>
                           </div>
+                          <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCot(ct);}}>🗑️ Archivar esta cotización</button></div>
                         </div>
                         )}
                       </div>
@@ -3159,7 +3175,7 @@ function VistaCarpinteria({usuario,notif}){
                       {cotizacionesFerr.length===0?(
                         <div style={{color:C.textoSuave,textAlign:"center",padding:20,fontStyle:"italic"}}>⏳ Esperando cotizaciones...</div>
                       ):(
-                        cotizacionesFerr.map((ct,i)=>{
+                        cotizacionesFerr.filter(ct=>!archivadosCot.has(ct.id)).map((ct,i)=>{
                           const key=ct.id||i;
                           const abiertaCot=ferrAbierta===key;
                           return(
@@ -3191,6 +3207,7 @@ function VistaCarpinteria({usuario,notif}){
                                 <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>💬 Chat con {ct.ferrNombre||"ferretería"}</div>
                                 <Chat key={ct.ferreteria_id} pedidoId={selFerr.id} tipoPedido="ferreteria" miUsuario={usuario} otroUsuario={{id:ct.ferreteria_id}}/>
                               </div>
+                                <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCot(ct);}}>🗑️ Archivar esta cotización</button></div>
                             </div>
                             )}
                           </div>
@@ -3299,7 +3316,7 @@ function VistaCarpinteria({usuario,notif}){
                       {cotizacionesPint.length===0?(
                         <div style={{color:C.textoSuave,textAlign:"center",padding:20,fontStyle:"italic"}}>⏳ Esperando cotizaciones...</div>
                       ):(
-                        cotizacionesPint.map((ct,i)=>{
+                        cotizacionesPint.filter(ct=>!archivadosCot.has(ct.id)).map((ct,i)=>{
                           const key=ct.id||i;
                           const abiertaCot=pintAbierta===key;
                           return(
@@ -3331,6 +3348,7 @@ function VistaCarpinteria({usuario,notif}){
                                 <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>💬 Chat con {ct.pintNombre||"pinturería"}</div>
                                 <Chat key={ct.pintureria_id} pedidoId={selPint.id} tipoPedido="pintureria" miUsuario={usuario} otroUsuario={{id:ct.pintureria_id}}/>
                               </div>
+                                <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCot(ct);}}>🗑️ Archivar esta cotización</button></div>
                             </div>
                             )}
                           </div>
