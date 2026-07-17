@@ -1302,6 +1302,7 @@ const db = {
   async insert(t,d){ const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}`,{method:"POST",headers:await this.hdr(),body:JSON.stringify(d)}); if(!r.ok)throw new Error(await r.text()); return r.json(); },
   async insertMin(t,d){ const h=await this.hdr(); const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}`,{method:"POST",headers:{...h,"Prefer":"return=minimal"},body:JSON.stringify(d)}); if(!r.ok)throw new Error(await r.text()); return true; },
   async update(t,d,q){ const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?${q}`,{method:"PATCH",headers:await this.hdr(),body:JSON.stringify(d)}); if(!r.ok)throw new Error(await r.text()); return r.json(); },
+  async updateMin(t,d,q){ const h=await this.hdr(); const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?${q}`,{method:"PATCH",headers:{...h,"Prefer":"return=minimal"},body:JSON.stringify(d)}); if(!r.ok)throw new Error(await r.text()); return true; },
   async remove(t,q){ const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?${q}`,{method:"DELETE",headers:await this.hdr()}); if(!r.ok)throw new Error(await r.text()); return true; },
   async signUp(e,p){ const r=await fetch(`${SUPABASE_URL}/auth/v1/signup`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:e,password:p})}); return r.json(); },
   async signIn(e,p){ const r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:e,password:p})}); return r.json(); },
@@ -1862,7 +1863,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-16.4</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-16.6</div>
     </div>
   );
 }
@@ -4996,6 +4997,68 @@ function Contacto({usuario,onCerrar}){
   );
 }
 
+function Papelera({usuario,onCerrar}){
+  const [archivados,setArchivados]=useState([]);
+  const [cargandoArch,setCargandoArch]=useState(false);
+  const cargarPapelera=async()=>{
+    setCargandoArch(true);
+    try{
+      const regs=await db.select("elementos_archivados",`?usuario_id=eq.${usuario.id}&eliminado=eq.false&order=archivado_at.desc`);
+      const enr=await Promise.all((regs||[]).map(async r=>{
+        let titulo="Elemento",monto=null;
+        try{
+          if(r.tipo_elemento==="presupuesto"){
+            const p=await db.select("presupuestos",`?id=eq.${r.elemento_id}&limit=1`);
+            if(p&&p[0]){ const c=await db.select("usuarios",`?id=eq.${p[0].carpinteria_id}&select=nombre&limit=1`); titulo="Presupuesto de "+(c?.[0]?.nombre||"carpintería"); monto=p[0].monto; }
+          }else if(r.tipo_elemento==="cotizacion"){
+            for(const [tabla,campo] of [["cotizaciones_aserradero","aserradero_id"],["cotizaciones_ferreteria","ferreteria_id"],["cotizaciones_pintureria","pintureria_id"],["cotizaciones_flete","flete_id"]]){
+              const q=await db.select(tabla,`?id=eq.${r.elemento_id}&limit=1`);
+              if(q&&q[0]){ const c=await db.select("usuarios",`?id=eq.${q[0][campo]}&select=nombre&limit=1`); titulo="Cotización de "+(c?.[0]?.nombre||"proveedor"); monto=q[0].precio_total; break; }
+            }
+          }
+        }catch{}
+        return{...r,titulo,monto};
+      }));
+      setArchivados(enr);
+    }catch{}
+    setCargandoArch(false);
+  };
+  useEffect(()=>{cargarPapelera();},[]);
+  const restaurar=async(r)=>{
+    try{ await db.remove("elementos_archivados",`usuario_id=eq.${usuario.id}&tipo_elemento=eq.${r.tipo_elemento}&elemento_id=eq.${r.elemento_id}`); setArchivados(a=>a.filter(x=>x.id!==r.id)); }catch{}
+  };
+  const eliminarDef=async(r)=>{
+    if(!window.confirm("¿Eliminar definitivamente? Esta acción no se puede deshacer."))return;
+    try{ await db.updateMin("elementos_archivados",{eliminado:true},`usuario_id=eq.${usuario.id}&tipo_elemento=eq.${r.tipo_elemento}&elemento_id=eq.${r.elemento_id}`); setArchivados(a=>a.filter(x=>x.id!==r.id)); }catch{}
+  };
+  return(
+    <div style={{maxWidth:640,margin:"0 auto"}}>
+      <button style={{...S.btn("ghost"),marginBottom:16}} onClick={onCerrar}>← Volver</button>
+      <div style={{...S.cardTitle,fontSize:26,marginBottom:8}}>🗑️ Papelera</div>
+      <div style={{fontSize:14,color:C.textoSuave,marginBottom:14}}>Los presupuestos y cotizaciones que archivaste. Podés restaurarlos (vuelven a tu lista) o eliminarlos definitivamente. Solo afecta tu vista; el que lo envió no se entera.</div>
+      {cargandoArch?(
+        <div style={{textAlign:"center",color:C.textoSuave,padding:20}}>Cargando...</div>
+      ):archivados.length===0?(
+        <div style={{textAlign:"center",color:C.textoSuave,padding:30,fontSize:16}}>🗑️ La papelera está vacía.</div>
+      ):(
+        archivados.map(r=>(
+          <div key={r.id} style={{border:`1px solid ${C.borde}`,padding:12,marginBottom:10,background:C.input,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+            <div style={{flex:1,minWidth:180}}>
+              <div style={{fontWeight:700,color:C.marron,fontSize:16}}>{r.titulo}</div>
+              {r.monto!=null&&<div style={{fontSize:15,color:C.verde,fontWeight:700,marginTop:2}}>$ {Number(r.monto).toLocaleString("es-AR")}</div>}
+              <div style={{fontSize:13,color:C.textoSuave,marginTop:2}}>Archivado el {r.archivado_at?new Date(r.archivado_at).toLocaleDateString("es-AR"):""}</div>
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button style={{...S.btn("ghost"),fontSize:14,padding:"8px 12px"}} onClick={()=>restaurar(r)}>↩️ Restaurar</button>
+              <button style={{...S.btn("ghost"),fontSize:14,padding:"8px 12px",color:C.error||"#C0392B"}} onClick={()=>eliminarDef(r)}>🗑️ Eliminar</button>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
 function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja}){
   const esCliente = usuario.tipo==="cliente";
   const [solapa,setSolapa]=useState("privado");
@@ -5303,6 +5366,7 @@ function App(){
   const [menuAbierto,setMenuAbierto]=useState(false);
   const [enMiCuenta,setEnMiCuenta]=useState(false);
   const [enContacto,setEnContacto]=useState(false);
+  const [enPapelera,setEnPapelera]=useState(false);
 
   const actualizarUsuario=(campos)=>{
     setSesion(s=>s?{...s,usuario:{...s.usuario,...campos}}:s);
@@ -5378,8 +5442,9 @@ function App(){
               <>
                 <div onClick={()=>setMenuAbierto(false)} style={{position:"fixed",inset:0,zIndex:200}}/>
                 <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:C.card,border:`1px solid ${C.borde}`,borderRadius:0,boxShadow:"0 6px 24px #5C2E0A44",zIndex:201,minWidth:190,overflow:"hidden"}}>
-                  <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnMiCuenta(true);setEnContacto(false);setMenuAbierto(false);}}>👤 Mi cuenta</button>
-                  <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnContacto(true);setEnMiCuenta(false);setMenuAbierto(false);}}>✉️ Enviar comentario</button>
+                  <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setMenuAbierto(false);}}>👤 Mi cuenta</button>
+                  <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnContacto(true);setEnMiCuenta(false);setEnPapelera(false);setMenuAbierto(false);}}>✉️ Enviar comentario</button>
+                  <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnPapelera(true);setEnMiCuenta(false);setEnContacto(false);setMenuAbierto(false);}}>🗑️ Papelera</button>
                   <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setMenuAbierto(false);cerrar();setMostrarBienvenida(true);}}>← Salir</button>
                 </div>
               </>
@@ -5394,6 +5459,8 @@ function App(){
           <MiCuenta usuario={usuario} onCerrar={()=>setEnMiCuenta(false)} onActualizar={actualizarUsuario} onDarDeBaja={darDeBaja}/>
         ) : enContacto ? (
           <Contacto usuario={usuario} onCerrar={()=>setEnContacto(false)}/>
+        ) : enPapelera ? (
+          <Papelera usuario={usuario} onCerrar={()=>setEnPapelera(false)}/>
         ) : (
           <>
             {navTab==="principal"&&usuario.tipo==="cliente"&&<VistaCliente usuario={usuario} notif={setNotifMsg}/>}
