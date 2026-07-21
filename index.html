@@ -1863,7 +1863,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-16.11</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-16.13</div>
     </div>
   );
 }
@@ -2673,6 +2673,14 @@ function VistaCarpinteria({usuario,notif}){
       // NO se cambia el estado global del pedido: cada carpintería ve su propio estado.
       // (El pedido solo pasa a "aceptado" cuando el cliente elige, desde su vista.)
       notif("¡Presupuesto enviado correctamente!");
+      // Aviso por mail al cliente que hizo el pedido (mejor esfuerzo, sin revelar monto ni romper sobre cerrado)
+      (async()=>{try{
+        const cli=await db.select("usuarios",`?id=eq.${sel.cliente_id}&recibir_avisos=eq.true&select=email`);
+        if(cli&&cli[0]&&cli[0].email){
+          const cuerpo="<p>Hola,</p><p>Recibiste un <strong>nuevo presupuesto</strong> de una carpintería en Encastre.</p><p>Ingresá a <a href=\"https://encastre.com.ar\">encastre.com.ar</a> para verlo.</p><p>— Encastre, La Comunidad de la Madera</p>";
+          db.avisarPorMail(cli[0].email,"Recibiste un presupuesto - Encastre",cuerpo);
+        }
+      }catch(e){}})();
       setPresF({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
       setYaEnvio(true);
       setMiPresupuesto({...datos,id:presId,items:itemsValidos.map(it=>({...it,precio:nmb(it.precio),cantidad:nmb(it.cantidad),importe:nmb(it.precio)*nmb(it.cantidad)})),created_at:new Date().toISOString()});
@@ -3696,6 +3704,20 @@ function VistaConversor(){
 
 function VistaFlete({usuario,notif}){
   const esFlete=usuario.tipo==="flete";
+  const [archivadosCotFlete,setArchivadosCotFlete]=useState(new Set());
+  useEffect(()=>{(async()=>{
+    try{
+      const a=await db.select("elementos_archivados",`?usuario_id=eq.${usuario.id}&tipo_elemento=eq.cotizacion&select=elemento_id`);
+      setArchivadosCotFlete(new Set((a||[]).map(x=>x.elemento_id)));
+    }catch{}
+  })();},[usuario.id]);
+  const archivarCotFlete=async(ct)=>{
+    try{
+      await db.insertMin("elementos_archivados",{usuario_id:usuario.id,tipo_elemento:"cotizacion",elemento_id:ct.id});
+      setArchivadosCotFlete(prev=>new Set(prev).add(ct.id));
+      notif("Cotización archivada");
+    }catch(e){ notif("No se pudo archivar"); }
+  };
 
   // ---- Lado fletero: recibe pedidos y cotiza ----
   const [pedidos,setPedidos]=useState([]);
@@ -4121,7 +4143,7 @@ function VistaFlete({usuario,notif}){
                   {cotizacionesFlete.length===0?(
                     <div style={{color:C.textoSuave,textAlign:"center",padding:20,fontStyle:"italic"}}>⏳ Esperando cotizaciones...</div>
                   ):(
-                    cotizacionesFlete.map((ct,i)=>{
+                    cotizacionesFlete.filter(ct=>!archivadosCotFlete.has(ct.id)).map((ct,i)=>{
                       const key=ct.id||i;
                       const abiertaCot=fleteAbierto===key;
                       return(
@@ -4153,6 +4175,7 @@ function VistaFlete({usuario,notif}){
                             <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>💬 Chat con {ct.fleteNombre||"flete"}</div>
                             <Chat key={ct.flete_id} pedidoId={selPedido.id} tipoPedido="flete" miUsuario={usuario} otroUsuario={{id:ct.flete_id}}/>
                           </div>
+                          <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCotFlete(ct);}}>🗑️ Archivar esta cotización</button></div>
                         </div>
                         )}
                       </div>
