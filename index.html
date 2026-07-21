@@ -1863,7 +1863,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-16.13</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-16.14</div>
     </div>
   );
 }
@@ -3466,6 +3466,7 @@ function VistaAserradero({usuario,notif}){
       const creado=await db.insert("cotizaciones_aserradero",datos);
       // NO se toca el estado global del pedido: sobre cerrado — cada aserradero ve solo su propio estado.
       notif("¡Cotización enviada!");
+      (async()=>{try{const c=await db.select("usuarios",`?id=eq.${sel.carpinteria_id}&recibir_avisos=eq.true&select=email`);if(c&&c[0]&&c[0].email){const cuerpo="<p>Hola,</p><p>Recibiste una <strong>nueva cotización</strong> de un aserradero en Encastre.</p><p>Ingresá a <a href=\"https://encastre.com.ar\">encastre.com.ar</a> para verla.</p><p>— Encastre, La Comunidad de la Madera</p>";db.avisarPorMail(c[0].email,"Recibiste una cotización - Encastre",cuerpo);}}catch(e){}})();
       setCotF({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
       setYaEnvio(true);
       setMiCot({...datos,items:datos.presupuesto_items,created_at:new Date().toISOString()});
@@ -3797,6 +3798,7 @@ function VistaFlete({usuario,notif}){
       await db.insert("cotizaciones_flete",datos);
       // NO se toca ningún estado global del pedido: sobre cerrado — cada flete ve solo su propio estado.
       notif("¡Cotización enviada!");
+      (async()=>{try{const c=await db.select("usuarios",`?id=eq.${sel.solicitante_id}&recibir_avisos=eq.true&select=email`);if(c&&c[0]&&c[0].email){const cuerpo="<p>Hola,</p><p>Recibiste una <strong>nueva cotización de flete</strong> en Encastre.</p><p>Ingresá a <a href=\"https://encastre.com.ar\">encastre.com.ar</a> para verla.</p><p>— Encastre, La Comunidad de la Madera</p>";db.avisarPorMail(c[0].email,"Recibiste una cotización de flete - Encastre",cuerpo);}}catch(e){}})();
       setCotF({items:[{descripcion:"",precio:"",cantidad:"1",modo:"viaje"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
       setYaEnvio(true);
       setMiCot({...datos,items:datos.presupuesto_items,created_at:new Date().toISOString()});
@@ -4264,6 +4266,7 @@ function VistaFerreteria({usuario,notif}){
       await db.insert("cotizaciones_ferreteria",datos);
       // NO se toca el estado global del pedido: sobre cerrado — cada ferretería ve solo su propio estado.
       notif("¡Cotización enviada!");
+      (async()=>{try{const c=await db.select("usuarios",`?id=eq.${sel.carpinteria_id}&recibir_avisos=eq.true&select=email`);if(c&&c[0]&&c[0].email){const cuerpo="<p>Hola,</p><p>Recibiste una <strong>nueva cotización</strong> de una ferretería en Encastre.</p><p>Ingresá a <a href=\"https://encastre.com.ar\">encastre.com.ar</a> para verla.</p><p>— Encastre, La Comunidad de la Madera</p>";db.avisarPorMail(c[0].email,"Recibiste una cotización - Encastre",cuerpo);}}catch(e){}})();
       setCotF({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
       setYaEnvio(true);
       setMiCot({...datos,items:datos.presupuesto_items,created_at:new Date().toISOString()});
@@ -4540,6 +4543,7 @@ function VistaPintureria({usuario,notif}){
       await db.insert("cotizaciones_pintureria",datos);
       // NO se toca el estado global del pedido: sobre cerrado — cada pinturería ve solo su propio estado.
       notif("¡Cotización enviada!");
+      (async()=>{try{const c=await db.select("usuarios",`?id=eq.${sel.carpinteria_id}&recibir_avisos=eq.true&select=email`);if(c&&c[0]&&c[0].email){const cuerpo="<p>Hola,</p><p>Recibiste una <strong>nueva cotización</strong> de una pinturería en Encastre.</p><p>Ingresá a <a href=\"https://encastre.com.ar\">encastre.com.ar</a> para verla.</p><p>— Encastre, La Comunidad de la Madera</p>";db.avisarPorMail(c[0].email,"Recibiste una cotización - Encastre",cuerpo);}}catch(e){}})();
       setCotF({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
       setYaEnvio(true);
       setMiCot({...datos,items:datos.presupuesto_items,created_at:new Date().toISOString()});
