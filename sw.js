@@ -1,4 +1,4 @@
-const CACHE_NAME = 'encastre-v2';
+const CACHE_NAME = 'encastre-v3';
 
 // Librerías pesadas que solo hace falta bajar una vez
 const LIBS = [
@@ -54,6 +54,39 @@ self.addEventListener('fetch', event => {
     caches.match(event.request).then(response => {
       if (response) return response;
       return fetch(event.request).catch(() => caches.match('/'));
+    })
+  );
+});
+
+// ─── NOTIFICACIONES PUSH ────────────────────────────────────────────────
+// Llega un aviso desde el servidor: mostrar la notificación
+self.addEventListener('push', event => {
+  let datos = { titulo: 'Encastre', cuerpo: 'Tenés una novedad.' };
+  try {
+    if (event.data) datos = { ...datos, ...event.data.json() };
+  } catch (e) { /* si no es JSON, se usa el texto por defecto */ }
+
+  event.waitUntil(
+    self.registration.showNotification(datos.titulo, {
+      body: datos.cuerpo,
+      icon: '/logo-192.png',
+      badge: '/logo-192.png',
+      data: { url: datos.url || '/' },
+      vibrate: [100, 50, 100]
+    })
+  );
+});
+
+// El usuario toca la notificación: abrir la app
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const destino = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(lista => {
+      for (const c of lista) {
+        if ('focus' in c) return c.focus();
+      }
+      if (clients.openWindow) return clients.openWindow(destino);
     })
   );
 });
