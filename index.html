@@ -15,6 +15,8 @@
   <meta name="theme-color" content="#5C2E0A"/>
   <meta name="description" content="Encastre — La Comunidad de la Madera"/>
   <link rel="manifest" href="/manifest.json"/>
+  <link rel="icon" type="image/png" href="/logo-192.png"/>
+  <link rel="apple-touch-icon" href="/logo-192.png"/>
 
   <!-- Open Graph -->
   <meta property="og:title" content="Encastre"/>
@@ -1915,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-22.1</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-24.1</div>
     </div>
   );
 }
@@ -5370,8 +5372,8 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja}){
               </label>
               <div style={{fontSize:13,color:C.textoSuave,marginTop:8}}>
                 {estadoPush==="no_soportado"?"Este dispositivo o navegador no admite notificaciones.":
-                 estadoPush==="bloqueado"?"Bloqueaste las notificaciones en el navegador. Para activarlas, habilitalas desde la configuraci\xc3\xb3n del sitio.":
-                 "Avisos instant\xc3\xa1neos en el celular cuando hay novedades. En iPhone hay que agregar la app a la pantalla de inicio."}
+                 estadoPush==="bloqueado"?"Bloqueaste las notificaciones en el navegador. Para activarlas, habilitalas desde la configuración del sitio.":
+                 "Avisos instantáneos en el celular cuando hay novedades. En iPhone hay que agregar la app a la pantalla de inicio."}
               </div>
             </div>
             <button style={{...S.btn("gold"),marginTop:16,width:"100%",justifyContent:"center"}} onClick={guardarPrivado} disabled={guardandoPriv}>{guardandoPriv?"Guardando...":"Guardar cambios"}</button>
