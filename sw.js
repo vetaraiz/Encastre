@@ -1,23 +1,21 @@
-const CACHE_NAME = 'encastre-v3';
+const CACHE_NAME = 'encastre-v4';
 
-// Librerías pesadas que solo hace falta bajar una vez
+// Librerías pesadas que solo hace falta bajar una vez (no cambian nunca)
 const LIBS = [
   'https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js'
 ];
 
-const urlsToCache = ['/', ...LIBS];
-
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
+      .then(cache => cache.addAll(LIBS))
       .then(() => self.skipWaiting())
   );
 });
 
-// Al activar, borra caches viejos (v1) para que no queden versiones obsoletas
+// Al activar, borra caches viejos para no servir versiones obsoletas
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -28,20 +26,21 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   const url = event.request.url;
+  const req = event.request;
 
-  // NUNCA cachear llamadas a Supabase ni a la API de mails: siempre datos frescos
+  // NUNCA tocar llamadas a Supabase: siempre frescas
   if (url.includes('supabase.co') || url.includes('supabase.com')) {
-    return; // deja pasar la petición normal, sin tocar el cache
+    return;
   }
 
-  // Las librerías: primero cache, y si no está, se baja y se guarda
+  // Librerías: CACHE PRIMERO (rapido, no cambian)
   if (LIBS.includes(url)) {
     event.respondWith(
-      caches.match(event.request).then(cached => {
+      caches.match(req).then(cached => {
         if (cached) return cached;
-        return fetch(event.request).then(resp => {
+        return fetch(req).then(resp => {
           const copy = resp.clone();
-          caches.open(CACHE_NAME).then(c => c.put(event.request, copy));
+          caches.open(CACHE_NAME).then(c => c.put(req, copy));
           return resp;
         });
       })
@@ -49,19 +48,22 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // El resto (index, íconos, etc.): cache primero, con respaldo a red
+  // Todo lo demas (index.html, iconos, etc.): RED PRIMERO.
+  // Siempre busca la ultima version; usa cache solo si no hay internet.
   event.respondWith(
-    caches.match(event.request).then(response => {
-      if (response) return response;
-      return fetch(event.request).catch(() => caches.match('/'));
-    })
+    fetch(req)
+      .then(resp => {
+        const copy = resp.clone();
+        caches.open(CACHE_NAME).then(c => c.put(req, copy));
+        return resp;
+      })
+      .catch(() => caches.match(req).then(c => c || caches.match('/')))
   );
 });
 
-// ─── NOTIFICACIONES PUSH ────────────────────────────────────────────────
-// Llega un aviso desde el servidor: mostrar la notificación
+// --- NOTIFICACIONES PUSH ---
 self.addEventListener('push', event => {
-  let datos = { titulo: 'Encastre', cuerpo: 'Tenés una novedad.' };
+  let datos = { titulo: 'Encastre', cuerpo: 'Tenes una novedad.' };
   try {
     if (event.data) datos = { ...datos, ...event.data.json() };
   } catch (e) { /* si no es JSON, se usa el texto por defecto */ }
@@ -77,7 +79,6 @@ self.addEventListener('push', event => {
   );
 });
 
-// El usuario toca la notificación: abrir la app
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   const destino = (event.notification.data && event.notification.data.url) || '/';
