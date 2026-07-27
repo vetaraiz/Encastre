@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.3</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.4</div>
     </div>
   );
 }
@@ -3560,29 +3560,26 @@ function VistaAserradero({usuario,notif}){
     return(
     <div className="fade">
       <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSel(null)}>← Volver</button>
-      <div style={S.card}>
-        <div style={S.cardTitle}>Pedido de carpintería</div>
-        {(()=>{
+      <PedidoFormato
+        solicitante={carpSel||{}}
+        titulo="Pedido de madera"
+        fecha={sel.created_at?new Date(sel.created_at).toLocaleDateString("es-AR"):null}
+        columnas={["Madera","Largo","Ancho","Espesor","Cantidad"]}
+        filas={(()=>{
           let its=[];
           try{ its=Array.isArray(sel.items)?sel.items:JSON.parse(sel.items||"[]"); }catch{its=[];}
           if(!its.length&&sel.material){ its=[{material:sel.material,pies:sel.pies,pulgadas:sel.pulgadas,espesor:sel.espesor,cantidad:sel.cantidad}]; }
-          return its.map((it,i)=>(
-            <div key={i} style={{background:C.suave,borderRadius:0,padding:12,border:`1px solid ${C.borde}`,marginBottom:8}}>
-              {its.length>1&&<div style={{fontWeight:700,color:C.marron,marginBottom:6}}>Madera {i+1}</div>}
-              <div style={S.row}>
-                <div style={S.col()}><div style={S.label}>Material</div><div style={{fontWeight:700,fontSize:17,color:C.marron}}>{it.material}</div></div>
-                <div style={S.col()}>
-                  <div style={S.label}>Medidas</div>
-                  <div style={{fontFamily:"monospace",color:C.marron}}>{it.pies}' largo · {it.pulgadas}" sección{it.espesor?` · ${it.espesor}" esp.`:""}</div>
-                  <div style={{fontSize:16,color:C.textoSuave}}>= {ftToCm(it.pies)}cm · {inToCm(it.pulgadas)}cm</div>
-                </div>
-                <div style={S.col()}><div style={S.label}>Cantidad</div><div style={{fontWeight:700,fontSize:17,color:C.marron}}>{it.cantidad} piezas</div></div>
-              </div>
-            </div>
-          ));
+          return its.map(it=>[
+            it.material,
+            `${it.pies}' (${ftToCm(it.pies)}cm)`,
+            `${it.pulgadas}" (${inToCm(it.pulgadas)}cm)`,
+            it.espesor?`${it.espesor}"`:"—",
+            `${it.cantidad} u`
+          ]);
         })()}
-        {sel.descripcion&&<div style={{fontSize:17,color:C.textoSuave,marginTop:4,fontStyle:"italic"}}>{sel.descripcion}</div>}
-      </div>
+        notas={sel.descripcion}
+        fechaLimite={sel.fecha_limite?new Date(sel.fecha_limite).toLocaleDateString("es-AR"):null}
+      />
 
       {miCot?(
       <div style={S.card}>
@@ -4992,6 +4989,56 @@ function comprimirFoto(file){
 }
 
 // ─── PRESUPUESTO: formato tipo planilla (verde) ─────────────────────────────
+function PedidoFormato({solicitante,titulo,numero,fecha,columnas,filas,notas,fechaLimite}){
+  const M=C.marron; // encabezado marrón (distingue pedido de cotización)
+  const th={textAlign:"left",padding:"8px 10px",color:"#fff",background:M,fontSize:14,fontWeight:700,fontFamily:"'Lato',sans-serif"};
+  const td={padding:"8px 10px",fontSize:15,color:C.texto,borderBottom:`1px solid ${C.borde}`,verticalAlign:"top"};
+  const dato=(l,v)=> v?<div style={{fontSize:14,color:C.texto,marginBottom:2}}><span style={{color:C.textoSuave}}>{l}:</span> {v}</div>:null;
+  return(
+    <div style={{border:`1px solid ${C.borde}`,borderRadius:0,overflow:"hidden",background:"#fff"}}>
+      {/* Encabezado marrón */}
+      <div style={{background:M,color:"#fff",padding:"12px 14px",display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+        <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:20}}>{titulo||"Pedido"}{(numero!==""&&numero!=null)?` N° ${numero}`:""}</div>
+        <div style={{fontSize:14,alignSelf:"center"}}>Fecha: {fecha||new Date().toLocaleDateString("es-AR")}</div>
+      </div>
+
+      {/* Datos del solicitante */}
+      <div style={{borderBottom:`2px solid ${M}`,padding:"12px 14px"}}>
+        <div style={{fontSize:12,fontWeight:700,color:M,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Solicita</div>
+        <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:18,color:C.marron,marginBottom:4}}>{solicitante.nombre||"—"}</div>
+        {dato("Barrio",solicitante.barrio)}
+        {dato("Ciudad",solicitante.ciudad)}
+      </div>
+
+      {/* Tabla de ítems del pedido (sin precios) */}
+      <div style={{overflowX:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",minWidth:320}}>
+          <thead><tr>
+            {columnas.map((c,i)=><th key={i} style={i===0?th:{...th,textAlign:"right"}}>{c}</th>)}
+          </tr></thead>
+          <tbody>
+            {(!filas||filas.length===0)?(
+              <tr><td style={td} colSpan={columnas.length}>Sin ítems.</td></tr>
+            ):filas.map((f,i)=>(
+              <tr key={i}>
+                {f.map((celda,j)=><td key={j} style={j===0?td:{...td,textAlign:"right",fontFamily:"monospace",whiteSpace:"nowrap"}}>{celda}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Notas y fecha límite */}
+      {(notas||fechaLimite)&&(
+        <div style={{padding:"10px 14px",background:C.suave,borderTop:`1px solid ${C.borde}`}}>
+          {notas&&<div style={{fontSize:14,color:C.texto,fontStyle:"italic",marginBottom:fechaLimite?4:0}}>{notas}</div>}
+          {fechaLimite&&<div style={{fontSize:13,color:C.textoSuave}}>⏰ Fecha límite para cotizar: {fechaLimite}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PresupuestoFormato({empresa,cliente,items,opts,numero,fecha,tiempoEntrega,esEmpresa,aceptado}){
   const V="#009966"; // verde encabezado
   const o=opts||{};
