@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.1</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.2</div>
     </div>
   );
 }
@@ -2552,7 +2552,7 @@ function VistaCarpinteria({usuario,notif}){
   const [clienteSel,setClienteSel]=useState({});
   const [enviando,setEnviando]=useState(false);
   const [yaEnvio,setYaEnvio]=useState(false);
-  const [asF,setAsF]=useState({material:"",pies:"",pulgadas:"",espesor:"",cantidad:"",descripcion:"",fechaLimite:""});
+  const [asF,setAsF]=useState({items:[{material:"",pies:"",pulgadas:"",espesor:"",cantidad:""}],descripcion:"",fechaLimite:""});
   const [misPedidosAserr,setMisPedidosAserr]=useState([]);
   const [subAserr,setSubAserr]=useState("pedir");
   const [subFerr,setSubFerr]=useState("pedir");
@@ -2759,17 +2759,21 @@ function VistaCarpinteria({usuario,notif}){
 
   const abrirPedidoAserr=async(p)=>{
     setSelAserr(p);
-    // Precargar el primer ítem de la cotización con lo que pidió la carpintería (editable)
+    // Precargar los ítems de la cotización con lo que pidió la carpintería (editable)
     try{
-      const partes=[];
-      if(p.material)partes.push(p.material);
-      const medidas=[];
-      if(p.pies)medidas.push(`${p.pies} pies`);
-      if(p.pulgadas)medidas.push(`${p.pulgadas}"`);
-      if(p.espesor)medidas.push(`espesor ${p.espesor}`);
-      if(medidas.length)partes.push(medidas.join(" × "));
-      const desc=partes.join(" — ")||(p.descripcion||"");
-      setCotF({items:[{descripcion:desc,precio:"",cantidad:String(p.cantidad||1)}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
+      let pedidoItems=[];
+      try{ pedidoItems=Array.isArray(p.items)?p.items:JSON.parse(p.items||"[]"); }catch{pedidoItems=[];}
+      // Si el pedido es viejo (sin lista items), usamos las columnas fijas como un solo ítem
+      if(!pedidoItems.length&&p.material){ pedidoItems=[{material:p.material,pies:p.pies,pulgadas:p.pulgadas,espesor:p.espesor,cantidad:p.cantidad}]; }
+      const items=pedidoItems.length?pedidoItems.map(it=>{
+        const medidas=[];
+        if(it.pies)medidas.push(`${it.pies} pies`);
+        if(it.pulgadas)medidas.push(`${it.pulgadas}"`);
+        if(it.espesor)medidas.push(`espesor ${it.espesor}`);
+        const desc=[it.material,medidas.join(" × ")].filter(Boolean).join(" — ");
+        return{descripcion:desc,precio:"",cantidad:String(it.cantidad||1)};
+      }):[{descripcion:"",precio:"",cantidad:"1"}];
+      setCotF({items,tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
     }catch{}
     try{
       const d=await db.select("cotizaciones_aserradero",`?pedido_id=eq.${p.id}&order=created_at.asc`);
@@ -2785,13 +2789,18 @@ function VistaCarpinteria({usuario,notif}){
   const [enviandoPed,setEnviandoPed]=useState(false);
   const enviarAserr=async()=>{
     if(enviandoPed)return;
-    if(!(asF.material&&asF.pies&&asF.pulgadas&&asF.cantidad)){setIntAs(true);return;}
+    const itemsValidos=(asF.items||[]).filter(it=>it.material.trim()&&Number(it.pies)>0&&Number(it.pulgadas)>0&&Number(it.cantidad)>0);
+    if(itemsValidos.length===0){setIntAs(true);return;}
     setEnviandoPed(true);
     try{
-      await db.insert("pedidos_aserradero",{carpinteria_id:usuario.id,material:asF.material,pies:Number(asF.pies),pulgadas:Number(asF.pulgadas),espesor:Number(asF.espesor||0),cantidad:Number(asF.cantidad),descripcion:asF.descripcion,fecha_limite:fechaLimiteISO(asF.fechaLimite)});
+      const itemsLimpios=itemsValidos.map(it=>({material:it.material.trim(),pies:Number(it.pies),pulgadas:Number(it.pulgadas),espesor:Number(it.espesor||0),cantidad:Number(it.cantidad)}));
+      const resumen=itemsLimpios.map(it=>`${it.material} ${it.pies}'×${it.pulgadas}"${it.espesor?` esp.${it.espesor}"`:""} (${it.cantidad}u)`).join(", ");
+      const primero=itemsLimpios[0];
+      // Guardamos items (lista) + columnas del primer ítem por compatibilidad con lo ya existente
+      await db.insert("pedidos_aserradero",{carpinteria_id:usuario.id,items:itemsLimpios,material:primero.material,pies:primero.pies,pulgadas:primero.pulgadas,espesor:primero.espesor,cantidad:itemsLimpios.reduce((a,it)=>a+it.cantidad,0),descripcion:asF.descripcion||resumen,fecha_limite:fechaLimiteISO(asF.fechaLimite)});
       notif("¡Pedido enviado a los aserraderos!");
       (async()=>{try{const ps=await db.select("usuarios","?tipo=eq.aserradero&recibir_avisos=eq.true&select=email,nombre");const msg="<p>Tenés un <strong>nuevo pedido para cotizar</strong> en Encastre.</p>";for(const c of (ps||[])){if(c.email)db.avisarPorMail(c.email,c.nombre,"Nuevo pedido para cotizar - Encastre",msg);}}catch(e){}})();
-      setAsF({material:"",pies:"",pulgadas:"",espesor:"",cantidad:"",descripcion:"",fechaLimite:""});
+      setAsF({items:[{material:"",pies:"",pulgadas:"",espesor:"",cantidad:""}],descripcion:"",fechaLimite:""});
       setIntAs(false);
       cargarMisPedidosAserr();
       setSubAserr("mis");
@@ -3066,19 +3075,30 @@ function VistaCarpinteria({usuario,notif}){
       {tab==="aserradero"&&subAserr==="pedir"&&(
         <div style={S.card}>
           <div style={S.cardTitle}>🪵 Pedir madera al aserradero</div>
-          <div style={{fontSize:17,color:C.textoSuave,marginBottom:14,fontStyle:"italic"}}>Las medidas van en pulgadas y pies (como trabaja el aserradero)</div>
-          <label style={S.label}>Tipo de madera</label>
-          <input value={asF.material} onChange={e=>setAsF(f=>({...f,material:e.target.value}))} placeholder="Ej: Roble, Pino, Cedro, Quebracho..." style={{...S.input,marginBottom:0,...marcaErr(intAs,!asF.material)}}/>
-          <AvisoErr activo={intAs} cond={!asF.material} texto="Falta el tipo de madera"/>
-          <div style={{marginBottom:14}}/>
-          <div style={S.row}>
-            <div style={S.col()}><label style={S.label}>Largo (pies)</label><input type="number" value={asF.pies} onChange={e=>setAsF(f=>({...f,pies:e.target.value}))} placeholder="0'" style={{...S.input,...marcaErr(intAs,!asF.pies)}}/><AvisoErr activo={intAs} cond={!asF.pies} texto="Falta el largo"/>{asF.pies&&<div style={{fontSize:17,color:C.textoSuave,fontFamily:"monospace"}}>= {ftToCm(asF.pies)}cm</div>}</div>
-            <div style={S.col()}><label style={S.label}>Ancho (pulgadas)</label><input type="number" value={asF.pulgadas} onChange={e=>setAsF(f=>({...f,pulgadas:e.target.value}))} placeholder='0"' style={{...S.input,...marcaErr(intAs,!asF.pulgadas)}}/><AvisoErr activo={intAs} cond={!asF.pulgadas} texto="Falta el ancho"/>{asF.pulgadas&&<div style={{fontSize:17,color:C.textoSuave,fontFamily:"monospace"}}>= {inToCm(asF.pulgadas)}cm</div>}</div>
-            <div style={S.col()}><label style={S.label}>Espesor (pulgadas)</label><input type="number" value={asF.espesor||""} onChange={e=>setAsF(f=>({...f,espesor:e.target.value}))} placeholder='0"' style={S.input}/>{asF.espesor&&<div style={{fontSize:17,color:C.textoSuave,fontFamily:"monospace"}}>= {inToCm(asF.espesor)}cm</div>}</div>
-            <div style={S.col()}><label style={S.label}>Cantidad</label><input type="number" value={asF.cantidad} onChange={e=>setAsF(f=>({...f,cantidad:e.target.value}))} placeholder="0" style={{...S.input,...marcaErr(intAs,!asF.cantidad)}}/><AvisoErr activo={intAs} cond={!asF.cantidad} texto="Falta la cantidad"/></div>
-          </div>
-          <div style={{marginTop:12}}><label style={S.label}>Observaciones</label><textarea value={asF.descripcion} onChange={e=>setAsF(f=>({...f,descripcion:e.target.value}))} placeholder="Calidad, secado, escuadría..." style={{...S.input,minHeight:56,resize:"vertical"}}/></div>
-          <BannerFalta activo={intAs} lista={[[!asF.material,"el tipo de madera"],[!asF.pies,"el largo"],[!asF.pulgadas,"el ancho"],[!asF.cantidad,"la cantidad"]]}/>
+          <div style={{fontSize:17,color:C.textoSuave,marginBottom:14,fontStyle:"italic"}}>Las medidas van en pulgadas y pies (como trabaja el aserradero). Podés pedir varias maderas en un mismo pedido.</div>
+          {asF.items.map((it,i)=>{
+            const setIt=(campo,val)=>setAsF(f=>{const its=[...f.items];its[i]={...its[i],[campo]:val};return{...f,items:its};});
+            const faltaMat=intAs&&!it.material.trim(), faltaPies=intAs&&!it.pies, faltaAncho=intAs&&!it.pulgadas, faltaCant=intAs&&!it.cantidad;
+            return(
+            <div key={i} style={{border:`1px solid ${C.borde}`,padding:12,marginBottom:10,background:C.input}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <div style={{fontWeight:700,color:C.marron}}>Madera {i+1}</div>
+                {asF.items.length>1&&<button onClick={()=>setAsF(f=>({...f,items:f.items.filter((_,j)=>j!==i)}))} style={{background:"transparent",border:"none",color:C.textoSuave,cursor:"pointer",fontSize:15}}>✕ quitar</button>}
+              </div>
+              <label style={S.label}>Tipo de madera</label>
+              <input value={it.material} onChange={e=>setIt("material",e.target.value)} placeholder="Ej: Roble, Pino, Cedro, Quebracho..." style={{...S.input,marginBottom:8,...marcaErr(intAs,!it.material)}}/>
+              <div style={S.row}>
+                <div style={S.col()}><label style={S.label}>Largo (pies)</label><input type="number" value={it.pies} onChange={e=>setIt("pies",e.target.value)} placeholder="0'" style={{...S.input,...marcaErr(intAs,!it.pies)}}/>{it.pies&&<div style={{fontSize:16,color:C.textoSuave,fontFamily:"monospace"}}>= {ftToCm(it.pies)}cm</div>}</div>
+                <div style={S.col()}><label style={S.label}>Ancho (pulgadas)</label><input type="number" value={it.pulgadas} onChange={e=>setIt("pulgadas",e.target.value)} placeholder='0"' style={{...S.input,...marcaErr(intAs,!it.pulgadas)}}/>{it.pulgadas&&<div style={{fontSize:16,color:C.textoSuave,fontFamily:"monospace"}}>= {inToCm(it.pulgadas)}cm</div>}</div>
+                <div style={S.col()}><label style={S.label}>Espesor (pulgadas)</label><input type="number" value={it.espesor||""} onChange={e=>setIt("espesor",e.target.value)} placeholder='0"' style={S.input}/>{it.espesor&&<div style={{fontSize:16,color:C.textoSuave,fontFamily:"monospace"}}>= {inToCm(it.espesor)}cm</div>}</div>
+                <div style={S.col()}><label style={S.label}>Cantidad</label><input type="number" value={it.cantidad} onChange={e=>setIt("cantidad",e.target.value)} placeholder="0" style={{...S.input,...marcaErr(intAs,!it.cantidad)}}/></div>
+              </div>
+            </div>
+            );
+          })}
+          <button onClick={()=>setAsF(f=>({...f,items:[...f.items,{material:"",pies:"",pulgadas:"",espesor:"",cantidad:""}]}))} style={{...S.btn("ghost"),width:"100%",justifyContent:"center",marginBottom:14}}>＋ Agregar otra madera</button>
+          <div style={{marginTop:0}}><label style={S.label}>Observaciones <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label><textarea value={asF.descripcion} onChange={e=>setAsF(f=>({...f,descripcion:e.target.value}))} placeholder="Calidad, secado, escuadría..." style={{...S.input,minHeight:56,resize:"vertical"}}/></div>
+          <BannerFalta activo={intAs} lista={[[asF.items.every(it=>!it.material.trim()||!it.pies||!it.pulgadas||!it.cantidad),"al menos una madera completa (tipo, largo, ancho y cantidad)"]]}/>
           <div style={{marginTop:12}}>
             <label style={S.label}>Fecha límite para recibir cotizaciones <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
             <input type="date" min={minFechaLimite()} value={asF.fechaLimite||""} onChange={e=>setAsF(f=>({...f,fechaLimite:e.target.value}))} style={{...S.input,maxWidth:220}}/>
@@ -3540,18 +3560,26 @@ function VistaAserradero({usuario,notif}){
       <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSel(null)}>← Volver</button>
       <div style={S.card}>
         <div style={S.cardTitle}>Pedido de carpintería</div>
-        <div style={{background:C.suave,borderRadius:0,padding:12,border:`1px solid ${C.borde}`}}>
-          <div style={S.row}>
-            <div style={S.col()}><div style={S.label}>Material</div><div style={{fontWeight:700,fontSize:17,color:C.marron}}>{sel.material}</div></div>
-            <div style={S.col()}>
-              <div style={S.label}>Medidas</div>
-              <div style={{fontFamily:"monospace",color:C.marron}}>{sel.pies}' largo · {sel.pulgadas}" sección</div>
-              <div style={{fontSize:17,color:C.textoSuave}}>= {ftToCm(sel.pies)}cm · {inToCm(sel.pulgadas)}cm</div>
+        {(()=>{
+          let its=[];
+          try{ its=Array.isArray(sel.items)?sel.items:JSON.parse(sel.items||"[]"); }catch{its=[];}
+          if(!its.length&&sel.material){ its=[{material:sel.material,pies:sel.pies,pulgadas:sel.pulgadas,espesor:sel.espesor,cantidad:sel.cantidad}]; }
+          return its.map((it,i)=>(
+            <div key={i} style={{background:C.suave,borderRadius:0,padding:12,border:`1px solid ${C.borde}`,marginBottom:8}}>
+              {its.length>1&&<div style={{fontWeight:700,color:C.marron,marginBottom:6}}>Madera {i+1}</div>}
+              <div style={S.row}>
+                <div style={S.col()}><div style={S.label}>Material</div><div style={{fontWeight:700,fontSize:17,color:C.marron}}>{it.material}</div></div>
+                <div style={S.col()}>
+                  <div style={S.label}>Medidas</div>
+                  <div style={{fontFamily:"monospace",color:C.marron}}>{it.pies}' largo · {it.pulgadas}" sección{it.espesor?` · ${it.espesor}" esp.`:""}</div>
+                  <div style={{fontSize:16,color:C.textoSuave}}>= {ftToCm(it.pies)}cm · {inToCm(it.pulgadas)}cm</div>
+                </div>
+                <div style={S.col()}><div style={S.label}>Cantidad</div><div style={{fontWeight:700,fontSize:17,color:C.marron}}>{it.cantidad} piezas</div></div>
+              </div>
             </div>
-            <div style={S.col()}><div style={S.label}>Cantidad</div><div style={{fontWeight:700,fontSize:17,color:C.marron}}>{sel.cantidad} piezas</div></div>
-          </div>
-          {sel.descripcion&&<div style={{fontSize:17,color:C.textoSuave,marginTop:8,fontStyle:"italic"}}>{sel.descripcion}</div>}
-        </div>
+          ));
+        })()}
+        {sel.descripcion&&<div style={{fontSize:17,color:C.textoSuave,marginTop:4,fontStyle:"italic"}}>{sel.descripcion}</div>}
       </div>
 
       {miCot?(
