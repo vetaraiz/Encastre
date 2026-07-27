@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.11</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.12</div>
     </div>
   );
 }
@@ -4018,10 +4018,12 @@ function VistaFlete({usuario,notif}){
                   </div>
                   <div style={{marginBottom:8}}>
                     <label style={S.label}>Modalidad</label>
-                    <div style={{display:"flex",gap:6}}>
+                    <div style={{display:"flex",gap:20,marginTop:4}}>
                       {[["viaje","Por viaje"],["hora","Por hora"]].map(([m,l])=>(
-                        <button key={m} type="button" onClick={()=>setItem(i,"modo",m)}
-                          style={{flex:1,padding:"8px 10px",borderRadius:0,cursor:"pointer",fontSize:15,fontWeight:700,fontFamily:"'Lato',sans-serif",border:`1px solid ${modo===m?C.marron:C.borde}`,background:modo===m?C.marron:"transparent",color:modo===m?C.crema:C.textoSuave}}>{l}</button>
+                        <label key={m} style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontSize:15,color:modo===m?C.marron:C.textoSuave,fontWeight:modo===m?700:400}}>
+                          <input type="radio" name={`modo-${i}`} checked={modo===m} onChange={()=>setItem(i,"modo",m)} style={{accentColor:C.marron,width:16,height:16}}/>
+                          {l}
+                        </label>
                       ))}
                     </div>
                   </div>
