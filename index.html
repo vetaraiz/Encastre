@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.5</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.6</div>
     </div>
   );
 }
@@ -3064,10 +3064,9 @@ function VistaCarpinteria({usuario,notif}){
             const setIt=(campo,val)=>setAsF(f=>{const its=[...f.items];its[i]={...its[i],[campo]:val};return{...f,items:its};});
             const faltaMat=intAs&&!it.material.trim(), faltaPies=intAs&&!it.pies, faltaAncho=intAs&&!it.pulgadas, faltaCant=intAs&&!it.cantidad;
             return(
-            <div key={i} style={{border:`1px solid ${C.borde}`,padding:12,marginBottom:10,background:C.input}}>
+            <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:0,padding:10,marginBottom:8,background:C.suave}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                 <div style={{fontWeight:700,color:C.marron}}>Madera {i+1}</div>
-                {asF.items.length>1&&<button onClick={()=>setAsF(f=>({...f,items:f.items.filter((_,j)=>j!==i)}))} style={{background:"transparent",border:"none",color:C.textoSuave,cursor:"pointer",fontSize:15}}>✕ quitar</button>}
               </div>
               <label style={S.label}>Tipo de madera</label>
               <input value={it.material} onChange={e=>setIt("material",e.target.value)} placeholder="Ej: Roble, Pino, Cedro, Quebracho..." style={{...S.input,marginBottom:8,...marcaErr(intAs,!it.material)}}/>
@@ -3077,6 +3076,7 @@ function VistaCarpinteria({usuario,notif}){
                 <div style={S.col()}><label style={S.label}>Espesor (pulgadas)</label><input type="number" value={it.espesor||""} onChange={e=>setIt("espesor",e.target.value)} placeholder='0"' style={S.input}/>{it.espesor&&<div style={{fontSize:16,color:C.textoSuave,fontFamily:"monospace"}}>= {inToCm(it.espesor)}cm</div>}</div>
                 <div style={S.col()}><label style={S.label}>Cantidad</label><input type="number" value={it.cantidad} onChange={e=>setIt("cantidad",e.target.value)} placeholder="0" style={{...S.input,...marcaErr(intAs,!it.cantidad)}}/></div>
               </div>
+              {asF.items.length>1&&<button onClick={()=>setAsF(f=>({...f,items:f.items.filter((_,j)=>j!==i)}))} style={{...S.btn("ghost"),color:C.error,borderColor:C.error,fontSize:14,padding:"5px 10px",marginTop:6,minHeight:"auto"}}>🗑️ Quitar madera</button>}
             </div>
             );
           })}
