@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.4</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.5</div>
     </div>
   );
 }
@@ -4991,7 +4991,7 @@ function comprimirFoto(file){
 // ─── PRESUPUESTO: formato tipo planilla (verde) ─────────────────────────────
 function PedidoFormato({solicitante,titulo,numero,fecha,columnas,filas,notas,fechaLimite}){
   const M=C.marron; // encabezado marrón (distingue pedido de cotización)
-  const th={textAlign:"left",padding:"8px 10px",color:"#fff",background:M,fontSize:14,fontWeight:700,fontFamily:"'Lato',sans-serif"};
+  const th={textAlign:"left",padding:"8px 10px",color:"#fff",background:C.medio,fontSize:14,fontWeight:700,fontFamily:"'Lato',sans-serif"};
   const td={padding:"8px 10px",fontSize:15,color:C.texto,borderBottom:`1px solid ${C.borde}`,verticalAlign:"top"};
   const dato=(l,v)=> v?<div style={{fontSize:14,color:C.texto,marginBottom:2}}><span style={{color:C.textoSuave}}>{l}:</span> {v}</div>:null;
   return(
