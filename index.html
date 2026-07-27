@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.12</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.13</div>
     </div>
   );
 }
@@ -2799,36 +2799,22 @@ function VistaCarpinteria({usuario,notif}){
       <div className="fade">
         <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSel(null)}>← Volver</button>
         <div style={S.card}>
-          {sel._clienteNombre&&<div style={{fontFamily:"'Playfair Display',serif",fontSize:28,color:C.marron,fontWeight:800,marginBottom:2}}>👤 {sel._clienteNombre}</div>}
-          <div style={{fontSize:15,color:C.textoSuave,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Pedido recibido</div>
-          <div style={{fontSize:17,color:C.textoSuave,marginBottom:10}}>{sel.descripcion} · {new Date(sel.created_at).toLocaleDateString("es-AR")}</div>
-          <div style={{background:C.suave,borderRadius:0,padding:12,border:`1px solid ${C.borde}`}}>
-            <div style={{...S.label,marginBottom:8}}>Medidas del cliente (en cm) con equivalencias</div>
-            {[["Alto",sel.alto],["Ancho",sel.ancho],["Profundidad",sel.profundidad]].map(([n,v])=>(
-              <div key={n} style={{display:"flex",justifyContent:"space-between",marginBottom:4,fontSize:16}}>
-                <span style={{color:C.textoSuave}}>{n}:</span>
-                <span style={{fontFamily:"monospace",color:C.marron,fontWeight:700}}>{v}cm = {cmToMm(v)}mm = {cmToIn(v)}"</span>
-              </div>
-            ))}
-          </div>
-          <div style={S.row,{marginTop:10}}>
-            <div style={S.col()}><div style={S.label}>Material</div><div style={{fontWeight:700}}>{mat?.label}{sel.especie?` · ${sel.especie}`:""}</div></div>
-            <div style={S.col()}><div style={S.label}>Terminación</div><div>{ter?.label}{sel.color?` · ${sel.color}`:""}</div></div>
-          </div>
-          {sel.notas_croquis&&<div style={{marginTop:12}}>
-            <div style={S.label}>📝 Notas del croquis</div>
-            <div style={{fontSize:16,color:C.marron,whiteSpace:"pre-wrap"}}>{sel.notas_croquis}</div>
-          </div>}
-          {sel.croquis_imagen&&<div style={{marginTop:12}}>
-            <div style={{...S.label,marginBottom:6}}>📷 Croquis del cliente</div>
-            <img src={sel.croquis_imagen} alt="croquis del cliente" style={{width:"100%",borderRadius:0,border:`1px solid ${C.borde}`}}/>
-          </div>}
-        </div>
+          <PedidoClienteFormato
+            cliente={{nombre:sel._clienteNombre}}
+            fecha={sel.created_at?new Date(sel.created_at).toLocaleDateString("es-AR"):null}
+            fechaLimite={sel.fecha_limite?new Date(sel.fecha_limite).toLocaleDateString("es-AR"):null}
+            descripcion={sel.descripcion}
+            alto={sel.alto} ancho={sel.ancho} profundidad={sel.profundidad}
+            material={mat?.label} especie={sel.especie}
+            terminacion={ter?.label} color={sel.color}
+            notasCroquis={sel.notas_croquis}
+            croquisImg={sel.croquis_imagen}
+          />
 
         {/* IA de sugerencia desactivada temporalmente — reponer cuando esté el puente serverless de Netlify */}
 
         {(sel.estado==="aceptado"&&(!miPresupuesto||miPresupuesto.estado!=="aceptado"))?(
-        <div style={{...S.card,textAlign:"center",borderColor:"#8A7A6A"}}>
+        <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`,textAlign:"center"}}>
           <div style={{fontSize:32,marginBottom:8}}>🔒</div>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,color:C.marron,fontWeight:700}}>Pedido cerrado</div>
           <div style={{fontSize:16,color:C.textoSuave,marginTop:6}}>El cliente ya eligió un presupuesto para este pedido.</div>
@@ -2837,13 +2823,13 @@ function VistaCarpinteria({usuario,notif}){
           </div>}
         </div>
         ):(sel.fecha_limite&&new Date(sel.fecha_limite)<new Date()&&!miPresupuesto)?(
-        <div style={{...S.card,textAlign:"center",borderColor:"#B23A2E"}}>
+        <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`,textAlign:"center"}}>
           <div style={{fontSize:32,marginBottom:8}}>⛔</div>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,color:"#B23A2E",fontWeight:700}}>Este pedido venció</div>
           <div style={{fontSize:16,color:C.textoSuave,marginTop:6}}>El cliente puso una fecha límite que ya pasó, así que no se pueden enviar presupuestos.</div>
         </div>
         ):miPresupuesto?(
-        <div style={S.card}>
+        <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`}}>
           <div style={S.cardTitle}>✅ Presupuesto enviado</div>
           <div style={{fontSize:15,color:C.textoSuave,marginBottom:10}}>Ya le enviaste un presupuesto a este cliente. Así lo ve:</div>
           <PresupuestoFormato
@@ -2859,7 +2845,7 @@ function VistaCarpinteria({usuario,notif}){
           />
         </div>
         ):(
-        <div style={S.card}>
+        <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`}}>
           <div style={S.cardTitle}>💰 Tu presupuesto</div>
 
           {(() => {
@@ -2958,11 +2944,12 @@ function VistaCarpinteria({usuario,notif}){
         </div>
         )}
 
-        <div style={S.card}>
+        <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`}}>
           <div style={S.cardTitle}>💬 Chat con cliente</div>
           <Chat pedidoId={sel.id} tipoPedido="cliente" miUsuario={usuario} otroUsuario={{id:sel.cliente_id}}/>
         </div>
         <div style={{textAlign:"right",marginTop:12}}><button style={{...S.btn("ghost"),fontSize:14,padding:"8px 14px",color:C.textoSuave}} onClick={()=>archivarPedido(sel)}>🗑️ Archivar este pedido</button></div>
+        </div>
       </div>
     );
   }
@@ -5004,6 +4991,52 @@ function comprimirFoto(file){
 }
 
 // ─── PRESUPUESTO: formato tipo planilla (verde) ─────────────────────────────
+function PedidoClienteFormato({cliente,fecha,fechaLimite,descripcion,alto,ancho,profundidad,material,especie,terminacion,color,notasCroquis,croquisImg}){
+  const M=C.marron;
+  const fila=(etiqueta,valor)=> valor?(
+    <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.borde}`}}>
+      <div style={{fontSize:12,fontWeight:700,color:C.medio,textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>{etiqueta}</div>
+      <div style={{fontSize:16,color:C.texto,fontWeight:600}}>{valor}</div>
+    </div>
+  ):null;
+  return(
+    <div style={{border:`1px solid ${C.borde}`,borderRadius:0,overflow:"hidden",background:"#fff"}}>
+      <div style={{background:M,color:"#fff",padding:"12px 14px",display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+        <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:20}}>Pedido recibido</div>
+        <div style={{fontSize:13,textAlign:"right",alignSelf:"center"}}>
+          <div>Fecha: {fecha||new Date().toLocaleDateString("es-AR")}</div>
+          {fechaLimite&&<div style={{color:"#F0C9A0",marginTop:2}}>Vence: {fechaLimite}</div>}
+        </div>
+      </div>
+      <div style={{borderBottom:`2px solid ${M}`,padding:"12px 14px"}}>
+        <div style={{fontSize:12,fontWeight:700,color:M,textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>Cliente</div>
+        <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:18,color:C.marron}}>{cliente.nombre||"—"}</div>
+      </div>
+      {fila("Descripción",descripcion)}
+      {(alto||ancho||profundidad)&&(
+        <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.borde}`}}>
+          <div style={{fontSize:12,fontWeight:700,color:C.medio,textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>Medidas</div>
+          {[["Alto",alto],["Ancho",ancho],["Profundidad",profundidad]].filter(([n,v])=>v).map(([n,v])=>(
+            <div key={n} style={{display:"flex",justifyContent:"space-between",marginBottom:3,fontSize:15}}>
+              <span style={{color:C.textoSuave}}>{n}</span>
+              <span style={{fontFamily:"monospace",color:C.marron,fontWeight:700}}>{v}cm = {cmToMm(v)}mm = {cmToIn(v)}"</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {fila("Material",material?`${material}${especie?` · ${especie}`:""}`:null)}
+      {fila("Terminación",terminacion?`${terminacion}${color?` · ${color}`:""}`:null)}
+      {fila("Notas del croquis",notasCroquis)}
+      {croquisImg&&(
+        <div style={{padding:"10px 14px"}}>
+          <div style={{fontSize:12,fontWeight:700,color:C.medio,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Croquis del cliente</div>
+          <img src={croquisImg} alt="croquis del cliente" style={{width:"100%",borderRadius:0,border:`1px solid ${C.borde}`}}/>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FleteFormato({solicitante,fecha,fechaLimite,origen,destino,fechaDeseada,materiales,notas}){
   const M=C.marron;
   const fila=(etiqueta,valor)=> valor?(
