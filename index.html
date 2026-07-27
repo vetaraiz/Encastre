@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-24.1</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.1</div>
     </div>
   );
 }
@@ -2759,6 +2759,18 @@ function VistaCarpinteria({usuario,notif}){
 
   const abrirPedidoAserr=async(p)=>{
     setSelAserr(p);
+    // Precargar el primer ítem de la cotización con lo que pidió la carpintería (editable)
+    try{
+      const partes=[];
+      if(p.material)partes.push(p.material);
+      const medidas=[];
+      if(p.pies)medidas.push(`${p.pies} pies`);
+      if(p.pulgadas)medidas.push(`${p.pulgadas}"`);
+      if(p.espesor)medidas.push(`espesor ${p.espesor}`);
+      if(medidas.length)partes.push(medidas.join(" × "));
+      const desc=partes.join(" — ")||(p.descripcion||"");
+      setCotF({items:[{descripcion:desc,precio:"",cantidad:String(p.cantidad||1)}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
+    }catch{}
     try{
       const d=await db.select("cotizaciones_aserradero",`?pedido_id=eq.${p.id}&order=created_at.asc`);
       const enr=await Promise.all(d.map(async ct=>{
