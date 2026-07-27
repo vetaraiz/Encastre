@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.10</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.11</div>
     </div>
   );
 }
@@ -3962,14 +3962,15 @@ function VistaFlete({usuario,notif}){
       <div className="fade">
         <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSel(null)}>← Volver</button>
         <div style={S.card}>
-          <PedidoFormato
+          <FleteFormato
             solicitante={solSel&&solSel.nombre?solSel:{nombre:sel._solNombre||"Solicitante"}}
-            titulo="Pedido de flete"
             fecha={sel.created_at?new Date(sel.created_at).toLocaleDateString("es-AR"):null}
-            columnas={["Origen","Destino"]}
-            filas={[[sel.origen,sel.destino]]}
-            notas={[sel.fecha_deseada?`📅 Fecha deseada: ${new Date(sel.fecha_deseada+"T12:00").toLocaleDateString("es-AR")}`:"",sel.descripcion_carga?`📦 ${sel.descripcion_carga}`:"",sel.notas?`📝 ${sel.notas}`:""].filter(Boolean).join("  ·  ")}
             fechaLimite={sel.fecha_limite?new Date(sel.fecha_limite).toLocaleDateString("es-AR"):null}
+            origen={sel.origen}
+            destino={sel.destino}
+            fechaDeseada={sel.fecha_deseada?new Date(sel.fecha_deseada+"T12:00").toLocaleDateString("es-AR"):null}
+            materiales={sel.descripcion_carga}
+            notas={sel.notas}
           />
 
         {miCot?(
@@ -5001,6 +5002,39 @@ function comprimirFoto(file){
 }
 
 // ─── PRESUPUESTO: formato tipo planilla (verde) ─────────────────────────────
+function FleteFormato({solicitante,fecha,fechaLimite,origen,destino,fechaDeseada,materiales,notas}){
+  const M=C.marron;
+  const fila=(etiqueta,valor)=> valor?(
+    <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.borde}`}}>
+      <div style={{fontSize:12,fontWeight:700,color:C.medio,textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>{etiqueta}</div>
+      <div style={{fontSize:16,color:C.texto,fontWeight:600}}>{valor}</div>
+    </div>
+  ):null;
+  return(
+    <div style={{border:`1px solid ${C.borde}`,borderRadius:0,overflow:"hidden",background:"#fff"}}>
+      {/* Encabezado marrón con fecha y vencimiento apilados a la derecha */}
+      <div style={{background:M,color:"#fff",padding:"12px 14px",display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+        <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:20}}>Pedido de flete</div>
+        <div style={{fontSize:13,textAlign:"right",alignSelf:"center"}}>
+          <div>Fecha: {fecha||new Date().toLocaleDateString("es-AR")}</div>
+          {fechaLimite&&<div style={{color:"#F0C9A0",marginTop:2}}>Vence: {fechaLimite}</div>}
+        </div>
+      </div>
+      {/* Solicitante */}
+      <div style={{borderBottom:`2px solid ${M}`,padding:"12px 14px"}}>
+        <div style={{fontSize:12,fontWeight:700,color:M,textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>Solicita</div>
+        <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:18,color:C.marron}}>{solicitante.nombre||"—"}</div>
+      </div>
+      {/* Datos apilados, armónicos */}
+      {fila("Origen",origen)}
+      {fila("Destino",destino)}
+      {fila("Fecha deseada",fechaDeseada)}
+      {fila("Materiales a trasladar",materiales)}
+      {fila("Notas",notas)}
+    </div>
+  );
+}
+
 function PedidoFormato({solicitante,titulo,numero,fecha,columnas,filas,notas,fechaLimite}){
   const M=C.marron; // encabezado marrón (distingue pedido de cotización)
   const th={textAlign:"left",padding:"8px 10px",color:"#fff",background:C.medio,fontSize:14,fontWeight:700,fontFamily:"'Lato',sans-serif"};
