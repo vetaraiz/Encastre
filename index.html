@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.6</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.7</div>
     </div>
   );
 }
@@ -4293,6 +4293,17 @@ function VistaFerreteria({usuario,notif}){
   const [enviando,setEnviando]=useState(false);
   const [yaEnvio,setYaEnvio]=useState(false);
   const [filtro,setFiltro]=useState("cotizar");
+  // Precargar la cotización con los herrajes que pidió la carpintería (si no cotizó aún)
+  useEffect(()=>{
+    if(!sel||miCot||yaEnvio)return;
+    try{
+      let its=[];
+      try{ its=Array.isArray(sel.items)?sel.items:JSON.parse(sel.items||"[]"); }catch{its=[];}
+      if(!its.length)return;
+      const items=its.map(it=>({descripcion:it.descripcion||"",precio:"",cantidad:String(it.cantidad||1)}));
+      setCotF(f=>({...f,items}));
+    }catch{}
+  },[sel,miCot,yaEnvio]);
 
   const cargar=useCallback(async()=>{
     try{
@@ -4366,28 +4377,23 @@ function VistaFerreteria({usuario,notif}){
     <div className="fade">
       <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSel(null)}>← Volver</button>
       <div style={S.card}>
-        <div style={S.cardTitle}>Pedido de carpintería</div>
-        <div style={{background:C.suave,borderRadius:0,padding:12,border:`1px solid ${C.borde}`}}>
-          <div style={{...S.label,marginBottom:6}}>HERRAJES SOLICITADOS</div>
-          {Array.isArray(sel.items)&&sel.items.length>0?(
-            <div>
-              {sel.items.map((it,i)=>(
-                <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:i<sel.items.length-1?`1px dashed ${C.borde}`:"none"}}>
-                  <span style={{color:C.marron,fontWeight:700}}>{it.descripcion}</span>
-                  <span style={{color:C.textoSuave,fontFamily:"monospace"}}>x {it.cantidad}</span>
-                </div>
-              ))}
-            </div>
-          ):(
-            <div style={{fontWeight:700,fontSize:21,color:C.marron,marginTop:4}}>{sel.descripcion}</div>
-          )}
-          {!(Array.isArray(sel.items)&&sel.items.length>0)&&sel.cantidad&&<div style={{fontSize:17,color:C.textoSuave,marginTop:4}}>Cantidad: {sel.cantidad} unidades</div>}
-          {sel.notas&&<div style={{fontSize:17,color:C.textoSuave,fontStyle:"italic",marginTop:8}}>📝 {sel.notas}</div>}
-        </div>
-      </div>
+        <PedidoFormato
+          solicitante={carpSel||{}}
+          titulo="Pedido de herrajes"
+          fecha={sel.created_at?new Date(sel.created_at).toLocaleDateString("es-AR"):null}
+          columnas={["Herraje","Cantidad"]}
+          filas={(()=>{
+            let its=[];
+            try{ its=Array.isArray(sel.items)?sel.items:JSON.parse(sel.items||"[]"); }catch{its=[];}
+            if(!its.length&&sel.descripcion){ its=[{descripcion:sel.descripcion,cantidad:sel.cantidad||1}]; }
+            return its.map(it=>[it.descripcion,`${it.cantidad} u`]);
+          })()}
+          notas={sel.notas}
+          fechaLimite={sel.fecha_limite?new Date(sel.fecha_limite).toLocaleDateString("es-AR"):null}
+        />
 
       {miCot?(
-      <div style={S.card}>
+      <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`}}>
         <div style={S.cardTitle}>✅ Cotización enviada</div>
         <div style={{fontSize:15,color:C.textoSuave,marginBottom:10}}>Así la ve la carpintería:</div>
         <PresupuestoFormato
@@ -4403,13 +4409,13 @@ function VistaFerreteria({usuario,notif}){
         />
       </div>
       ):estaVencido(sel)?(
-      <div style={{...S.card,textAlign:"center",borderColor:"#B23A2E"}}>
+      <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`,textAlign:"center"}}>
         <div style={{fontSize:32,marginBottom:8}}>⛔</div>
         <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,color:"#B23A2E",fontWeight:700}}>Este pedido venció</div>
         <div style={{fontSize:16,color:C.textoSuave,marginTop:6}}>Se puso una fecha límite que ya pasó, así que no se pueden enviar cotizaciones.</div>
       </div>
       ):(
-      <div style={S.card}>
+      <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`}}>
         <div style={S.cardTitle}>💰 Tu cotización</div>
         {(() => {
           const calc=calcularPresup(cotF.items,cotF);
@@ -4507,9 +4513,10 @@ function VistaFerreteria({usuario,notif}){
       </div>
       )}
 
-      <div style={S.card}>
+      <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`}}>
         <div style={S.cardTitle}>💬 Chat con carpintería</div>
         <Chat pedidoId={sel.id} tipoPedido="ferreteria" miUsuario={usuario} otroUsuario={{id:sel.carpinteria_id}}/>
+      </div>
       </div>
     </div>
     );
