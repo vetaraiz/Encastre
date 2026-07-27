@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.8</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.9</div>
     </div>
   );
 }
@@ -3560,7 +3560,8 @@ function VistaAserradero({usuario,notif}){
     return(
     <div className="fade">
       <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSel(null)}>← Volver</button>
-      <PedidoFormato
+      <div style={S.card}>
+        <PedidoFormato
         solicitante={carpSel||{}}
         titulo="Pedido de madera"
         fecha={sel.created_at?new Date(sel.created_at).toLocaleDateString("es-AR"):null}
@@ -3582,7 +3583,7 @@ function VistaAserradero({usuario,notif}){
       />
 
       {miCot?(
-      <div style={S.card}>
+      <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`}}>
         <div style={S.cardTitle}>✅ Cotización enviada</div>
         <div style={{fontSize:15,color:C.textoSuave,marginBottom:10}}>Así la ve la carpintería:</div>
         <PresupuestoFormato
@@ -3598,13 +3599,13 @@ function VistaAserradero({usuario,notif}){
         />
       </div>
       ):estaVencido(sel)?(
-      <div style={{...S.card,textAlign:"center",borderColor:"#B23A2E"}}>
+      <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`,textAlign:"center"}}>
         <div style={{fontSize:32,marginBottom:8}}>⛔</div>
         <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,color:"#B23A2E",fontWeight:700}}>Este pedido venció</div>
         <div style={{fontSize:16,color:C.textoSuave,marginTop:6}}>Se puso una fecha límite que ya pasó, así que no se pueden enviar cotizaciones.</div>
       </div>
       ):(
-      <div style={S.card}>
+      <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`}}>
         <div style={S.cardTitle}>💰 Tu cotización</div>
         {(() => {
           const calc=calcularPresup(cotF.items,cotF);
@@ -3702,9 +3703,10 @@ function VistaAserradero({usuario,notif}){
       </div>
       )}
 
-      <div style={S.card}>
+      <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`}}>
         <div style={S.cardTitle}>💬 Chat con carpintería</div>
         <Chat pedidoId={sel.id} tipoPedido="aserradero" miUsuario={usuario} otroUsuario={{id:sel.carpinteria_id}}/>
+      </div>
       </div>
     </div>
     );
