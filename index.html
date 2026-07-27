@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.9</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.10</div>
     </div>
   );
 }
@@ -3962,23 +3962,18 @@ function VistaFlete({usuario,notif}){
       <div className="fade">
         <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSel(null)}>← Volver</button>
         <div style={S.card}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:18,color:C.marron}}>👤 {solSel.nombre||sel._solNombre||"Solicitante"}</div>
-          </div>
-          <div style={S.cardTitle}>Pedido de flete</div>
-          <div style={{background:C.suave,borderRadius:0,padding:12,border:`1px solid ${C.borde}`}}>
-            <div style={S.row}>
-              <div style={S.col()}><div style={S.label}>Origen</div><div style={{fontWeight:700,color:C.marron}}>{sel.origen}</div></div>
-              <div style={S.col()}><div style={S.label}>Destino</div><div style={{fontWeight:700,color:C.marron}}>{sel.destino}</div></div>
-            </div>
-            {sel.fecha_deseada&&<div style={{fontSize:17,color:C.textoSuave,marginTop:8}}>📅 Fecha deseada: {new Date(sel.fecha_deseada+"T12:00").toLocaleDateString("es-AR")}</div>}
-            {sel.descripcion_carga&&<div style={{fontSize:17,color:C.textoSuave,marginTop:6,fontStyle:"italic"}}>📦 {sel.descripcion_carga}</div>}
-            {sel.notas&&<div style={{fontSize:17,color:C.textoSuave,marginTop:6,fontStyle:"italic"}}>📝 {sel.notas}</div>}
-          </div>
-        </div>
+          <PedidoFormato
+            solicitante={solSel&&solSel.nombre?solSel:{nombre:sel._solNombre||"Solicitante"}}
+            titulo="Pedido de flete"
+            fecha={sel.created_at?new Date(sel.created_at).toLocaleDateString("es-AR"):null}
+            columnas={["Origen","Destino"]}
+            filas={[[sel.origen,sel.destino]]}
+            notas={[sel.fecha_deseada?`📅 Fecha deseada: ${new Date(sel.fecha_deseada+"T12:00").toLocaleDateString("es-AR")}`:"",sel.descripcion_carga?`📦 ${sel.descripcion_carga}`:"",sel.notas?`📝 ${sel.notas}`:""].filter(Boolean).join("  ·  ")}
+            fechaLimite={sel.fecha_limite?new Date(sel.fecha_limite).toLocaleDateString("es-AR"):null}
+          />
 
         {miCot?(
-        <div style={S.card}>
+        <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`}}>
           <div style={S.cardTitle}>✅ Cotización enviada</div>
           <div style={{fontSize:15,color:C.textoSuave,marginBottom:10}}>Así la ve quien pidió el flete:</div>
           <PresupuestoFormato
@@ -3994,13 +3989,13 @@ function VistaFlete({usuario,notif}){
           />
         </div>
         ):estaVencido(sel)?(
-        <div style={{...S.card,textAlign:"center",borderColor:"#B23A2E"}}>
+        <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`,textAlign:"center"}}>
           <div style={{fontSize:32,marginBottom:8}}>⛔</div>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,color:"#B23A2E",fontWeight:700}}>Este pedido venció</div>
           <div style={{fontSize:16,color:C.textoSuave,marginTop:6}}>Se puso una fecha límite que ya pasó, así que no se pueden enviar cotizaciones.</div>
         </div>
         ):(
-        <div style={S.card}>
+        <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`}}>
           <div style={S.cardTitle}>💰 Tu cotización</div>
           {(() => {
             const calc=calcularPresup(cotF.items,cotF);
@@ -4111,9 +4106,10 @@ function VistaFlete({usuario,notif}){
         </div>
         )}
 
-        <div style={S.card}>
+        <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`}}>
           <div style={S.cardTitle}>💬 Chat con solicitante</div>
           <Chat pedidoId={sel.id} tipoPedido="flete" miUsuario={usuario} otroUsuario={{id:sel.solicitante_id}}/>
+        </div>
         </div>
       </div>
       );
