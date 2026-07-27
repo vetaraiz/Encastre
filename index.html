@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.2</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.3</div>
     </div>
   );
 }
@@ -2759,22 +2759,6 @@ function VistaCarpinteria({usuario,notif}){
 
   const abrirPedidoAserr=async(p)=>{
     setSelAserr(p);
-    // Precargar los ítems de la cotización con lo que pidió la carpintería (editable)
-    try{
-      let pedidoItems=[];
-      try{ pedidoItems=Array.isArray(p.items)?p.items:JSON.parse(p.items||"[]"); }catch{pedidoItems=[];}
-      // Si el pedido es viejo (sin lista items), usamos las columnas fijas como un solo ítem
-      if(!pedidoItems.length&&p.material){ pedidoItems=[{material:p.material,pies:p.pies,pulgadas:p.pulgadas,espesor:p.espesor,cantidad:p.cantidad}]; }
-      const items=pedidoItems.length?pedidoItems.map(it=>{
-        const medidas=[];
-        if(it.pies)medidas.push(`${it.pies} pies`);
-        if(it.pulgadas)medidas.push(`${it.pulgadas}"`);
-        if(it.espesor)medidas.push(`espesor ${it.espesor}`);
-        const desc=[it.material,medidas.join(" × ")].filter(Boolean).join(" — ");
-        return{descripcion:desc,precio:"",cantidad:String(it.cantidad||1)};
-      }):[{descripcion:"",precio:"",cantidad:"1"}];
-      setCotF({items,tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
-    }catch{}
     try{
       const d=await db.select("cotizaciones_aserradero",`?pedido_id=eq.${p.id}&order=created_at.asc`);
       const enr=await Promise.all(d.map(async ct=>{
@@ -3485,6 +3469,24 @@ function VistaAserradero({usuario,notif}){
   const [enviando,setEnviando]=useState(false);
   const [yaEnvio,setYaEnvio]=useState(false);
   const [filtro,setFiltro]=useState("cotizar");
+  // Al abrir un pedido para cotizar, precargar los ítems con lo que pidió la carpintería (si no cotizó aún)
+  useEffect(()=>{
+    if(!sel||miCot||yaEnvio)return;
+    try{
+      let pedidoItems=[];
+      try{ pedidoItems=Array.isArray(sel.items)?sel.items:JSON.parse(sel.items||"[]"); }catch{pedidoItems=[];}
+      if(!pedidoItems.length&&sel.material){ pedidoItems=[{material:sel.material,pies:sel.pies,pulgadas:sel.pulgadas,espesor:sel.espesor,cantidad:sel.cantidad}]; }
+      if(!pedidoItems.length)return;
+      const items=pedidoItems.map(it=>{
+        const medidas=[];
+        if(it.pies)medidas.push(`${it.pies} pies`);
+        if(it.pulgadas)medidas.push(`${it.pulgadas}"`);
+        if(it.espesor)medidas.push(`espesor ${it.espesor}`);
+        return{descripcion:[it.material,medidas.join(" × ")].filter(Boolean).join(" — "),precio:"",cantidad:String(it.cantidad||1)};
+      });
+      setCotF(f=>({...f,items}));
+    }catch{}
+  },[sel,miCot,yaEnvio]);
 
   const cargar=useCallback(async()=>{
     try{
