@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-27.14</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.1</div>
     </div>
   );
 }
@@ -2060,33 +2060,39 @@ function Calificar({deUsuario,paraUsuario,pedidoId,califs=[]}){
 
 // ─── NUEVO PEDIDO ─────────────────────────────────────────────────────────────
 function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
-  const [f,setF]=useState({descripcion:"",alto:"",ancho:"",profundidad:"",material:"",especie:"",terminacion:"",color:"",notasCroquis:"",usaCroquis:false,tieneCajones:"No",cantidadCajones:"",medidasCajones:"",croquisImg:"",fechaLimite:""});
-  const [procImg,setProcImg]=useState(false);
+  const itemVacio=()=>({descripcion:"",alto:"",ancho:"",profundidad:"",material:"",especie:"",terminacion:"",color:"",usaCroquis:false,notasCroquis:"",croquisImg:"",tieneCajones:"No",cantidadCajones:"",medidasCajones:""});
+  const [items,setItems]=useState([itemVacio()]);
+  const [fechaLimite,setFechaLimite]=useState("");
+  const [procImgIdx,setProcImgIdx]=useState(null);
   const [intento,setIntento]=useState(false);
-  const set=(k,v)=>setF(p=>({...p,[k]:v}));
+  const setIt=(i,k,v)=>setItems(prev=>{const arr=[...prev];arr[i]={...arr[i],[k]:v};return arr;});
+  const agregarMueble=()=>setItems(prev=>[...prev,itemVacio()]);
+  const quitarMueble=(i)=>setItems(prev=>prev.filter((_,j)=>j!==i));
   // Fechas en horario LOCAL (evita el corrimiento de un día que daba toISOString en UTC-3)
   const aISO=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   const masDias=n=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()+n);return aISO(d);};
   const minFecha=masDias(1); // mínimo: mañana (un pedido no puede vencer hoy)
-  // Lista de lo que falta completar, para marcar en rojo y avisar
-  const faltan=()=>{
+  // Lista de lo que falta completar por mueble, para marcar en rojo y avisar
+  const faltanItem=(it)=>{
     const l=[];
-    if(!f.descripcion)l.push("qué necesitás");
-    if(!f.alto)l.push("el alto");
-    if(!f.ancho)l.push("el ancho");
-    if(!f.profundidad)l.push("la profundidad");
-    if(!f.material)l.push("el material");
-    if(!f.terminacion)l.push("la terminación");
+    if(!it.descripcion)l.push("qué necesitás");
+    if(!it.alto)l.push("el alto");
+    if(!it.ancho)l.push("el ancho");
+    if(!it.profundidad)l.push("la profundidad");
+    if(!it.material)l.push("el material");
+    if(!it.terminacion)l.push("la terminación");
     return l;
   };
+  const problemas=items.map((it,i)=>({i,f:faltanItem(it)})).filter(p=>p.f.length>0);
+  const ok=items.length>0&&problemas.length===0;
   const errBorde=(cond)=>(intento&&cond)?{border:`2px solid ${C.rojo}`}:{};
   const AvisoFalta=({cond,texto})=>(intento&&cond)?<div style={{color:C.rojo,fontSize:15,marginTop:4,fontWeight:600}}>⚠️ {texto||"Falta completar este campo"}</div>:null;
 
-  // Toma una foto del croquis, la achica y la convierte a texto para guardarla en la base
-  const elegirImagenCroquis=(file)=>{
+  // Toma una foto del croquis, la achica y la convierte a texto para guardarla en la base (una por mueble)
+  const elegirImagenCroquis=(i,file)=>{
     if(!file) return;
     if(!file.type.startsWith("image/")){ alert("Por ahora se puede adjuntar solo una foto/imagen (JPG o PNG)."); return; }
-    setProcImg(true);
+    setProcImgIdx(i);
     const reader=new FileReader();
     reader.onload=ev=>{
       const img=new Image();
@@ -2098,16 +2104,15 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
         const canvas=document.createElement("canvas");
         canvas.width=w; canvas.height=h;
         canvas.getContext("2d").drawImage(img,0,0,w,h);
-        set("croquisImg",canvas.toDataURL("image/jpeg",0.6));
-        setProcImg(false);
+        setIt(i,"croquisImg",canvas.toDataURL("image/jpeg",0.6));
+        setProcImgIdx(null);
       };
-      img.onerror=()=>{ setProcImg(false); alert("No se pudo leer la imagen. Probá con una foto JPG o PNG."); };
+      img.onerror=()=>{ setProcImgIdx(null); alert("No se pudo leer la imagen. Probá con una foto JPG o PNG."); };
       img.src=ev.target.result;
     };
-    reader.onerror=()=>{ setProcImg(false); alert("No se pudo leer el archivo."); };
+    reader.onerror=()=>{ setProcImgIdx(null); alert("No se pudo leer el archivo."); };
     reader.readAsDataURL(file);
   };
-  const ok=f.descripcion&&f.alto&&f.ancho&&f.profundidad&&f.material&&f.terminacion;
 
   const [guardando,setGuardando]=useState(false);
   const guardar=async()=>{
@@ -2122,9 +2127,18 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
         setGuardando(false);
         return;
       }
-      await db.insert("pedidos",{cliente_id:usuario.id,descripcion:f.descripcion,alto:Number(f.alto),ancho:Number(f.ancho),profundidad:Number(f.profundidad),material:f.material,especie:f.especie||null,terminacion:f.terminacion,color:f.color,notas_croquis:f.notasCroquis||"",tiene_cajones:f.tieneCajones==="Sí",cantidad_cajones:Number(f.cantidadCajones)||0,medidas_cajones:f.medidasCajones||"",croquis_imagen:f.croquisImg||"",fecha_limite:f.fechaLimite?new Date(f.fechaLimite+"T23:59:59").toISOString():null});
+      const itemsLimpios=items.map(it=>({
+        descripcion:it.descripcion, alto:Number(it.alto), ancho:Number(it.ancho), profundidad:Number(it.profundidad),
+        material:it.material, especie:it.especie||null, terminacion:it.terminacion, color:it.color||"",
+        notasCroquis:it.notasCroquis||"", croquisImg:it.croquisImg||"",
+        tieneCajones:it.tieneCajones==="Sí", cantidadCajones:Number(it.cantidadCajones)||0, medidasCajones:it.medidasCajones||""
+      }));
+      const primero=itemsLimpios[0];
+      const resumen=itemsLimpios.map(it=>it.descripcion).join(" + ");
+      // Guardamos items (lista) + columnas del primer mueble por compatibilidad con lo ya existente
+      await db.insert("pedidos",{cliente_id:usuario.id,items:itemsLimpios,descripcion:resumen,alto:primero.alto,ancho:primero.ancho,profundidad:primero.profundidad,material:primero.material,especie:primero.especie,terminacion:primero.terminacion,color:primero.color,notas_croquis:primero.notasCroquis,tiene_cajones:primero.tieneCajones,cantidad_cajones:primero.cantidadCajones,medidas_cajones:primero.medidasCajones,croquis_imagen:primero.croquisImg,fecha_limite:fechaLimite?new Date(fechaLimite+"T23:59:59").toISOString():null});
       // El aviso por mail a las carpinterías lo envía el servidor (webhook -> Edge Function avisar-pedido)
-      notif("¡Pedido enviado a todas las carpinterías!");
+      notif(items.length>1?`¡Pedido enviado a todas las carpinterías! (${items.length} muebles)`:"¡Pedido enviado a todas las carpinterías!");
       onGuardar();
     }catch(e){alert("Error al guardar pedido: "+e.message);setGuardando(false);}
   };
@@ -2132,114 +2146,123 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
   return(
     <div style={S.card} className="fade">
       <div style={S.cardTitle}>✏️ Nuevo pedido de presupuesto</div>
+      <div style={{fontSize:16,color:C.textoSuave,marginBottom:14,fontStyle:"italic"}}>Podés pedir varios muebles en un mismo pedido; cada uno con sus propias medidas, material y croquis.</div>
 
-      <div style={{marginBottom:14}}>
-        <label style={S.label}>¿Qué necesitás?</label>
-        <textarea value={f.descripcion} onChange={e=>set("descripcion",e.target.value)} placeholder="Describí lo que querés hacer: ej. Mesa de comedor para 8 personas con cajón lateral..." style={{...S.input,minHeight:72,resize:"vertical",...errBorde(!f.descripcion)}}/>
-        <AvisoFalta cond={!f.descripcion}/>
-      </div>
-
-      <Divider/>
-      <div style={S.secTitle}>📐 Medidas en centímetros</div>
-      <div style={S.row}>
-        {[["alto","Alto (cm)"],["ancho","Ancho (cm)"],["profundidad","Profundidad (cm)"]].map(([k,l])=>(
-          <div key={k} style={S.col()}>
-            <label style={S.label}>{l}</label>
-            <input type="number" value={f[k]} onChange={e=>set(k,e.target.value)} placeholder="0" style={{...S.input,...errBorde(!f[k])}}/>
-            <AvisoFalta cond={!f[k]} texto="Falta esta medida"/>
-            {f[k]&&<div style={{fontSize:17,color:C.textoSuave,marginTop:3,fontFamily:"monospace"}}>= {cmToMm(f[k])}mm · {cmToIn(f[k])}"</div>}
+      {items.map((it,i)=>(
+        <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:0,padding:14,marginBottom:14,background:C.suave}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,color:C.marron,fontSize:18}}>Mueble {i+1}</div>
+            {items.length>1&&<button onClick={()=>quitarMueble(i)} style={{...S.btn("ghost"),color:C.error,borderColor:C.error,fontSize:14,padding:"5px 10px",minHeight:"auto"}}>🗑️ Quitar mueble</button>}
           </div>
-        ))}
-      </div>
 
-      <div style={{marginTop:12}}>
-        <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:17,color:C.textoSuave}}>
-          <input type="checkbox" checked={f.usaCroquis} onChange={e=>set("usaCroquis",e.target.checked)}/>
-          Quiero adjuntar descripción de un croquis con medidas aproximadas
-        </label>
-        {f.usaCroquis&&<textarea value={f.notasCroquis} onChange={e=>set("notasCroquis",e.target.value)} placeholder="Describí el croquis..." style={{...S.input,minHeight:56,resize:"vertical",marginTop:8}}/>}
-        {f.usaCroquis&&<div style={{marginTop:10}}>
-          <label style={{...S.btn("ghost"),display:"inline-flex",alignItems:"center",gap:8,cursor:"pointer",margin:0}}>
-            📷 {f.croquisImg?"Cambiar foto del croquis":"Adjuntar foto del croquis"}
-            <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{elegirImagenCroquis(e.target.files[0]); e.target.value="";}}/>
-          </label>
-          {procImg&&<div style={{fontSize:15,color:C.textoSuave,marginTop:6}}>⟳ Procesando imagen...</div>}
-          {f.croquisImg&&<div style={{marginTop:10}}>
-            <img src={f.croquisImg} alt="croquis" style={{maxWidth:"100%",maxHeight:240,borderRadius:0,border:`1px solid ${C.borde}`}}/>
-            <div><button style={{...S.btn("ghost"),marginTop:6}} onClick={()=>set("croquisImg","")}>🗑️ Quitar foto</button></div>
-          </div>}
-        </div>}
-      </div>
+          <div style={{marginBottom:14}}>
+            <label style={S.label}>¿Qué necesitás?</label>
+            <textarea value={it.descripcion} onChange={e=>setIt(i,"descripcion",e.target.value)} placeholder="Describí lo que querés hacer: ej. Mesa de comedor para 8 personas con cajón lateral..." style={{...S.input,minHeight:72,resize:"vertical",...errBorde(!it.descripcion)}}/>
+            <AvisoFalta cond={!it.descripcion}/>
+          </div>
 
-      <Divider/>
-      <div style={S.secTitle}>🪵 Material</div>
-      <AvisoFalta cond={!f.material} texto="Falta elegir un material"/>
-      <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:6}}>
-        {MATS.map(m=><button key={m.id} style={S.tag(f.material===m.id)} onClick={()=>{set("material",m.id);set("especie","");set("terminacion","");set("color","");}}>{m.label}</button>)}
-      </div>
-      {(()=>{
-        const m=MATS.find(m=>m.id===f.material);
-        if(!m) return null;
-        if(m.especies) return(
-          <div style={{marginTop:4}}>
-            <div style={{fontSize:16,color:C.marron,marginBottom:6,fontWeight:600}}>¿Qué tipo de {m.label.toLowerCase()}?</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
-              {m.especies.map(e=><button key={e} style={S.tag(f.especie===e)} onClick={()=>set("especie",f.especie===e?"":e)}>{e}</button>)}
-              <button style={S.tag(f.especie==="Otra / a definir")} onClick={()=>set("especie",f.especie==="Otra / a definir"?"":"Otra / a definir")}>Otra / a definir</button>
+          <Divider/>
+          <div style={S.secTitle}>📐 Medidas en centímetros</div>
+          <div style={S.row}>
+            {[["alto","Alto (cm)"],["ancho","Ancho (cm)"],["profundidad","Profundidad (cm)"]].map(([k,l])=>(
+              <div key={k} style={S.col()}>
+                <label style={S.label}>{l}</label>
+                <input type="number" value={it[k]} onChange={e=>setIt(i,k,e.target.value)} placeholder="0" style={{...S.input,...errBorde(!it[k])}}/>
+                <AvisoFalta cond={!it[k]} texto="Falta esta medida"/>
+                {it[k]&&<div style={{fontSize:17,color:C.textoSuave,marginTop:3,fontFamily:"monospace"}}>= {cmToMm(it[k])}mm · {cmToIn(it[k])}"</div>}
+              </div>
+            ))}
+          </div>
+
+          <div style={{marginTop:12}}>
+            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:17,color:C.textoSuave}}>
+              <input type="checkbox" checked={it.usaCroquis} onChange={e=>setIt(i,"usaCroquis",e.target.checked)}/>
+              Quiero adjuntar descripción de un croquis con medidas aproximadas
+            </label>
+            {it.usaCroquis&&<textarea value={it.notasCroquis} onChange={e=>setIt(i,"notasCroquis",e.target.value)} placeholder="Describí el croquis..." style={{...S.input,minHeight:56,resize:"vertical",marginTop:8}}/>}
+            {it.usaCroquis&&<div style={{marginTop:10}}>
+              <label style={{...S.btn("ghost"),display:"inline-flex",alignItems:"center",gap:8,cursor:"pointer",margin:0}}>
+                📷 {it.croquisImg?"Cambiar foto del croquis":"Adjuntar foto del croquis"}
+                <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{elegirImagenCroquis(i,e.target.files[0]); e.target.value="";}}/>
+              </label>
+              {procImgIdx===i&&<div style={{fontSize:15,color:C.textoSuave,marginTop:6}}>⟳ Procesando imagen...</div>}
+              {it.croquisImg&&<div style={{marginTop:10}}>
+                <img src={it.croquisImg} alt="croquis" style={{maxWidth:"100%",maxHeight:240,borderRadius:0,border:`1px solid ${C.borde}`}}/>
+                <div><button style={{...S.btn("ghost"),marginTop:6}} onClick={()=>setIt(i,"croquisImg","")}>🗑️ Quitar foto</button></div>
+              </div>}
+            </div>}
+          </div>
+
+          <Divider/>
+          <div style={S.secTitle}>🪵 Material</div>
+          <AvisoFalta cond={!it.material} texto="Falta elegir un material"/>
+          <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:6}}>
+            {MATS.map(m=><button key={m.id} style={S.tag(it.material===m.id)} onClick={()=>{setIt(i,"material",m.id);setIt(i,"especie","");setIt(i,"terminacion","");setIt(i,"color","");}}>{m.label}</button>)}
+          </div>
+          {(()=>{
+            const m=MATS.find(m=>m.id===it.material);
+            if(!m) return null;
+            if(m.especies) return(
+              <div style={{marginTop:4}}>
+                <div style={{fontSize:16,color:C.marron,marginBottom:6,fontWeight:600}}>¿Qué tipo de {m.label.toLowerCase()}?</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+                  {m.especies.map(e=><button key={e} style={S.tag(it.especie===e)} onClick={()=>setIt(i,"especie",it.especie===e?"":e)}>{e}</button>)}
+                  <button style={S.tag(it.especie==="Otra / a definir")} onClick={()=>setIt(i,"especie",it.especie==="Otra / a definir"?"":"Otra / a definir")}>Otra / a definir</button>
+                </div>
+              </div>
+            );
+            return <div style={{fontSize:17,color:C.textoSuave,fontStyle:"italic"}}>Ej: {m.ej}</div>;
+          })()}
+
+          <Divider/>
+          <div style={S.secTitle}>🎨 Terminación / Acabado</div>
+          <AvisoFalta cond={!it.terminacion} texto="Falta elegir una terminación"/>
+          <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+            {TERS.filter(t=>{
+              const esMadera=["madera_dura","madera_semidura","madera_blanda"].includes(it.material);
+              const esMelamina=["aglomerado_melamina","mdf_melamina"].includes(it.material);
+              const esTablero=["aglomerado","mdf","fenolico"].includes(it.material);
+              if(esMadera) return ["crudo","pintado","lacheado","enchapado"].includes(t.id);
+              if(esMelamina) return ["melamina_color"].includes(t.id);
+              if(esTablero) return ["crudo","pintado","lacheado","enchapado","melamina_color"].includes(t.id);
+              return true;
+            }).map(t=><button key={t.id} style={S.tag(it.terminacion===t.id)} onClick={()=>setIt(i,"terminacion",t.id)}>{t.label}</button>)}
+          </div>
+          {it.terminacion==="melamina_color"&&(
+            <div style={{marginTop:10}}>
+              <label style={S.label}>Color de melamina</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{COLORES_MEL.map(c=><button key={c} style={S.tag(it.color===c)} onClick={()=>setIt(i,"color",c)}>{c}</button>)}</div>
             </div>
-          </div>
-        );
-        return <div style={{fontSize:17,color:C.textoSuave,fontStyle:"italic"}}>Ej: {m.ej}</div>;
-      })()}
+          )}
+          {it.terminacion==="pintado"&&(
+            <div style={{marginTop:10}}>
+              <label style={S.label}>Color</label>
+              <input value={it.color} onChange={e=>setIt(i,"color",e.target.value)} placeholder="Ej: Blanco roto..." style={{...S.input,maxWidth:220}}/>
+            </div>
+          )}
+        </div>
+      ))}
+
+      <button onClick={agregarMueble} style={{...S.btn("ghost"),width:"100%",justifyContent:"center",marginBottom:16}}>＋ Agregar otro mueble</button>
 
       <Divider/>
-      <div style={S.secTitle}>🎨 Terminación / Acabado</div>
-      <AvisoFalta cond={!f.terminacion} texto="Falta elegir una terminación"/>
-      <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
-        {TERS.filter(t=>{
-          const esMadera=["madera_dura","madera_semidura","madera_blanda"].includes(f.material);
-          const esMelamina=["aglomerado_melamina","mdf_melamina"].includes(f.material);
-          const esTablero=["aglomerado","mdf","fenolico"].includes(f.material);
-          if(esMadera) return ["crudo","pintado","lacheado","enchapado"].includes(t.id);
-          if(esMelamina) return ["melamina_color"].includes(t.id);
-          if(esTablero) return ["crudo","pintado","lacheado","enchapado","melamina_color"].includes(t.id);
-          return true;
-        }).map(t=>{
-          // Reset terminacion if not valid for current material
-          if(f.terminacion&&f.terminacion===t.id&&false) set("terminacion","");
-          return <button key={t.id} style={S.tag(f.terminacion===t.id)} onClick={()=>set("terminacion",t.id)}>{t.label}</button>;
-        })}
-      </div>
-      {f.terminacion==="melamina_color"&&(
-        <div style={{marginTop:10}}>
-          <label style={S.label}>Color de melamina</label>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{COLORES_MEL.map(c=><button key={c} style={S.tag(f.color===c)} onClick={()=>set("color",c)}>{c}</button>)}</div>
-        </div>
-      )}
-      {f.terminacion==="pintado"&&(
-        <div style={{marginTop:10}}>
-          <label style={S.label}>Color</label>
-          <input value={f.color} onChange={e=>set("color",e.target.value)} placeholder="Ej: Blanco roto..." style={{...S.input,maxWidth:220}}/>
-        </div>
-      )}
-
       <div style={S.secTitle}>⏰ Fecha límite para recibir presupuestos <span style={{fontWeight:400,fontSize:15,color:C.textoSuave}}>(opcional)</span></div>
-      <div style={{fontSize:15,color:C.textoSuave,marginBottom:8}}>Pasada esta fecha, las carpinterías ya no podrán cotizar. Si la dejás vacía, el pedido queda abierto sin vencimiento.</div>
+      <div style={{fontSize:15,color:C.textoSuave,marginBottom:8}}>Pasada esta fecha, las carpinterías ya no podrán cotizar. Si la dejás vacía, el pedido queda abierto sin vencimiento. Aplica a todo el pedido.</div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8}}>
         {[["3 días",3],["1 semana",7],["15 días",15]].map(([lbl,d])=>{
           const fecha=masDias(d);
-          const activo=f.fechaLimite===fecha;
-          return <button key={d} style={{...S.btn(activo?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>set("fechaLimite",activo?"":fecha)}>{lbl}</button>;
+          const activo=fechaLimite===fecha;
+          return <button key={d} style={{...S.btn(activo?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFechaLimite(activo?"":fecha)}>{lbl}</button>;
         })}
-        {f.fechaLimite&&<button style={{...S.btn("ghost"),fontSize:15,padding:"6px 12px",color:C.rojo,borderColor:C.rojo}} onClick={()=>set("fechaLimite","")}>✕ Sin vencimiento</button>}
+        {fechaLimite&&<button style={{...S.btn("ghost"),fontSize:15,padding:"6px 12px",color:C.rojo,borderColor:C.rojo}} onClick={()=>setFechaLimite("")}>✕ Sin vencimiento</button>}
       </div>
       <div style={{fontSize:15,color:C.textoSuave,margin:"4px 0 6px"}}>📆 O elegí una fecha exacta en el calendario:</div>
-      <input type="date" value={f.fechaLimite} min={minFecha} onChange={e=>{const v=e.target.value; set("fechaLimite", v&&v<minFecha?minFecha:v);}} style={S.input}/>
-      {f.fechaLimite&&<div style={{fontSize:15,color:C.verde,marginTop:4}}>📅 Vence el {new Date(f.fechaLimite+"T00:00:00").toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}</div>}
+      <input type="date" value={fechaLimite} min={minFecha} onChange={e=>{const v=e.target.value; setFechaLimite(v&&v<minFecha?minFecha:v);}} style={S.input}/>
+      {fechaLimite&&<div style={{fontSize:15,color:C.verde,marginTop:4}}>📅 Vence el {new Date(fechaLimite+"T00:00:00").toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}</div>}
 
       {intento&&!ok&&(
         <div style={{marginTop:16,padding:"10px 14px",background:"#FDECEA",border:`1px solid ${C.rojo}`,borderRadius:0,color:C.rojo,fontSize:16,fontWeight:600}}>
-          ⚠️ Para enviar el pedido te falta completar: {faltan().join(", ")}.
+          ⚠️ Para enviar el pedido te falta completar — {problemas.map(p=>`Mueble ${p.i+1}: ${p.f.join(", ")}`).join(" · ")}.
         </div>
       )}
       <div style={{display:"flex",gap:10,marginTop:intento&&!ok?10:20}}>
@@ -2404,15 +2427,24 @@ function VistaCliente({usuario,notif}){
 
   // Detalle del pedido (se despliega dentro de la fila al tocar el pedido)
   const DetallePedido=()=>{
-    const mat=MATS.find(m=>m.id===sel.material);
-    const ter=TERS.find(t=>t.id===sel.terminacion);
+    // Compatibilidad: pedidos viejos sin "items" muestran un solo mueble armado con las columnas planas
+    const muebles=(sel.items&&sel.items.length>0)?sel.items:[{descripcion:sel.descripcion,alto:sel.alto,ancho:sel.ancho,profundidad:sel.profundidad,material:sel.material,especie:sel.especie,terminacion:sel.terminacion,color:sel.color}];
     return(
       <div style={{marginTop:12,borderTop:`1px dashed ${C.borde}`,paddingTop:12}} className="fade">
-        <div style={S.row}>
-          <div style={S.col()}><div style={S.label}>Medidas</div><div style={{fontSize:16,fontFamily:"monospace",color:C.marron}}>Alto {sel.alto} · Ancho {sel.ancho} · Prof {sel.profundidad} cm</div></div>
-          <div style={S.col()}><div style={S.label}>Material</div><div>{mat?.label}{sel.especie?` · ${sel.especie}`:""}</div></div>
-          <div style={S.col()}><div style={S.label}>Terminación</div><div>{ter?.label}{sel.color?` · ${sel.color}`:""}</div></div>
-        </div>
+        {muebles.map((it,i)=>{
+          const mat=MATS.find(m=>m.id===it.material);
+          const ter=TERS.find(t=>t.id===it.terminacion);
+          return(
+            <div key={i} style={muebles.length>1?{marginBottom:12,paddingBottom:12,borderBottom:i<muebles.length-1?`1px dashed ${C.borde}`:"none"}:{}}>
+              {muebles.length>1&&<div style={{fontWeight:700,color:C.marron,marginBottom:6}}>🪑 Mueble {i+1}{it.descripcion?`: ${it.descripcion}`:""}</div>}
+              <div style={S.row}>
+                <div style={S.col()}><div style={S.label}>Medidas</div><div style={{fontSize:16,fontFamily:"monospace",color:C.marron}}>Alto {it.alto} · Ancho {it.ancho} · Prof {it.profundidad} cm</div></div>
+                <div style={S.col()}><div style={S.label}>Material</div><div>{mat?.label}{it.especie?` · ${it.especie}`:""}</div></div>
+                <div style={S.col()}><div style={S.label}>Terminación</div><div>{ter?.label}{it.color?` · ${it.color}`:""}</div></div>
+              </div>
+            </div>
+          );
+        })}
         {presups.length===0?(
           <div style={{textAlign:"center",color:C.textoSuave,padding:20}}>
             <div style={{fontSize:28,marginBottom:6}}>⏳</div>
@@ -2495,7 +2527,7 @@ function VistaCliente({usuario,notif}){
             <div onClick={()=>abrirPedido(p)} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
               <div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:21,color:C.marron,marginBottom:4}}>{p.descripcion}</div>
-                <div style={{fontSize:17,color:C.textoSuave}}>{p.alto}×{p.ancho}×{p.profundidad} cm · {mat?.label} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                <div style={{fontSize:17,color:C.textoSuave}}>{p.alto}×{p.ancho}×{p.profundidad} cm · {mat?.label} · {new Date(p.created_at).toLocaleDateString("es-AR")}{p.items&&p.items.length>1?` · +${p.items.length-1} mueble${p.items.length>2?"s":""} más`:""}</div>
                 {p.fecha_limite&&<AvisoVence fechaLimite={p.fecha_limite}/>}
               </div>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -2792,8 +2824,8 @@ function VistaCarpinteria({usuario,notif}){
   };
 
   if(sel){
-    const mat=MATS.find(m=>m.id===sel.material);
-    const ter=TERS.find(t=>t.id===sel.terminacion);
+    // Compatibilidad: pedidos viejos sin "items" arman un solo mueble con las columnas planas
+    const muebles=(sel.items&&sel.items.length>0)?sel.items:[{descripcion:sel.descripcion,alto:sel.alto,ancho:sel.ancho,profundidad:sel.profundidad,material:sel.material,especie:sel.especie,terminacion:sel.terminacion,color:sel.color,notasCroquis:sel.notas_croquis,croquisImg:sel.croquis_imagen}];
     return(
       <div className="fade">
         <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSel(null)}>← Volver</button>
@@ -2802,12 +2834,7 @@ function VistaCarpinteria({usuario,notif}){
             cliente={{nombre:sel._clienteNombre}}
             fecha={sel.created_at?new Date(sel.created_at).toLocaleDateString("es-AR"):null}
             fechaLimite={sel.fecha_limite?new Date(sel.fecha_limite).toLocaleDateString("es-AR"):null}
-            descripcion={sel.descripcion}
-            alto={sel.alto} ancho={sel.ancho} profundidad={sel.profundidad}
-            material={mat?.label} especie={sel.especie}
-            terminacion={ter?.label} color={sel.color}
-            notasCroquis={sel.notas_croquis}
-            croquisImg={sel.croquis_imagen}
+            items={muebles}
           />
 
         {/* IA de sugerencia desactivada temporalmente — reponer cuando esté el puente serverless de Netlify */}
@@ -3022,7 +3049,7 @@ function VistaCarpinteria({usuario,notif}){
                   <div>
                     <div style={{fontFamily:"'Playfair Display',serif",fontWeight:p._nuevo?900:700,color:C.marron,fontSize:21}}>{p.descripcion}<TagNuevo on={p._nuevo}/></div>
                     {p._clienteNombre&&<div style={{fontSize:16,color:C.marron,marginTop:2}}>👤 {p._clienteNombre}</div>}
-                    <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{p.alto}×{p.ancho}×{p.profundidad}cm · {mat?.label} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                    <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{p.alto}×{p.ancho}×{p.profundidad}cm · {mat?.label} · {new Date(p.created_at).toLocaleDateString("es-AR")}{p.items&&p.items.length>1?` · +${p.items.length-1} mueble${p.items.length>2?"s":""} más`:""}</div>
                     {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
                   </div>
                   <span style={{alignSelf:"flex-start",whiteSpace:"nowrap",background:et.bg,color:et.fg,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:0,fontFamily:"'Lato',sans-serif"}}>{et.t}</span>
@@ -4989,7 +5016,7 @@ function comprimirFoto(file){
 }
 
 // ─── PRESUPUESTO: formato tipo planilla (verde) ─────────────────────────────
-function PedidoClienteFormato({cliente,fecha,fechaLimite,descripcion,alto,ancho,profundidad,material,especie,terminacion,color,notasCroquis,croquisImg}){
+function PedidoClienteFormato({cliente,fecha,fechaLimite,items}){
   const M=C.marron;
   const fila=(etiqueta,valor)=> valor?(
     <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.borde}`}}>
@@ -4997,10 +5024,11 @@ function PedidoClienteFormato({cliente,fecha,fechaLimite,descripcion,alto,ancho,
       <div style={{fontSize:16,color:C.texto,fontWeight:600}}>{valor}</div>
     </div>
   ):null;
+  const lista=items&&items.length>0?items:[{}];
   return(
     <div style={{border:`1px solid ${C.borde}`,borderRadius:0,overflow:"hidden",background:"#fff"}}>
       <div style={{background:M,color:"#fff",padding:"12px 14px",display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-        <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:20}}>Pedido recibido</div>
+        <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:20}}>Pedido recibido{lista.length>1?` · ${lista.length} muebles`:""}</div>
         <div style={{fontSize:13,textAlign:"right",alignSelf:"center"}}>
           <div>Fecha: {fecha||new Date().toLocaleDateString("es-AR")}</div>
           {fechaLimite&&<div style={{color:"#F0C9A0",marginTop:2}}>Vence: {fechaLimite}</div>}
@@ -5010,27 +5038,36 @@ function PedidoClienteFormato({cliente,fecha,fechaLimite,descripcion,alto,ancho,
         <div style={{fontSize:12,fontWeight:700,color:M,textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>Cliente</div>
         <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:18,color:C.marron}}>{cliente.nombre||"—"}</div>
       </div>
-      {fila("Descripción",descripcion)}
-      {(alto||ancho||profundidad)&&(
-        <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.borde}`}}>
-          <div style={{fontSize:12,fontWeight:700,color:C.medio,textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>Medidas</div>
-          {[["Alto",alto],["Ancho",ancho],["Profundidad",profundidad]].filter(([n,v])=>v).map(([n,v])=>(
-            <div key={n} style={{display:"flex",justifyContent:"space-between",marginBottom:3,fontSize:15}}>
-              <span style={{color:C.textoSuave}}>{n}</span>
-              <span style={{fontFamily:"monospace",color:C.marron,fontWeight:700}}>{v}cm = {cmToMm(v)}mm = {cmToIn(v)}"</span>
-            </div>
-          ))}
-        </div>
-      )}
-      {fila("Material",material?`${material}${especie?` · ${especie}`:""}`:null)}
-      {fila("Terminación",terminacion?`${terminacion}${color?` · ${color}`:""}`:null)}
-      {fila("Notas del croquis",notasCroquis)}
-      {croquisImg&&(
-        <div style={{padding:"10px 14px"}}>
-          <div style={{fontSize:12,fontWeight:700,color:C.medio,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Croquis del cliente</div>
-          <img src={croquisImg} alt="croquis del cliente" style={{width:"100%",borderRadius:0,border:`1px solid ${C.borde}`}}/>
-        </div>
-      )}
+      {lista.map((it,i)=>{
+        const mat=MATS.find(m=>m.id===it.material);
+        const ter=TERS.find(t=>t.id===it.terminacion);
+        return(
+          <div key={i} style={i<lista.length-1?{borderBottom:`3px double ${C.borde}`}:{}}>
+            {lista.length>1&&<div style={{padding:"10px 14px 0",fontSize:13,fontWeight:700,color:M,textTransform:"uppercase",letterSpacing:.5}}>🪑 Mueble {i+1}</div>}
+            {fila("Descripción",it.descripcion)}
+            {(it.alto||it.ancho||it.profundidad)&&(
+              <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.borde}`}}>
+                <div style={{fontSize:12,fontWeight:700,color:C.medio,textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>Medidas</div>
+                {[["Alto",it.alto],["Ancho",it.ancho],["Profundidad",it.profundidad]].filter(([n,v])=>v).map(([n,v])=>(
+                  <div key={n} style={{display:"flex",justifyContent:"space-between",marginBottom:3,fontSize:15}}>
+                    <span style={{color:C.textoSuave}}>{n}</span>
+                    <span style={{fontFamily:"monospace",color:C.marron,fontWeight:700}}>{v}cm = {cmToMm(v)}mm = {cmToIn(v)}"</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {fila("Material",mat?.label?`${mat.label}${it.especie?` · ${it.especie}`:""}`:null)}
+            {fila("Terminación",ter?.label?`${ter.label}${it.color?` · ${it.color}`:""}`:null)}
+            {fila("Notas del croquis",it.notasCroquis)}
+            {it.croquisImg&&(
+              <div style={{padding:"10px 14px"}}>
+                <div style={{fontSize:12,fontWeight:700,color:C.medio,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Croquis del cliente</div>
+                <img src={it.croquisImg} alt="croquis del cliente" style={{width:"100%",borderRadius:0,border:`1px solid ${C.borde}`}}/>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
