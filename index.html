@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.2</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.3</div>
     </div>
   );
 }
@@ -3110,12 +3110,12 @@ function VistaCarpinteria({usuario,notif}){
           )}
 
           {misPedidosAserr.length>0&&(
-          <div style={S.card}>
-            <div style={S.cardTitle}>📋 Mis pedidos enviados</div>
+          <>
+            <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,color:C.marron,fontSize:20,marginBottom:12}}>📋 Mis pedidos enviados ({misPedidosAserr.length})</div>
             {misPedidosAserr.map(p=>{
               const abierto=selAserr&&selAserr.id===p.id;
               return(
-              <div key={p.id} style={{border:`1px solid ${abierto?C.acento:C.borde}`,borderRadius:0,padding:12,marginBottom:10,background:C.input}}>
+              <div key={p.id} style={{...S.card,...(abierto?{borderColor:C.acento}:{})}}>
                 <div style={{display:"flex",justifyContent:"space-between",cursor:"pointer"}}
                   onClick={()=>{ if(abierto){setSelAserr(null);} else {setCotAserrAbierta(null);abrirPedidoAserr(p);} }}>
                   <div>
@@ -3181,7 +3181,7 @@ function VistaCarpinteria({usuario,notif}){
               </div>
               );
             })}
-          </div>
+          </>
           )}
         </>
       )}
@@ -3253,12 +3253,12 @@ function VistaCarpinteria({usuario,notif}){
             )}
 
             {misPedidosFerreria.length>0&&(
-              <div style={S.card}>
-                <div style={S.cardTitle}>📋 Mis pedidos de herrajes</div>
+              <>
+                <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,color:C.marron,fontSize:20,marginBottom:12}}>📋 Mis pedidos de herrajes ({misPedidosFerreria.length})</div>
                 {misPedidosFerreria.map(p=>{
                   const abierto=selFerr&&selFerr.id===p.id;
                   return(
-                  <div key={p.id} style={{border:`1px solid ${abierto?C.acento:C.borde}`,borderRadius:0,padding:12,marginBottom:10,background:C.input}}>
+                  <div key={p.id} style={{...S.card,...(abierto?{borderColor:C.acento}:{})}}>
                     <div style={{display:"flex",justifyContent:"space-between",cursor:"pointer"}}
                       onClick={()=>{ if(abierto){setSelFerr(null);} else {abrirPedidoFerr(p);} }}>
                       <div>
@@ -3323,7 +3323,7 @@ function VistaCarpinteria({usuario,notif}){
                   </div>
                   );
                 })}
-              </div>
+              </>
             )}
           </>
           )}
@@ -3397,12 +3397,12 @@ function VistaCarpinteria({usuario,notif}){
             )}
 
             {misPedidosPint.length>0&&(
-              <div style={S.card}>
-                <div style={S.cardTitle}>📋 Mis pedidos de pinturas</div>
+              <>
+                <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,color:C.marron,fontSize:20,marginBottom:12}}>📋 Mis pedidos de pinturas ({misPedidosPint.length})</div>
                 {misPedidosPint.map(p=>{
                   const abierto=selPint&&selPint.id===p.id;
                   return(
-                  <div key={p.id} style={{border:`1px solid ${abierto?C.acento:C.borde}`,borderRadius:0,padding:12,marginBottom:10,background:C.input}}>
+                  <div key={p.id} style={{...S.card,...(abierto?{borderColor:C.acento}:{})}}>
                     <div style={{display:"flex",justifyContent:"space-between",cursor:"pointer"}}
                       onClick={()=>{ if(abierto){setSelPint(null);} else {abrirPedidoPint(p);} }}>
                       <div>
@@ -3467,7 +3467,7 @@ function VistaCarpinteria({usuario,notif}){
                   </div>
                   );
                 })}
-              </div>
+              </>
             )}
           </>
           )}
@@ -4224,6 +4224,7 @@ function VistaFlete({usuario,notif}){
             <button style={S.btn("dark")} onClick={()=>setSubFl("pedir")}>➕ Nuevo pedido</button>
           </div>
           {misPedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hiciste pedidos de flete todavía. Tocá "➕ Nuevo pedido" arriba para hacer el primero.</div>}
+          {misPedidos.length>0&&<div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,color:C.marron,fontSize:20,marginBottom:12}}>📋 Mis pedidos de flete ({misPedidos.length})</div>}
           {misPedidos.map(p=>{
             const abierto=selPedido&&selPedido.id===p.id;
             return(
