@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.1</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.2</div>
     </div>
   );
 }
@@ -2585,9 +2585,9 @@ function VistaCarpinteria({usuario,notif}){
   const [yaEnvio,setYaEnvio]=useState(false);
   const [asF,setAsF]=useState({items:[{material:"",pies:"",pulgadas:"",espesor:"",cantidad:""}],descripcion:"",fechaLimite:""});
   const [misPedidosAserr,setMisPedidosAserr]=useState([]);
-  const [subAserr,setSubAserr]=useState("pedir");
-  const [subFerr,setSubFerr]=useState("pedir");
-  const [subPint,setSubPint]=useState("pedir");
+  const [subAserr,setSubAserr]=useState("mis");
+  const [subFerr,setSubFerr]=useState("mis");
+  const [subPint,setSubPint]=useState("mis");
   const [intAs,setIntAs]=useState(false);
   const [intFe,setIntFe]=useState(false);
   const [intPi,setIntPi]=useState(false);
@@ -3061,16 +3061,9 @@ function VistaCarpinteria({usuario,notif}){
         </div>
       )}
 
-      {tab==="aserradero"&&(
-        <div style={{display:"flex",gap:8,marginBottom:14}}>
-          {[["pedir","🪵 Pedir madera"],["mis",`📋 Mis pedidos${misPedidosAserr.length>0?` (${misPedidosAserr.length})`:""}`]].map(([id,l])=>(
-            <button key={id} style={{...S.btn(subAserr===id?"dark":"ghost"),flex:1,justifyContent:"center",fontSize:16}} onClick={()=>setSubAserr(id)}>{l}</button>
-          ))}
-        </div>
-      )}
-
       {tab==="aserradero"&&subAserr==="pedir"&&(
         <div style={S.card}>
+          <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSubAserr("mis")}>← Volver a mis pedidos</button>
           <div style={S.cardTitle}>🪵 Pedir madera al aserradero</div>
           <div style={{fontSize:17,color:C.textoSuave,marginBottom:14,fontStyle:"italic"}}>Las medidas van en pulgadas y pies (como trabaja el aserradero). Podés pedir varias maderas en un mismo pedido.</div>
           {asF.items.map((it,i)=>{
@@ -3105,96 +3098,99 @@ function VistaCarpinteria({usuario,notif}){
         </div>
       )}
 
-      {tab==="aserradero"&&subAserr==="mis"&&misPedidosAserr.length===0&&(
-        <div style={S.card}>
-          <div style={{fontSize:17,color:C.textoSuave,fontStyle:"italic"}}>Todavía no enviaste pedidos de madera. Andá a la solapa "Pedir madera" para hacer el primero.</div>
-        </div>
-      )}
+      {tab==="aserradero"&&subAserr==="mis"&&(
+        <>
+          <div style={{display:"flex",justifyContent:"flex-end",marginBottom:14}}>
+            <button style={S.btn("dark")} onClick={()=>setSubAserr("pedir")}>➕ Nuevo pedido</button>
+          </div>
+          {misPedidosAserr.length===0&&(
+          <div style={S.card}>
+            <div style={{fontSize:17,color:C.textoSuave,fontStyle:"italic"}}>Todavía no enviaste pedidos de madera. Tocá "➕ Nuevo pedido" arriba para hacer el primero.</div>
+          </div>
+          )}
 
-      {tab==="aserradero"&&subAserr==="mis"&&misPedidosAserr.length>0&&(
-        <div style={S.card}>
-          <div style={S.cardTitle}>📋 Mis pedidos enviados</div>
-          {misPedidosAserr.map(p=>{
-            const abierto=selAserr&&selAserr.id===p.id;
-            return(
-            <div key={p.id} style={{border:`1px solid ${abierto?C.acento:C.borde}`,borderRadius:0,padding:12,marginBottom:10,background:C.input}}>
-              <div style={{display:"flex",justifyContent:"space-between",cursor:"pointer"}}
-                onClick={()=>{ if(abierto){setSelAserr(null);} else {setCotAserrAbierta(null);abrirPedidoAserr(p);} }}>
-                <div>
-                  <div style={{fontWeight:700,color:C.marron}}>{p.material}</div>
-                  <div style={{fontSize:17,color:C.textoSuave}}>{p.pies}' largo · {p.pulgadas}" ancho · {p.espesor}" espesor · {p.cantidad} piezas</div>
-                  <div style={{fontSize:17,color:C.textoSuave}}>{new Date(p.created_at).toLocaleDateString("es-AR")}</div>
-                  {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
+          {misPedidosAserr.length>0&&(
+          <div style={S.card}>
+            <div style={S.cardTitle}>📋 Mis pedidos enviados</div>
+            {misPedidosAserr.map(p=>{
+              const abierto=selAserr&&selAserr.id===p.id;
+              return(
+              <div key={p.id} style={{border:`1px solid ${abierto?C.acento:C.borde}`,borderRadius:0,padding:12,marginBottom:10,background:C.input}}>
+                <div style={{display:"flex",justifyContent:"space-between",cursor:"pointer"}}
+                  onClick={()=>{ if(abierto){setSelAserr(null);} else {setCotAserrAbierta(null);abrirPedidoAserr(p);} }}>
+                  <div>
+                    <div style={{fontWeight:700,color:C.marron}}>{p.material}</div>
+                    <div style={{fontSize:17,color:C.textoSuave}}>{p.pies}' largo · {p.pulgadas}" ancho · {p.espesor}" espesor · {p.cantidad} piezas</div>
+                    <div style={{fontSize:17,color:C.textoSuave}}>{new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                    {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{whiteSpace:"nowrap",background:p._cantCot>0?C.verde:C.suave,color:p._cantCot>0?"#fff":C.textoSuave,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:0,fontFamily:"'Lato',sans-serif"}}>
+                      {p._cantCot>0?`${p._cantCot} cotización${p._cantCot>1?"es":""}`:"Sin cotizaciones"}
+                    </span>
+                    <span style={{color:C.textoSuave,fontSize:18}}>{abierto?"▲":"▼"}</span>
+                  </div>
                 </div>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{whiteSpace:"nowrap",background:p._cantCot>0?C.verde:C.suave,color:p._cantCot>0?"#fff":C.textoSuave,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:0,fontFamily:"'Lato',sans-serif"}}>
-                    {p._cantCot>0?`${p._cantCot} cotización${p._cantCot>1?"es":""}`:"Sin cotizaciones"}
-                  </span>
-                  <span style={{color:C.textoSuave,fontSize:18}}>{abierto?"▲":"▼"}</span>
-                </div>
+                {abierto&&(
+                  <div style={{marginTop:12,borderTop:`1px dashed ${C.borde}`,paddingTop:12}} className="fade">
+                    <div style={{fontWeight:700,color:C.marron,marginBottom:8}}>💰 Cotizaciones recibidas</div>
+                    {cotizacionesAserr.length===0?(
+                      <div style={{color:C.textoSuave,textAlign:"center",padding:20,fontStyle:"italic"}}>⏳ Esperando cotizaciones del aserradero...</div>
+                    ):(
+                      cotizacionesAserr.filter(ct=>!archivadosCot.has(ct.id)).map((ct,i)=>{
+                        const key=ct.id||i;
+                        const abiertaCot=cotAserrAbierta===key;
+                        return(
+                        <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:0,marginBottom:10,overflow:"hidden",background:C.input}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
+                            onClick={()=>{const ab=abiertaCot?null:key;setCotAserrAbierta(ab);if(ab){marcarCotVista("cotizaciones_aserradero","visto_carpinteria",ct);setCotizacionesAserr(cs=>cs.map(x=>x.id===ct.id?{...x,visto_carpinteria:true}:x));cargarMisPedidosAserr();}}}>
+                            <b style={{color:C.marron,fontSize:17}}>🏭 {ct.aserraderoNombre||"Aserradero"}{ct.visto_carpinteria===false&&<span style={{marginLeft:8,fontSize:12,fontWeight:800,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</b>
+                            <div style={{display:"flex",alignItems:"center",gap:10}}>
+                              <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
+                              <span style={{color:C.textoSuave,fontSize:16}}>{abiertaCot?"▲":"▼"}</span>
+                            </div>
+                          </div>
+                          {abiertaCot&&(
+                          <div style={{padding:"0 14px 14px",borderTop:`1px dashed ${C.borde}`}} className="fade">
+                            <div style={{marginTop:12}}>
+                              <PresupuestoFormato
+                                empresa={ct.aserraderoObj||{}}
+                                cliente={{...usuario,mostrar_telefono:true,mostrar_direccion:true}}
+                                items={ct.items||[]}
+                                opts={{descuento_tipo:ct.descuento_tipo,descuento_valor:ct.descuento_valor,iva_pct:ct.iva_porcentaje}}
+                                numero={ct.numero_presupuesto!=null?ct.numero_presupuesto:""}
+                                fecha={ct.created_at?new Date(ct.created_at).toLocaleDateString("es-AR"):null}
+                                tiempoEntrega={ct.tiempo_entrega}
+                                esEmpresa={false}
+                                aceptado={false}
+                              />
+                            </div>
+                            <div style={{marginTop:10}}>
+                              <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>💬 Chat con {ct.aserraderoNombre||"aserradero"}</div>
+                              <Chat key={ct.aserradero_id} pedidoId={selAserr.id} tipoPedido="aserradero" miUsuario={usuario} otroUsuario={{id:ct.aserradero_id}}/>
+                            </div>
+                            <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCot(ct);}}>🗑️ Archivar esta cotización</button></div>
+                          </div>
+                          )}
+                        </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
               </div>
-              {abierto&&(
-                <div style={{marginTop:12,borderTop:`1px dashed ${C.borde}`,paddingTop:12}} className="fade">
-                  <div style={{fontWeight:700,color:C.marron,marginBottom:8}}>💰 Cotizaciones recibidas</div>
-                  {cotizacionesAserr.length===0?(
-                    <div style={{color:C.textoSuave,textAlign:"center",padding:20,fontStyle:"italic"}}>⏳ Esperando cotizaciones del aserradero...</div>
-                  ):(
-                    cotizacionesAserr.filter(ct=>!archivadosCot.has(ct.id)).map((ct,i)=>{
-                      const key=ct.id||i;
-                      const abiertaCot=cotAserrAbierta===key;
-                      return(
-                      <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:0,marginBottom:10,overflow:"hidden",background:C.input}}>
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
-                          onClick={()=>{const ab=abiertaCot?null:key;setCotAserrAbierta(ab);if(ab){marcarCotVista("cotizaciones_aserradero","visto_carpinteria",ct);setCotizacionesAserr(cs=>cs.map(x=>x.id===ct.id?{...x,visto_carpinteria:true}:x));cargarMisPedidosAserr();}}}>
-                          <b style={{color:C.marron,fontSize:17}}>🏭 {ct.aserraderoNombre||"Aserradero"}{ct.visto_carpinteria===false&&<span style={{marginLeft:8,fontSize:12,fontWeight:800,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</b>
-                          <div style={{display:"flex",alignItems:"center",gap:10}}>
-                            <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
-                            <span style={{color:C.textoSuave,fontSize:16}}>{abiertaCot?"▲":"▼"}</span>
-                          </div>
-                        </div>
-                        {abiertaCot&&(
-                        <div style={{padding:"0 14px 14px",borderTop:`1px dashed ${C.borde}`}} className="fade">
-                          <div style={{marginTop:12}}>
-                            <PresupuestoFormato
-                              empresa={ct.aserraderoObj||{}}
-                              cliente={{...usuario,mostrar_telefono:true,mostrar_direccion:true}}
-                              items={ct.items||[]}
-                              opts={{descuento_tipo:ct.descuento_tipo,descuento_valor:ct.descuento_valor,iva_pct:ct.iva_porcentaje}}
-                              numero={ct.numero_presupuesto!=null?ct.numero_presupuesto:""}
-                              fecha={ct.created_at?new Date(ct.created_at).toLocaleDateString("es-AR"):null}
-                              tiempoEntrega={ct.tiempo_entrega}
-                              esEmpresa={false}
-                              aceptado={false}
-                            />
-                          </div>
-                          <div style={{marginTop:10}}>
-                            <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>💬 Chat con {ct.aserraderoNombre||"aserradero"}</div>
-                            <Chat key={ct.aserradero_id} pedidoId={selAserr.id} tipoPedido="aserradero" miUsuario={usuario} otroUsuario={{id:ct.aserradero_id}}/>
-                          </div>
-                          <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCot(ct);}}>🗑️ Archivar esta cotización</button></div>
-                        </div>
-                        )}
-                      </div>
-                      );
-                    })
-                  )}
-                </div>
-              )}
-            </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+          )}
+        </>
       )}
 
       {tab==="ferreteria"&&(
         <div>
-          <div style={{display:"flex",gap:8,marginBottom:14}}>
-            {[["pedir","🔩 Pedir herrajes"],["mis",`📋 Mis pedidos${misPedidosFerreria.length>0?` (${misPedidosFerreria.length})`:""}`]].map(([id,l])=>(
-              <button key={id} style={{...S.btn(subFerr===id?"dark":"ghost"),flex:1,justifyContent:"center",fontSize:16}} onClick={()=>setSubFerr(id)}>{l}</button>
-            ))}
-          </div>
           {subFerr==="pedir"&&(
           <div style={S.card}>
+            <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSubFerr("mis")}>← Volver a mis pedidos</button>
             <div style={S.cardTitle}>🔩 Pedir herrajes a ferretería</div>
             <div style={{fontSize:14,color:C.textoSuave,marginBottom:10}}>Agregá un renglón por cada herraje que necesitás, con su cantidad.</div>
             {ferrF.items.map((it,i)=>(
@@ -3245,97 +3241,100 @@ function VistaCarpinteria({usuario,notif}){
           </div>
           )}
 
-          {subFerr==="mis"&&misPedidosFerreria.length===0&&(
-            <div style={S.card}>
-              <div style={{fontSize:17,color:C.textoSuave,fontStyle:"italic"}}>Todavía no enviaste pedidos de herrajes. Andá a la solapa "Pedir herrajes" para hacer el primero.</div>
+          {subFerr==="mis"&&(
+          <>
+            <div style={{display:"flex",justifyContent:"flex-end",marginBottom:14}}>
+              <button style={S.btn("dark")} onClick={()=>setSubFerr("pedir")}>➕ Nuevo pedido</button>
             </div>
-          )}
+            {misPedidosFerreria.length===0&&(
+              <div style={S.card}>
+                <div style={{fontSize:17,color:C.textoSuave,fontStyle:"italic"}}>Todavía no enviaste pedidos de herrajes. Tocá "➕ Nuevo pedido" arriba para hacer el primero.</div>
+              </div>
+            )}
 
-          {subFerr==="mis"&&misPedidosFerreria.length>0&&(
-            <div style={S.card}>
-              <div style={S.cardTitle}>📋 Mis pedidos de herrajes</div>
-              {misPedidosFerreria.map(p=>{
-                const abierto=selFerr&&selFerr.id===p.id;
-                return(
-                <div key={p.id} style={{border:`1px solid ${abierto?C.acento:C.borde}`,borderRadius:0,padding:12,marginBottom:10,background:C.input}}>
-                  <div style={{display:"flex",justifyContent:"space-between",cursor:"pointer"}}
-                    onClick={()=>{ if(abierto){setSelFerr(null);} else {abrirPedidoFerr(p);} }}>
-                    <div>
-                      <div style={{fontWeight:700,fontSize:18,color:C.marron}}>{p.descripcion}</div>
-                      <div style={{fontSize:17,color:C.textoSuave}}>{Array.isArray(p.items)&&p.items.length>0?`${p.items.length} ítem${p.items.length>1?"s":""}`:`Cantidad: ${p.cantidad}`} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
-                      {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
+            {misPedidosFerreria.length>0&&(
+              <div style={S.card}>
+                <div style={S.cardTitle}>📋 Mis pedidos de herrajes</div>
+                {misPedidosFerreria.map(p=>{
+                  const abierto=selFerr&&selFerr.id===p.id;
+                  return(
+                  <div key={p.id} style={{border:`1px solid ${abierto?C.acento:C.borde}`,borderRadius:0,padding:12,marginBottom:10,background:C.input}}>
+                    <div style={{display:"flex",justifyContent:"space-between",cursor:"pointer"}}
+                      onClick={()=>{ if(abierto){setSelFerr(null);} else {abrirPedidoFerr(p);} }}>
+                      <div>
+                        <div style={{fontWeight:700,fontSize:18,color:C.marron}}>{p.descripcion}</div>
+                        <div style={{fontSize:17,color:C.textoSuave}}>{Array.isArray(p.items)&&p.items.length>0?`${p.items.length} ítem${p.items.length>1?"s":""}`:`Cantidad: ${p.cantidad}`} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                        {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
+                      </div>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{whiteSpace:"nowrap",background:p._cantCot>0?C.verde:C.suave,color:p._cantCot>0?"#fff":C.textoSuave,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:0,fontFamily:"'Lato',sans-serif"}}>
+                          {p._cantCot>0?`${p._cantCot} cotización${p._cantCot>1?"es":""}`:"Sin cotizaciones"}
+                        </span>
+                        <span style={{color:C.textoSuave,fontSize:18}}>{abierto?"▲":"▼"}</span>
+                      </div>
                     </div>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <span style={{whiteSpace:"nowrap",background:p._cantCot>0?C.verde:C.suave,color:p._cantCot>0?"#fff":C.textoSuave,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:0,fontFamily:"'Lato',sans-serif"}}>
-                        {p._cantCot>0?`${p._cantCot} cotización${p._cantCot>1?"es":""}`:"Sin cotizaciones"}
-                      </span>
-                      <span style={{color:C.textoSuave,fontSize:18}}>{abierto?"▲":"▼"}</span>
-                    </div>
+                    {abierto&&(
+                      <div style={{marginTop:12,borderTop:`1px dashed ${C.borde}`,paddingTop:12}} className="fade">
+                        <div style={{fontWeight:700,color:C.marron,marginBottom:8}}>💰 Cotizaciones de ferreterías</div>
+                        {cotizacionesFerr.length===0?(
+                          <div style={{color:C.textoSuave,textAlign:"center",padding:20,fontStyle:"italic"}}>⏳ Esperando cotizaciones...</div>
+                        ):(
+                          cotizacionesFerr.filter(ct=>!archivadosCot.has(ct.id)).map((ct,i)=>{
+                            const key=ct.id||i;
+                            const abiertaCot=ferrAbierta===key;
+                            return(
+                            <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:0,marginBottom:10,overflow:"hidden",background:C.input}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
+                                onClick={()=>{const ab=abiertaCot?null:key;setFerrAbierta(ab);if(ab){marcarCotVista("cotizaciones_ferreteria","visto_carpinteria",ct);setCotizacionesFerr(cs=>cs.map(x=>x.id===ct.id?{...x,visto_carpinteria:true}:x));cargarMisPedidosFerreria();}}}>
+                                <b style={{color:C.marron,fontSize:17}}>🔩 {ct.ferrNombre||"Ferretería"}{ct.visto_carpinteria===false&&<span style={{marginLeft:8,fontSize:12,fontWeight:800,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</b>
+                                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                                  <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
+                                  <span style={{color:C.textoSuave,fontSize:16}}>{abiertaCot?"▲":"▼"}</span>
+                                </div>
+                              </div>
+                              {abiertaCot&&(
+                              <div style={{padding:"0 14px 14px",borderTop:`1px dashed ${C.borde}`}} className="fade">
+                                <div style={{marginTop:12}}>
+                                  <PresupuestoFormato
+                                    empresa={ct.ferrObj||{}}
+                                    cliente={{...usuario,mostrar_telefono:true,mostrar_direccion:true}}
+                                    items={ct.items||[]}
+                                    opts={{descuento_tipo:ct.descuento_tipo,descuento_valor:ct.descuento_valor,iva_pct:ct.iva_porcentaje}}
+                                    numero={ct.numero_presupuesto!=null?ct.numero_presupuesto:""}
+                                    fecha={ct.created_at?new Date(ct.created_at).toLocaleDateString("es-AR"):null}
+                                    tiempoEntrega={ct.tiempo_entrega}
+                                    esEmpresa={false}
+                                    aceptado={false}
+                                  />
+                                </div>
+                                <div style={{marginTop:10}}>
+                                  <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>💬 Chat con {ct.ferrNombre||"ferretería"}</div>
+                                  <Chat key={ct.ferreteria_id} pedidoId={selFerr.id} tipoPedido="ferreteria" miUsuario={usuario} otroUsuario={{id:ct.ferreteria_id}}/>
+                                </div>
+                                  <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCot(ct);}}>🗑️ Archivar esta cotización</button></div>
+                              </div>
+                              )}
+                            </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
                   </div>
-                  {abierto&&(
-                    <div style={{marginTop:12,borderTop:`1px dashed ${C.borde}`,paddingTop:12}} className="fade">
-                      <div style={{fontWeight:700,color:C.marron,marginBottom:8}}>💰 Cotizaciones de ferreterías</div>
-                      {cotizacionesFerr.length===0?(
-                        <div style={{color:C.textoSuave,textAlign:"center",padding:20,fontStyle:"italic"}}>⏳ Esperando cotizaciones...</div>
-                      ):(
-                        cotizacionesFerr.filter(ct=>!archivadosCot.has(ct.id)).map((ct,i)=>{
-                          const key=ct.id||i;
-                          const abiertaCot=ferrAbierta===key;
-                          return(
-                          <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:0,marginBottom:10,overflow:"hidden",background:C.input}}>
-                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
-                              onClick={()=>{const ab=abiertaCot?null:key;setFerrAbierta(ab);if(ab){marcarCotVista("cotizaciones_ferreteria","visto_carpinteria",ct);setCotizacionesFerr(cs=>cs.map(x=>x.id===ct.id?{...x,visto_carpinteria:true}:x));cargarMisPedidosFerreria();}}}>
-                              <b style={{color:C.marron,fontSize:17}}>🔩 {ct.ferrNombre||"Ferretería"}{ct.visto_carpinteria===false&&<span style={{marginLeft:8,fontSize:12,fontWeight:800,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</b>
-                              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                                <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
-                                <span style={{color:C.textoSuave,fontSize:16}}>{abiertaCot?"▲":"▼"}</span>
-                              </div>
-                            </div>
-                            {abiertaCot&&(
-                            <div style={{padding:"0 14px 14px",borderTop:`1px dashed ${C.borde}`}} className="fade">
-                              <div style={{marginTop:12}}>
-                                <PresupuestoFormato
-                                  empresa={ct.ferrObj||{}}
-                                  cliente={{...usuario,mostrar_telefono:true,mostrar_direccion:true}}
-                                  items={ct.items||[]}
-                                  opts={{descuento_tipo:ct.descuento_tipo,descuento_valor:ct.descuento_valor,iva_pct:ct.iva_porcentaje}}
-                                  numero={ct.numero_presupuesto!=null?ct.numero_presupuesto:""}
-                                  fecha={ct.created_at?new Date(ct.created_at).toLocaleDateString("es-AR"):null}
-                                  tiempoEntrega={ct.tiempo_entrega}
-                                  esEmpresa={false}
-                                  aceptado={false}
-                                />
-                              </div>
-                              <div style={{marginTop:10}}>
-                                <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>💬 Chat con {ct.ferrNombre||"ferretería"}</div>
-                                <Chat key={ct.ferreteria_id} pedidoId={selFerr.id} tipoPedido="ferreteria" miUsuario={usuario} otroUsuario={{id:ct.ferreteria_id}}/>
-                              </div>
-                                <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCot(ct);}}>🗑️ Archivar esta cotización</button></div>
-                            </div>
-                            )}
-                          </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  )}
-                </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
           )}
         </div>
       )}
 
       {tab==="pintureria"&&(
         <div>
-          <div style={{display:"flex",gap:8,marginBottom:14}}>
-            {[["pedir","🎨 Pedir pinturas"],["mis",`📋 Mis pedidos${misPedidosPint.length>0?` (${misPedidosPint.length})`:""}`]].map(([id,l])=>(
-              <button key={id} style={{...S.btn(subPint===id?"dark":"ghost"),flex:1,justifyContent:"center",fontSize:16}} onClick={()=>setSubPint(id)}>{l}</button>
-            ))}
-          </div>
           {subPint==="pedir"&&(
           <div style={S.card}>
+            <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSubPint("mis")}>← Volver a mis pedidos</button>
             <div style={S.cardTitle}>🎨 Pedir pinturas a pinturería</div>
             <div style={{fontSize:14,color:C.textoSuave,marginBottom:10}}>Agregá un renglón por cada producto que necesitás (incluí color/terminación en la descripción), con su cantidad en litros.</div>
             {pintF.items.map((it,i)=>(
@@ -3386,84 +3385,91 @@ function VistaCarpinteria({usuario,notif}){
           </div>
           )}
 
-          {subPint==="mis"&&misPedidosPint.length===0&&(
-            <div style={S.card}>
-              <div style={{fontSize:17,color:C.textoSuave,fontStyle:"italic"}}>Todavía no enviaste pedidos de pinturas. Andá a la solapa "Pedir pinturas" para hacer el primero.</div>
+          {subPint==="mis"&&(
+          <>
+            <div style={{display:"flex",justifyContent:"flex-end",marginBottom:14}}>
+              <button style={S.btn("dark")} onClick={()=>setSubPint("pedir")}>➕ Nuevo pedido</button>
             </div>
-          )}
+            {misPedidosPint.length===0&&(
+              <div style={S.card}>
+                <div style={{fontSize:17,color:C.textoSuave,fontStyle:"italic"}}>Todavía no enviaste pedidos de pinturas. Tocá "➕ Nuevo pedido" arriba para hacer el primero.</div>
+              </div>
+            )}
 
-          {subPint==="mis"&&misPedidosPint.length>0&&(
-            <div style={S.card}>
-              <div style={S.cardTitle}>📋 Mis pedidos de pinturas</div>
-              {misPedidosPint.map(p=>{
-                const abierto=selPint&&selPint.id===p.id;
-                return(
-                <div key={p.id} style={{border:`1px solid ${abierto?C.acento:C.borde}`,borderRadius:0,padding:12,marginBottom:10,background:C.input}}>
-                  <div style={{display:"flex",justifyContent:"space-between",cursor:"pointer"}}
-                    onClick={()=>{ if(abierto){setSelPint(null);} else {abrirPedidoPint(p);} }}>
-                    <div>
-                      <div style={{fontWeight:700,fontSize:18,color:C.marron}}>{p.descripcion}</div>
-                      <div style={{fontSize:17,color:C.textoSuave}}>{Array.isArray(p.items)&&p.items.length>0?`${p.items.length} ítem${p.items.length>1?"s":""}`:([p.color&&`🎨 ${p.color}`,p.tono,p.litros&&`${p.litros} L`].filter(Boolean).join(" · ")||"Sin detalle")} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
-                      {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
+            {misPedidosPint.length>0&&(
+              <div style={S.card}>
+                <div style={S.cardTitle}>📋 Mis pedidos de pinturas</div>
+                {misPedidosPint.map(p=>{
+                  const abierto=selPint&&selPint.id===p.id;
+                  return(
+                  <div key={p.id} style={{border:`1px solid ${abierto?C.acento:C.borde}`,borderRadius:0,padding:12,marginBottom:10,background:C.input}}>
+                    <div style={{display:"flex",justifyContent:"space-between",cursor:"pointer"}}
+                      onClick={()=>{ if(abierto){setSelPint(null);} else {abrirPedidoPint(p);} }}>
+                      <div>
+                        <div style={{fontWeight:700,fontSize:18,color:C.marron}}>{p.descripcion}</div>
+                        <div style={{fontSize:17,color:C.textoSuave}}>{Array.isArray(p.items)&&p.items.length>0?`${p.items.length} ítem${p.items.length>1?"s":""}`:([p.color&&`🎨 ${p.color}`,p.tono,p.litros&&`${p.litros} L`].filter(Boolean).join(" · ")||"Sin detalle")} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
+                        {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
+                      </div>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{whiteSpace:"nowrap",background:p._cantCot>0?C.verde:C.suave,color:p._cantCot>0?"#fff":C.textoSuave,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:0,fontFamily:"'Lato',sans-serif"}}>
+                          {p._cantCot>0?`${p._cantCot} cotización${p._cantCot>1?"es":""}`:"Sin cotizaciones"}
+                        </span>
+                        <span style={{color:C.textoSuave,fontSize:18}}>{abierto?"▲":"▼"}</span>
+                      </div>
                     </div>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <span style={{whiteSpace:"nowrap",background:p._cantCot>0?C.verde:C.suave,color:p._cantCot>0?"#fff":C.textoSuave,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:0,fontFamily:"'Lato',sans-serif"}}>
-                        {p._cantCot>0?`${p._cantCot} cotización${p._cantCot>1?"es":""}`:"Sin cotizaciones"}
-                      </span>
-                      <span style={{color:C.textoSuave,fontSize:18}}>{abierto?"▲":"▼"}</span>
-                    </div>
+                    {abierto&&(
+                      <div style={{marginTop:12,borderTop:`1px dashed ${C.borde}`,paddingTop:12}} className="fade">
+                        <div style={{fontWeight:700,color:C.marron,marginBottom:8}}>💰 Cotizaciones de pinturerías</div>
+                        {cotizacionesPint.length===0?(
+                          <div style={{color:C.textoSuave,textAlign:"center",padding:20,fontStyle:"italic"}}>⏳ Esperando cotizaciones...</div>
+                        ):(
+                          cotizacionesPint.filter(ct=>!archivadosCot.has(ct.id)).map((ct,i)=>{
+                            const key=ct.id||i;
+                            const abiertaCot=pintAbierta===key;
+                            return(
+                            <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:0,marginBottom:10,overflow:"hidden",background:C.input}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
+                                onClick={()=>{const ab=abiertaCot?null:key;setPintAbierta(ab);if(ab){marcarCotVista("cotizaciones_pintureria","visto_carpinteria",ct);setCotizacionesPint(cs=>cs.map(x=>x.id===ct.id?{...x,visto_carpinteria:true}:x));cargarMisPedidosPint();}}}>
+                                <b style={{color:C.marron,fontSize:17}}>🎨 {ct.pintNombre||"Pinturería"}{ct.visto_carpinteria===false&&<span style={{marginLeft:8,fontSize:12,fontWeight:800,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</b>
+                                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                                  <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
+                                  <span style={{color:C.textoSuave,fontSize:16}}>{abiertaCot?"▲":"▼"}</span>
+                                </div>
+                              </div>
+                              {abiertaCot&&(
+                              <div style={{padding:"0 14px 14px",borderTop:`1px dashed ${C.borde}`}} className="fade">
+                                <div style={{marginTop:12}}>
+                                  <PresupuestoFormato
+                                    empresa={ct.pintObj||{}}
+                                    cliente={{...usuario,mostrar_telefono:true,mostrar_direccion:true}}
+                                    items={ct.items||[]}
+                                    opts={{descuento_tipo:ct.descuento_tipo,descuento_valor:ct.descuento_valor,iva_pct:ct.iva_porcentaje}}
+                                    numero={ct.numero_presupuesto!=null?ct.numero_presupuesto:""}
+                                    fecha={ct.created_at?new Date(ct.created_at).toLocaleDateString("es-AR"):null}
+                                    tiempoEntrega={ct.tiempo_entrega}
+                                    esEmpresa={false}
+                                    aceptado={false}
+                                  />
+                                </div>
+                                <div style={{marginTop:10}}>
+                                  <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>💬 Chat con {ct.pintNombre||"pinturería"}</div>
+                                  <Chat key={ct.pintureria_id} pedidoId={selPint.id} tipoPedido="pintureria" miUsuario={usuario} otroUsuario={{id:ct.pintureria_id}}/>
+                                </div>
+                                  <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCot(ct);}}>🗑️ Archivar esta cotización</button></div>
+                              </div>
+                              )}
+                            </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
                   </div>
-                  {abierto&&(
-                    <div style={{marginTop:12,borderTop:`1px dashed ${C.borde}`,paddingTop:12}} className="fade">
-                      <div style={{fontWeight:700,color:C.marron,marginBottom:8}}>💰 Cotizaciones de pinturerías</div>
-                      {cotizacionesPint.length===0?(
-                        <div style={{color:C.textoSuave,textAlign:"center",padding:20,fontStyle:"italic"}}>⏳ Esperando cotizaciones...</div>
-                      ):(
-                        cotizacionesPint.filter(ct=>!archivadosCot.has(ct.id)).map((ct,i)=>{
-                          const key=ct.id||i;
-                          const abiertaCot=pintAbierta===key;
-                          return(
-                          <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:0,marginBottom:10,overflow:"hidden",background:C.input}}>
-                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
-                              onClick={()=>{const ab=abiertaCot?null:key;setPintAbierta(ab);if(ab){marcarCotVista("cotizaciones_pintureria","visto_carpinteria",ct);setCotizacionesPint(cs=>cs.map(x=>x.id===ct.id?{...x,visto_carpinteria:true}:x));cargarMisPedidosPint();}}}>
-                              <b style={{color:C.marron,fontSize:17}}>🎨 {ct.pintNombre||"Pinturería"}{ct.visto_carpinteria===false&&<span style={{marginLeft:8,fontSize:12,fontWeight:800,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</b>
-                              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                                <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
-                                <span style={{color:C.textoSuave,fontSize:16}}>{abiertaCot?"▲":"▼"}</span>
-                              </div>
-                            </div>
-                            {abiertaCot&&(
-                            <div style={{padding:"0 14px 14px",borderTop:`1px dashed ${C.borde}`}} className="fade">
-                              <div style={{marginTop:12}}>
-                                <PresupuestoFormato
-                                  empresa={ct.pintObj||{}}
-                                  cliente={{...usuario,mostrar_telefono:true,mostrar_direccion:true}}
-                                  items={ct.items||[]}
-                                  opts={{descuento_tipo:ct.descuento_tipo,descuento_valor:ct.descuento_valor,iva_pct:ct.iva_porcentaje}}
-                                  numero={ct.numero_presupuesto!=null?ct.numero_presupuesto:""}
-                                  fecha={ct.created_at?new Date(ct.created_at).toLocaleDateString("es-AR"):null}
-                                  tiempoEntrega={ct.tiempo_entrega}
-                                  esEmpresa={false}
-                                  aceptado={false}
-                                />
-                              </div>
-                              <div style={{marginTop:10}}>
-                                <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>💬 Chat con {ct.pintNombre||"pinturería"}</div>
-                                <Chat key={ct.pintureria_id} pedidoId={selPint.id} tipoPedido="pintureria" miUsuario={usuario} otroUsuario={{id:ct.pintureria_id}}/>
-                              </div>
-                                <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCot(ct);}}>🗑️ Archivar esta cotización</button></div>
-                            </div>
-                            )}
-                          </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  )}
-                </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
           )}
         </div>
       )}
@@ -3908,7 +3914,7 @@ function VistaFlete({usuario,notif}){
   };
 
   // ---- Lado solicitante: pide flete y ve cotizaciones ----
-  const [subFl,setSubFl]=useState("pedir");
+  const [subFl,setSubFl]=useState("mis");
   const [pedF,setPedF]=useState({origen:"",destino:"",descripcion:"",fecha:"",notas:"",fechaLimite:""});
   const [misPedidos,setMisPedidos]=useState([]);
   const [selPedido,setSelPedido]=useState(null);
@@ -4178,14 +4184,9 @@ function VistaFlete({usuario,notif}){
   // ================= VISTA SOLICITANTE (cualquier tipo que no sea flete) =================
   return(
     <div>
-      <div style={{display:"flex",gap:7,marginBottom:16}}>
-        {[["pedir","📤 Pedir flete"],["mis","📋 Mis pedidos"]].map(([id,l])=>(
-          <button key={id} style={{background:subFl===id?C.marron:"transparent",color:subFl===id?C.crema:C.textoSuave,border:subFl===id?"none":`1px solid ${C.borde}`,borderRadius:0,padding:"7px 14px",cursor:"pointer",fontSize:17,fontWeight:700,fontFamily:"'Lato',sans-serif"}} onClick={()=>setSubFl(id)}>{l}</button>
-        ))}
-      </div>
-
       {subFl==="pedir"&&(
         <div style={S.card}>
+          <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSubFl("mis")}>← Volver a mis pedidos</button>
           <div style={S.cardTitle}>🚚 Solicitar flete</div>
           <div style={{fontSize:14,color:C.textoSuave,marginBottom:10}}>Se envía a todos los fletes registrados. Cada uno cotiza por su cuenta, sin ver las cotizaciones de los demás.</div>
           <div style={S.row}>
@@ -4219,7 +4220,10 @@ function VistaFlete({usuario,notif}){
 
       {subFl==="mis"&&(
         <div>
-          {misPedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hiciste pedidos de flete todavía</div>}
+          <div style={{display:"flex",justifyContent:"flex-end",marginBottom:14}}>
+            <button style={S.btn("dark")} onClick={()=>setSubFl("pedir")}>➕ Nuevo pedido</button>
+          </div>
+          {misPedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hiciste pedidos de flete todavía. Tocá "➕ Nuevo pedido" arriba para hacer el primero.</div>}
           {misPedidos.map(p=>{
             const abierto=selPedido&&selPedido.id===p.id;
             return(
