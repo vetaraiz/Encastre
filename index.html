@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.3</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.4</div>
     </div>
   );
 }
@@ -3637,7 +3637,7 @@ function VistaAserradero({usuario,notif}){
             {cotF.items.map((it,i)=>{
               const imp=nmb(it.precio)*nmb(it.cantidad);
               return(
-              <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:0,padding:10,marginBottom:8,background:C.suave}}>
+              <div key={i} style={{padding:"12px 0",borderBottom:`1px dashed ${C.borde}`}}>
                 <div style={{marginBottom:8}}>
                   <label style={S.label}>Descripción</label>
                   <input value={it.descripcion} onChange={e=>setItem(i,"descripcion",e.target.value)} placeholder='Ej: Tabla de roble 3m x 8"' style={S.input}/>
