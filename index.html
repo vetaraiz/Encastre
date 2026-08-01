@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.5</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.6</div>
     </div>
   );
 }
@@ -1978,27 +1978,28 @@ function Chat({pedidoId,tipoPedido,miUsuario,otroUsuario}){
   };
 
   return(
-    <div style={{background:C.input,border:`1px solid ${C.borde}`,borderRadius:0,overflow:"hidden"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 14px",background:C.suave,borderBottom:`1px solid ${C.borde}`}}>
-        <span style={{fontSize:17,color:C.textoSuave,fontWeight:700,letterSpacing:.8,textTransform:"uppercase"}}>💬 Chat directo</span>
-        {otroId&&!meBloquearon&&(bloqueoMio
+    <div>
+      {(otroId&&!meBloquearon)&&(
+      <div style={{display:"flex",justifyContent:"flex-end",paddingBottom:8,marginBottom:8,borderBottom:`1px dashed ${C.borde}`}}>
+        {bloqueoMio
           ? <button onClick={desbloquear} style={{...S.btn("ghost"),fontSize:14,padding:"4px 10px",minHeight:"auto"}}>Desbloquear</button>
           : <button onClick={bloquear} style={{background:"none",border:`1px solid ${C.borde}`,color:C.textoSuave,borderRadius:0,padding:"4px 10px",cursor:"pointer",fontSize:14,minHeight:"auto"}}>🚫 Bloquear</button>
-        )}
+        }
       </div>
+      )}
       {meBloquearon?(
         <div style={{padding:18,textAlign:"center",color:C.textoSuave,fontSize:16}}>🚫 Este usuario te bloqueó. No podés enviarle mensajes.</div>
       ):bloqueoMio?(
         <div style={{padding:18,textAlign:"center",color:C.textoSuave,fontSize:16}}>🚫 Bloqueaste a este usuario. Tocá "Desbloquear" para volver a chatear.</div>
       ):(
       <div>
-      <div style={{maxHeight:180,overflowY:"auto",padding:"10px 14px"}}>
+      <div style={{maxHeight:180,overflowY:"auto"}}>
         {msgs.length===0&&<div style={{color:C.textoSuave,fontSize:17,textAlign:"center",padding:16,fontStyle:"italic"}}>Sin mensajes aún...</div>}
         {msgs.map((m,i)=>{
           const propio=m.de_usuario_id===miUsuario.id;
           return(
             <div key={i} style={{marginBottom:8,display:"flex",flexDirection:propio?"row-reverse":"row",gap:6}}>
-              <div style={{background:propio?C.marron:C.card,border:`1px solid ${propio?C.marron:C.borde}`,borderRadius:0,padding:"6px 11px",maxWidth:"78%"}}>
+              <div style={{background:propio?C.marron:C.suave,borderRadius:0,padding:"6px 11px",maxWidth:"78%"}}>
                 <div style={{fontSize:17,color:propio?C.acento:C.textoSuave,marginBottom:2}}>{new Date(m.created_at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</div>
                 <div style={{fontSize:17,color:propio?C.crema:C.texto}}>{m.texto}</div>
               </div>
@@ -2007,7 +2008,7 @@ function Chat({pedidoId,tipoPedido,miUsuario,otroUsuario}){
         })}
         <div ref={endRef}/>
       </div>
-      <div style={{display:"flex",gap:8,padding:"8px 14px",borderTop:`1px solid ${C.borde}`,background:C.card}}>
+      <div style={{display:"flex",gap:8,paddingTop:8,marginTop:8,borderTop:`1px dashed ${C.borde}`}}>
         <input value={txt} onChange={e=>setTxt(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")enviar();}} placeholder="Escribí tu mensaje..." style={{...S.input,flex:1}}/>
         <button style={S.btn("dark")} onClick={enviar}>Enviar</button>
       </div>
