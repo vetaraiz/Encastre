@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.7</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.8</div>
     </div>
   );
 }
@@ -2581,10 +2581,14 @@ function VistaCarpinteria({usuario,notif}){
   },[usuario.id]);
   useEffect(()=>{cargarArchivadosCot();},[cargarArchivadosCot]);
   useEffect(()=>{const h=()=>{setSelAserr(null);setSelFerr(null);setSelPint(null);setTab("pedidos");};window.addEventListener("encastre-ir-principal",h);return()=>window.removeEventListener("encastre-ir-principal",h);},[]);
-  const archivarCot=async(ct)=>{
+  const archivarCot=async(ct,tipo)=>{
     try{
       await db.insertMin("elementos_archivados",{usuario_id:usuario.id,tipo_elemento:"cotizacion",elemento_id:ct.id});
       setArchivadosCot(prev=>new Set(prev).add(ct.id));
+      const dec=(setter,pedidoId)=>setter(ps=>ps.map(p=>p.id===pedidoId?{...p,_cantCot:Math.max(0,(p._cantCot||0)-1)}:p));
+      if(tipo==="aserradero"&&selAserr) dec(setMisPedidosAserr,selAserr.id);
+      else if(tipo==="ferreteria"&&selFerr) dec(setMisPedidosFerreria,selFerr.id);
+      else if(tipo==="pintureria"&&selPint) dec(setMisPedidosPint,selPint.id);
       notif("Cotización archivada");
     }catch(e){ notif("No se pudo archivar"); }
   };
@@ -3190,7 +3194,7 @@ function VistaCarpinteria({usuario,notif}){
                               <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>💬 Chat con {ct.aserraderoNombre||"aserradero"}</div>
                               <Chat key={ct.aserradero_id} pedidoId={selAserr.id} tipoPedido="aserradero" miUsuario={usuario} otroUsuario={{id:ct.aserradero_id}}/>
                             </div>
-                            <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCot(ct);}}>🗑️ Archivar esta cotización</button></div>
+                            <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCot(ct,"aserradero");}}>🗑️ Archivar esta cotización</button></div>
                           </div>
                           )}
                         </div>
@@ -3332,7 +3336,7 @@ function VistaCarpinteria({usuario,notif}){
                                   <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>💬 Chat con {ct.ferrNombre||"ferretería"}</div>
                                   <Chat key={ct.ferreteria_id} pedidoId={selFerr.id} tipoPedido="ferreteria" miUsuario={usuario} otroUsuario={{id:ct.ferreteria_id}}/>
                                 </div>
-                                  <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCot(ct);}}>🗑️ Archivar esta cotización</button></div>
+                                  <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCot(ct,"ferreteria");}}>🗑️ Archivar esta cotización</button></div>
                               </div>
                               )}
                             </div>
@@ -3476,7 +3480,7 @@ function VistaCarpinteria({usuario,notif}){
                                   <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>💬 Chat con {ct.pintNombre||"pinturería"}</div>
                                   <Chat key={ct.pintureria_id} pedidoId={selPint.id} tipoPedido="pintureria" miUsuario={usuario} otroUsuario={{id:ct.pintureria_id}}/>
                                 </div>
-                                  <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCot(ct);}}>🗑️ Archivar esta cotización</button></div>
+                                  <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCot(ct,"pintureria");}}>🗑️ Archivar esta cotización</button></div>
                               </div>
                               )}
                             </div>
@@ -3843,6 +3847,7 @@ function VistaFlete({usuario,notif}){
     try{
       await db.insertMin("elementos_archivados",{usuario_id:usuario.id,tipo_elemento:"cotizacion",elemento_id:ct.id});
       setArchivadosCotFlete(prev=>new Set(prev).add(ct.id));
+      if(selPedido) setMisPedidos(ps=>ps.map(p=>p.id===selPedido.id?{...p,_cantCot:Math.max(0,(p._cantCot||0)-1)}:p));
       notif("Cotización archivada");
     }catch(e){ notif("No se pudo archivar"); }
   };
