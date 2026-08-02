@@ -1510,6 +1510,11 @@ function TagNuevo({on}){
   if(!on)return null;
   return <span style={{marginLeft:8,fontSize:12,fontWeight:800,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>;
 }
+// Etiqueta para pedidos con un mensaje de chat sin leer
+function TagMsjNuevo({on}){
+  if(!on)return null;
+  return <span style={{marginLeft:8,fontSize:12,fontWeight:800,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>💬 Mensaje nuevo</span>;
+}
 
 // Punto verde: indica que hay novedades sin ver (sin contar cuántas)
 function Badge9({n}){
@@ -1929,7 +1934,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.11</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.12</div>
     </div>
   );
 }
@@ -2668,7 +2673,15 @@ function VistaCarpinteria({usuario,notif}){
         const vs=await db.select("vistas_pedido",`?usuario_id=eq.${usuario.id}&tipo_pedido=eq.pedidos&select=pedido_id`);
         vs.forEach(v=>vistos.add(v.pedido_id));
       }catch{}
-      setPedidos(d.map(p=>({...p,_clienteNombre:mapa[p.cliente_id]||"",_miEstado:mios[p.id]||null,_nuevo:!vistos.has(p.id)})));
+      let conMsj=new Set();
+      if(d.length){
+        try{
+          const idsPed=d.map(p=>p.id).join(",");
+          const msjs=await db.select("mensajes",`?pedido_id=in.(${idsPed})&tipo_pedido=eq.cliente&para_usuario_id=eq.${usuario.id}&leido=eq.false&select=pedido_id`);
+          msjs.forEach(m=>conMsj.add(m.pedido_id));
+        }catch{}
+      }
+      setPedidos(d.map(p=>({...p,_clienteNombre:mapa[p.cliente_id]||"",_miEstado:mios[p.id]||null,_nuevo:!vistos.has(p.id),_msjNuevo:conMsj.has(p.id)})));
     }catch{}
   },[usuario.id]);
   // Auto-refresh cada 15 segundos para ver pedidos nuevos
@@ -3103,7 +3116,7 @@ function VistaCarpinteria({usuario,notif}){
                 onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
                 <div style={{display:"flex",justifyContent:"space-between",gap:10}}>
                   <div>
-                    <div style={{fontFamily:"'Playfair Display',serif",fontWeight:p._nuevo?900:700,color:C.marron,fontSize:21}}>{p.descripcion}<TagNuevo on={p._nuevo}/></div>
+                    <div style={{fontFamily:"'Playfair Display',serif",fontWeight:p._nuevo?900:700,color:C.marron,fontSize:21}}>{p.descripcion}<TagNuevo on={p._nuevo}/><TagMsjNuevo on={p._msjNuevo}/></div>
                     {p._clienteNombre&&<div style={{fontSize:16,color:C.marron,marginTop:2}}>👤 {p._clienteNombre}</div>}
                     <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{p.alto}×{p.ancho}×{p.profundidad}cm · {mat?.label} · {new Date(p.created_at).toLocaleDateString("es-AR")}{p.items&&p.items.length>1?` · +${p.items.length-1} mueble${p.items.length>2?"s":""} más`:""}</div>
                     {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
@@ -3577,7 +3590,15 @@ function VistaAserradero({usuario,notif}){
         const vs=await db.select("vistas_pedido",`?usuario_id=eq.${usuario.id}&tipo_pedido=eq.aserradero&select=pedido_id`);
         vs.forEach(v=>vistos.add(v.pedido_id));
       }catch{}
-      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null,_nuevo:!vistos.has(p.id)})));
+      let conMsj=new Set();
+      if(d.length){
+        try{
+          const idsPed=d.map(p=>p.id).join(",");
+          const msjs=await db.select("mensajes",`?pedido_id=in.(${idsPed})&tipo_pedido=eq.aserradero&para_usuario_id=eq.${usuario.id}&leido=eq.false&select=pedido_id`);
+          msjs.forEach(m=>conMsj.add(m.pedido_id));
+        }catch{}
+      }
+      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null,_nuevo:!vistos.has(p.id),_msjNuevo:conMsj.has(p.id)})));
     }catch{}
   },[usuario.id]);
   useEffect(()=>{cargar();const t=setInterval(cargar,15000);return()=>clearInterval(t);},[cargar]);
@@ -3780,7 +3801,7 @@ function VistaAserradero({usuario,notif}){
 
       <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`}}>
         <div style={S.cardTitle}>💬 Chat con carpintería</div>
-        <Chat pedidoId={sel.id} tipoPedido="aserradero" miUsuario={usuario} otroUsuario={{id:sel.carpinteria_id}}/>
+        <Chat pedidoId={sel.id} tipoPedido="aserradero" miUsuario={usuario} otroUsuario={{id:sel.carpinteria_id}} onLeido={cargar}/>
       </div>
       </div>
     </div>
@@ -3818,7 +3839,7 @@ function VistaAserradero({usuario,notif}){
           onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontWeight:p._nuevo?900:700,color:C.marron,fontSize:17}}>{p.material}<TagNuevo on={p._nuevo}/></div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontWeight:p._nuevo?900:700,color:C.marron,fontSize:17}}>{p.material}<TagNuevo on={p._nuevo}/><TagMsjNuevo on={p._msjNuevo}/></div>
               <div style={{fontSize:17,color:C.textoSuave,marginTop:3,fontFamily:"monospace"}}>{p.pies}' × {p.pulgadas}" · {p.cantidad} piezas · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
               {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
             </div>
@@ -3916,7 +3937,15 @@ function VistaFlete({usuario,notif}){
         const vs=await db.select("vistas_pedido",`?usuario_id=eq.${usuario.id}&tipo_pedido=eq.flete&select=pedido_id`);
         vs.forEach(v=>vistos.add(v.pedido_id));
       }catch{}
-      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null,_solNombre:nombres[p.solicitante_id]||"Solicitante",_nuevo:!vistos.has(p.id)})));
+      let conMsj=new Set();
+      if(d.length){
+        try{
+          const idsPed=d.map(p=>p.id).join(",");
+          const msjs=await db.select("mensajes",`?pedido_id=in.(${idsPed})&tipo_pedido=eq.flete&para_usuario_id=eq.${usuario.id}&leido=eq.false&select=pedido_id`);
+          msjs.forEach(m=>conMsj.add(m.pedido_id));
+        }catch{}
+      }
+      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null,_solNombre:nombres[p.solicitante_id]||"Solicitante",_nuevo:!vistos.has(p.id),_msjNuevo:conMsj.has(p.id)})));
     }catch{}
   },[usuario.id,esFlete]);
   useEffect(()=>{cargar();const t=setInterval(cargar,15000);return()=>clearInterval(t);},[cargar]);
@@ -4192,7 +4221,7 @@ function VistaFlete({usuario,notif}){
 
         <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`}}>
           <div style={S.cardTitle}>💬 Chat con solicitante</div>
-          <Chat pedidoId={sel.id} tipoPedido="flete" miUsuario={usuario} otroUsuario={{id:sel.solicitante_id}}/>
+          <Chat pedidoId={sel.id} tipoPedido="flete" miUsuario={usuario} otroUsuario={{id:sel.solicitante_id}} onLeido={cargar}/>
         </div>
         </div>
       </div>
@@ -4230,7 +4259,7 @@ function VistaFlete({usuario,notif}){
             onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
             <div style={{display:"flex",justifyContent:"space-between"}}>
               <div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontWeight:p._nuevo?900:700,color:C.marron,fontSize:17}}>👤 {p._solNombre||"Solicitante"}<TagNuevo on={p._nuevo}/></div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontWeight:p._nuevo?900:700,color:C.marron,fontSize:17}}>👤 {p._solNombre||"Solicitante"}<TagNuevo on={p._nuevo}/><TagMsjNuevo on={p._msjNuevo}/></div>
                 <div style={{fontSize:16,color:C.marron,marginTop:2}}>{p.origen} → {p.destino}</div>
                 <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{p.fecha_deseada?new Date(p.fecha_deseada+"T12:00").toLocaleDateString("es-AR"):"Sin fecha definida"} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
               {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
@@ -4399,7 +4428,15 @@ function VistaFerreteria({usuario,notif}){
         const vs=await db.select("vistas_pedido",`?usuario_id=eq.${usuario.id}&tipo_pedido=eq.ferreteria&select=pedido_id`);
         vs.forEach(v=>vistos.add(v.pedido_id));
       }catch{}
-      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null,_nuevo:!vistos.has(p.id)})));
+      let conMsj=new Set();
+      if(d.length){
+        try{
+          const idsPed=d.map(p=>p.id).join(",");
+          const msjs=await db.select("mensajes",`?pedido_id=in.(${idsPed})&tipo_pedido=eq.ferreteria&para_usuario_id=eq.${usuario.id}&leido=eq.false&select=pedido_id`);
+          msjs.forEach(m=>conMsj.add(m.pedido_id));
+        }catch{}
+      }
+      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null,_nuevo:!vistos.has(p.id),_msjNuevo:conMsj.has(p.id)})));
     }catch{}
   },[usuario.id]);
   useEffect(()=>{cargar();const t=setInterval(cargar,15000);return()=>clearInterval(t);},[cargar]);
@@ -4596,7 +4633,7 @@ function VistaFerreteria({usuario,notif}){
 
       <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`}}>
         <div style={S.cardTitle}>💬 Chat con carpintería</div>
-        <Chat pedidoId={sel.id} tipoPedido="ferreteria" miUsuario={usuario} otroUsuario={{id:sel.carpinteria_id}}/>
+        <Chat pedidoId={sel.id} tipoPedido="ferreteria" miUsuario={usuario} otroUsuario={{id:sel.carpinteria_id}} onLeido={cargar}/>
       </div>
       </div>
     </div>
@@ -4634,7 +4671,7 @@ function VistaFerreteria({usuario,notif}){
           onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontWeight:p._nuevo?900:700,color:C.marron,fontSize:21}}>{p.descripcion}<TagNuevo on={p._nuevo}/></div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontWeight:p._nuevo?900:700,color:C.marron,fontSize:21}}>{p.descripcion}<TagNuevo on={p._nuevo}/><TagMsjNuevo on={p._msjNuevo}/></div>
               <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{Array.isArray(p.items)&&p.items.length>0?`${p.items.length} ítem${p.items.length>1?"s":""}`:`Cantidad: ${p.cantidad}`} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
               {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
             </div>
@@ -4683,7 +4720,15 @@ function VistaPintureria({usuario,notif}){
         const vs=await db.select("vistas_pedido",`?usuario_id=eq.${usuario.id}&tipo_pedido=eq.pintureria&select=pedido_id`);
         vs.forEach(v=>vistos.add(v.pedido_id));
       }catch{}
-      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null,_nuevo:!vistos.has(p.id)})));
+      let conMsj=new Set();
+      if(d.length){
+        try{
+          const idsPed=d.map(p=>p.id).join(",");
+          const msjs=await db.select("mensajes",`?pedido_id=in.(${idsPed})&tipo_pedido=eq.pintureria&para_usuario_id=eq.${usuario.id}&leido=eq.false&select=pedido_id`);
+          msjs.forEach(m=>conMsj.add(m.pedido_id));
+        }catch{}
+      }
+      setPedidos(d.map(p=>({...p,_miEstado:mias[p.id]?"cotizado":null,_nuevo:!vistos.has(p.id),_msjNuevo:conMsj.has(p.id)})));
     }catch{}
   },[usuario.id]);
   useEffect(()=>{cargar();const t=setInterval(cargar,15000);return()=>clearInterval(t);},[cargar]);
@@ -4880,7 +4925,7 @@ function VistaPintureria({usuario,notif}){
 
       <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`}}>
         <div style={S.cardTitle}>💬 Chat con carpintería</div>
-        <Chat pedidoId={sel.id} tipoPedido="pintureria" miUsuario={usuario} otroUsuario={{id:sel.carpinteria_id}}/>
+        <Chat pedidoId={sel.id} tipoPedido="pintureria" miUsuario={usuario} otroUsuario={{id:sel.carpinteria_id}} onLeido={cargar}/>
       </div>
       </div>
     </div>
@@ -4918,7 +4963,7 @@ function VistaPintureria({usuario,notif}){
           onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontWeight:p._nuevo?900:700,color:C.marron,fontSize:21}}>{p.descripcion}<TagNuevo on={p._nuevo}/></div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontWeight:p._nuevo?900:700,color:C.marron,fontSize:21}}>{p.descripcion}<TagNuevo on={p._nuevo}/><TagMsjNuevo on={p._msjNuevo}/></div>
               <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{Array.isArray(p.items)&&p.items.length>0?`${p.items.length} ítem${p.items.length>1?"s":""}`:[p.color&&`Color: ${p.color}`,p.litros&&`${p.litros} L`].filter(Boolean).join(" · ")} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
               {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
             </div>
