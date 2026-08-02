@@ -1917,7 +1917,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.6</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.7</div>
     </div>
   );
 }
@@ -2173,6 +2173,25 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
                 {it[k]&&<div style={{fontSize:17,color:C.textoSuave,marginTop:3,fontFamily:"monospace"}}>= {cmToMm(it[k])}mm · {cmToIn(it[k])}"</div>}
               </div>
             ))}
+          </div>
+
+          <div style={{marginTop:12}}>
+            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:17,color:C.textoSuave}}>
+              <input type="checkbox" checked={it.tieneCajones==="Sí"} onChange={e=>setIt(i,"tieneCajones",e.target.checked?"Sí":"No")}/>
+              ¿Lleva cajones?
+            </label>
+            {it.tieneCajones==="Sí"&&(
+              <div style={{...S.row,marginTop:8}}>
+                <div style={S.col()}>
+                  <label style={S.label}>¿Cuántos?</label>
+                  <input type="number" value={it.cantidadCajones} onChange={e=>setIt(i,"cantidadCajones",e.target.value)} placeholder="0" style={S.input}/>
+                </div>
+                <div style={S.col()}>
+                  <label style={S.label}>Medida aproximada</label>
+                  <input value={it.medidasCajones} onChange={e=>setIt(i,"medidasCajones",e.target.value)} placeholder='Ej: 40x30x15 cm' style={S.input}/>
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={{marginTop:12}}>
@@ -2443,6 +2462,7 @@ function VistaCliente({usuario,notif}){
                 <div style={S.col()}><div style={S.label}>Material</div><div>{mat?.label}{it.especie?` · ${it.especie}`:""}</div></div>
                 <div style={S.col()}><div style={S.label}>Terminación</div><div>{ter?.label}{it.color?` · ${it.color}`:""}</div></div>
               </div>
+              {it.tieneCajones&&<div style={{marginTop:6,fontSize:16}}><span style={S.label}>Cajones</span> {it.cantidadCajones||"—"}{it.medidasCajones?` · ${it.medidasCajones}`:""}</div>}
             </div>
           );
         })}
@@ -5064,6 +5084,7 @@ function PedidoClienteFormato({cliente,fecha,fechaLimite,items}){
             )}
             {fila("Material",mat?.label?`${mat.label}${it.especie?` · ${it.especie}`:""}`:null)}
             {fila("Terminación",ter?.label?`${ter.label}${it.color?` · ${it.color}`:""}`:null)}
+            {fila("Cajones",it.tieneCajones?`${it.cantidadCajones||"—"}${it.medidasCajones?` · ${it.medidasCajones}`:""}`:null)}
             {fila("Notas del croquis",it.notasCroquis)}
             {it.croquisImg&&(
               <div style={{padding:"10px 14px"}}>
