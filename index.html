@@ -1516,10 +1516,11 @@ function TagMsjNuevo({on}){
   return <span style={{marginLeft:8,fontSize:12,fontWeight:800,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>💬 Mensaje nuevo</span>;
 }
 
-// Punto verde: indica que hay novedades sin ver (sin contar cuántas)
+// Antes era un punto verde sin número (no se podía saber si realmente quedaba algo pendiente
+// o si el punto estaba pegado). Ahora muestra la cantidad real.
 function Badge9({n}){
   if(!n||n<=0)return null;
-  return <span style={{display:"inline-block",width:9,height:9,marginLeft:7,borderRadius:"50%",background:"#009966",verticalAlign:"middle"}}/>;
+  return <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:18,height:18,padding:"0 5px",marginLeft:7,borderRadius:"50%",background:"#009966",color:"#fff",fontSize:12,fontWeight:800,fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>{n}</span>;
 }
 
 // Marca un pedido como visto POR ESTE usuario (no global: cada proveedor tiene su propia marca)
@@ -1934,7 +1935,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.12</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.13</div>
     </div>
   );
 }
