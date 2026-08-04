@@ -1935,7 +1935,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.13</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.14</div>
     </div>
   );
 }
@@ -5413,6 +5413,153 @@ function Contacto({usuario,onCerrar}){
   );
 }
 
+// ─── PANEL DE ADMINISTRACIÓN (solo usuario.tipo==="admin") ────────────────────
+function AdminUsuarios(){
+  const [lista,setLista]=useState([]);
+  const [cargando,setCargando]=useState(true);
+  const [filtro,setFiltro]=useState("");
+  useEffect(()=>{(async()=>{
+    try{ const d=await db.select("usuarios","?order=created_at.desc"); setLista(d); }catch{}
+    setCargando(false);
+  })();},[]);
+  const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🎨",admin:"🛡️"};
+  const filtrados=filtro?lista.filter(u=>u.tipo===filtro):lista;
+  return(
+    <div>
+      <div style={{...S.cardTitle,fontSize:26,marginBottom:16}}>👥 Usuarios registrados ({lista.length})</div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+        <button style={S.btn(filtro===""?"dark":"ghost")} onClick={()=>setFiltro("")}>Todos</button>
+        {["cliente","carpinteria","aserradero","ferreteria","pintureria","flete"].map(t=>(
+          <button key={t} style={S.btn(filtro===t?"dark":"ghost")} onClick={()=>setFiltro(t)}>{EMOJIS[t]} {t}</button>
+        ))}
+      </div>
+      {cargando?<div style={S.card}>Cargando...</div>:(
+        <div style={S.card}>
+          {filtrados.length===0&&<div style={{color:C.textoSuave,textAlign:"center",padding:20}}>Sin usuarios en este filtro.</div>}
+          {filtrados.map(u=>(
+            <div key={u.id} style={{padding:"12px 0",borderBottom:`1px dashed ${C.borde}`}}>
+              <div style={{fontWeight:700,color:C.marron,fontSize:17}}>{EMOJIS[u.tipo]||"👤"} {u.nombre||"(sin nombre)"}{u.activo===false&&<span style={{marginLeft:8,fontSize:12,color:C.error,fontWeight:700}}>(dado de baja)</span>}</div>
+              <div style={{fontSize:15,color:C.textoSuave}}>{u.email||"sin email"} · {u.telefono||"sin teléfono"} · {u.tipo} · {u.created_at?new Date(u.created_at).toLocaleDateString("es-AR"):""}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminQuejas(){
+  const [lista,setLista]=useState([]);
+  const [sel,setSel]=useState(null);
+  const [respuesta,setRespuesta]=useState("");
+  const [guardando,setGuardando]=useState(false);
+  const [filtro,setFiltro]=useState("");
+  const cargar=useCallback(async()=>{
+    try{ const d=await db.select("quejas","?order=created_at.desc"); setLista(d); }catch{}
+  },[]);
+  useEffect(()=>{cargar();const t=setInterval(cargar,20000);return()=>clearInterval(t);},[cargar]);
+
+  const EMOJI_TIPO={pedido:"📦",usuario:"👤",app:"⚙️"};
+  const COLOR_ESTADO={nueva:C.rojo,en_revision:C.acento,resuelta:C.verde};
+  const LABEL_ESTADO={nueva:"Nueva",en_revision:"En revisión",resuelta:"Resuelta"};
+
+  const abrir=(q)=>{ setSel(q); setRespuesta(q.respuesta_admin||""); };
+
+  const cambiarEstado=async(estado)=>{
+    if(!sel)return;
+    setGuardando(true);
+    try{
+      await db.updateMin("quejas",{estado,respuesta_admin:respuesta||null,resuelta_at:estado==="resuelta"?new Date().toISOString():null},`id=eq.${sel.id}`);
+      setLista(ls=>ls.map(q=>q.id===sel.id?{...q,estado,respuesta_admin:respuesta||null}:q));
+      setSel(s=>s?{...s,estado,respuesta_admin:respuesta||null}:s);
+    }catch(e){alert("No se pudo guardar: "+(e.message||""));}
+    setGuardando(false);
+  };
+
+  if(sel){
+    return(
+      <div>
+        <button style={{...S.btn("ghost"),marginBottom:16}} onClick={()=>setSel(null)}>← Volver</button>
+        <div style={S.card}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
+            <div style={{fontWeight:800,color:C.marron,fontSize:20}}>{EMOJI_TIPO[sel.tipo]||"⚠️"} Queja sobre {sel.tipo==="pedido"?"un pedido":sel.tipo==="usuario"?"un usuario":"la app"}</div>
+            <span style={{background:COLOR_ESTADO[sel.estado]||C.suave,color:"#fff",fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:0}}>{LABEL_ESTADO[sel.estado]||sel.estado||"Nueva"}</span>
+          </div>
+          <div style={{fontSize:15,color:C.textoSuave,marginBottom:10}}>{sel.created_at?new Date(sel.created_at).toLocaleString("es-AR"):""}</div>
+          <Divider/>
+          <div style={{marginBottom:10}}><div style={S.label}>Quién la hizo</div><div style={{fontSize:15,fontFamily:"monospace"}}>{sel.usuario_id}</div></div>
+          <div style={{marginBottom:10}}><div style={S.label}>Descripción</div><div style={{fontSize:17}}>{sel.descripcion}</div></div>
+          {sel.pedido_id&&<div style={{marginBottom:10}}><div style={S.label}>Pedido relacionado</div><div style={{fontSize:15,fontFamily:"monospace"}}>{sel.pedido_id} {sel.tipo_pedido?`(${sel.tipo_pedido})`:""}</div></div>}
+          {sel.usuario_reportado_id&&<div style={{marginBottom:10}}><div style={S.label}>Usuario reportado</div><div style={{fontSize:15,fontFamily:"monospace"}}>{sel.usuario_reportado_id}</div></div>}
+          <Divider/>
+          <div style={{marginBottom:10}}>
+            <label style={S.label}>Respuesta / notas internas</label>
+            <textarea value={respuesta} onChange={e=>setRespuesta(e.target.value)} style={{...S.input,minHeight:80,resize:"vertical"}}/>
+          </div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <button style={S.btn(sel.estado==="en_revision"?"dark":"ghost")} disabled={guardando} onClick={()=>cambiarEstado("en_revision")}>🔎 Marcar en revisión</button>
+            <button style={S.btn(sel.estado==="resuelta"?"dark":"ghost")} disabled={guardando} onClick={()=>cambiarEstado("resuelta")}>✅ Marcar resuelta</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const filtradas=filtro?lista.filter(q=>(q.estado||"nueva")===filtro):lista;
+  return(
+    <div>
+      <div style={{...S.cardTitle,fontSize:26,marginBottom:16}}>⚠️ Quejas ({lista.length})</div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+        <button style={S.btn(filtro===""?"dark":"ghost")} onClick={()=>setFiltro("")}>Todas</button>
+        {["nueva","en_revision","resuelta"].map(e=>(
+          <button key={e} style={S.btn(filtro===e?"dark":"ghost")} onClick={()=>setFiltro(e)}>{LABEL_ESTADO[e]}</button>
+        ))}
+      </div>
+      {filtradas.length===0?(
+        <div style={S.card}><div style={{color:C.textoSuave,textAlign:"center",padding:20}}>No hay quejas en este filtro.</div></div>
+      ):filtradas.map(q=>(
+        <div key={q.id} style={{...S.card,cursor:"pointer"}} onClick={()=>abrir(q)}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+            <div style={{fontWeight:700,color:C.marron,fontSize:17}}>{EMOJI_TIPO[q.tipo]||"⚠️"} {q.descripcion?(q.descripcion.length>70?q.descripcion.slice(0,70)+"…":q.descripcion):"(sin descripción)"}</div>
+            <span style={{background:COLOR_ESTADO[q.estado]||C.rojo,color:"#fff",fontSize:12,fontWeight:700,padding:"3px 9px",borderRadius:0,whiteSpace:"nowrap"}}>{LABEL_ESTADO[q.estado||"nueva"]}</span>
+          </div>
+          <div style={{fontSize:14,color:C.textoSuave,marginTop:4}}>{q.created_at?new Date(q.created_at).toLocaleString("es-AR"):""}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function VistaAdmin({usuario,onSalir}){
+  const [tab,setTab]=useState("quejas");
+  return(
+    <div style={S.app}>
+      <div style={S.topbar}>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+          <img src={LOGO_B64} alt="Encastre" style={{width:46,height:46,objectFit:"contain",borderRadius:0}}/>
+          <div className="encastre-topbar-brand" style={{alignItems:"center",textAlign:"center"}}>
+            <div className="encastre-logo-name">ENCASTRE</div>
+            <span className="encastre-logo-sub">Panel de administración</span>
+          </div>
+        </div>
+        <nav style={{display:"flex",gap:6}}>
+          {[["quejas","⚠️ Quejas"],["usuarios","👥 Usuarios"]].map(([id,l])=>(
+            <button key={id} style={{background:tab===id?C.acento:"transparent",color:tab===id?C.marron:C.suave,border:tab===id?"none":`1px solid ${C.acento}44`,borderRadius:0,padding:"10px 20px",cursor:"pointer",fontSize:18,fontWeight:700,fontFamily:"'Lato',sans-serif"}} onClick={()=>setTab(id)}>{l}</button>
+          ))}
+        </nav>
+        <div style={{textAlign:"right"}}>
+          <div style={{fontSize:16,color:C.crema,fontWeight:700}}>🛡️ {usuario.nombre}</div>
+          <button onClick={onSalir} style={{background:"transparent",color:C.suave,border:`1px solid ${C.suave}44`,borderRadius:0,padding:"5px 12px",cursor:"pointer",fontSize:14,marginTop:4}}>← Salir</button>
+        </div>
+      </div>
+      <div style={S.main}>
+        {tab==="quejas"&&<AdminQuejas/>}
+        {tab==="usuarios"&&<AdminUsuarios/>}
+      </div>
+    </div>
+  );
+}
+
 function Papelera({usuario,onCerrar}){
   const [archivados,setArchivados]=useState([]);
   const [cargandoArch,setCargandoArch]=useState(false);
@@ -5863,13 +6010,6 @@ function App(){
     setNavTab("principal");
   };
 
-  const cerrar=async()=>{
-    try{await db.signOut(sesion?.token);}catch{}
-    db.limpiarSesion();
-    setSesion(null);
-    try{localStorage.removeItem("encastre_sesion");}catch{}
-  };
-
   const darDeBaja=async()=>{
     if(!window.confirm("¿Seguro que querés dar de baja tu cuenta? No vas a poder volver a ingresar con ella. Solo la administración puede reactivarla."))return;
     try{
@@ -5884,6 +6024,13 @@ function App(){
   if(!sesion) return <AuthScreen onAuth={handleAuth}/>;
 
   const {usuario}=sesion;
+  const cerrar=async()=>{
+    try{await db.signOut(sesion?.token);}catch{}
+    db.limpiarSesion();
+    setSesion(null);
+    try{localStorage.removeItem("encastre_sesion");}catch{}
+  };
+  if(usuario.tipo==="admin") return <VistaAdmin usuario={usuario} onSalir={async()=>{await cerrar();setMostrarBienvenida(true);}}/>;
   const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🎨"};
   const navPrincipal=usuario.tipo==="cliente"?"🪑 Mis pedidos":usuario.tipo==="carpinteria"?"🔨 Pedidos":usuario.tipo==="aserradero"?"🪵 Pedidos":usuario.tipo==="ferreteria"?"🔩 Pedidos":usuario.tipo==="pintureria"?"🎨 Pedidos":"🚚 Pedidos";
 
