@@ -1838,6 +1838,7 @@ function AuthScreen({onAuth}){
         if(perfiles.length===0){ try{ perfiles=await db.select("usuarios",`?email=eq.${encodeURIComponent(email.trim().toLowerCase())}&limit=1`); }catch{} }
         if(perfiles.length===0){db.limpiarSesion();setErr("Perfil no encontrado");setCargando(false);return;}
         if(perfiles[0].activo===false){db.limpiarSesion();setErr("Esta cuenta fue dada de baja. Escribí a carpinteriavetaraiz@gmail.com si querés reactivarla.");setCargando(false);return;}
+        if(perfiles[0].suspendido_hasta&&new Date(perfiles[0].suspendido_hasta)>new Date()){db.limpiarSesion();setErr(`Esta cuenta está suspendida hasta el ${new Date(perfiles[0].suspendido_hasta).toLocaleDateString("es-AR")}. Escribí a administracion@encastre.com.ar si tenés dudas.`);setCargando(false);return;}
         console.log("Usuario al login:",perfiles[0]);
         onAuth({token:access_token,refresh:signInRes.refresh_token,expira:Date.now()+((signInRes.expires_in||3600)*1000),usuario:perfiles[0]});
       }
@@ -1935,7 +1936,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.14</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.15</div>
     </div>
   );
 }
@@ -5418,12 +5419,124 @@ function AdminUsuarios(){
   const [lista,setLista]=useState([]);
   const [cargando,setCargando]=useState(true);
   const [filtro,setFiltro]=useState("");
+  const [sel,setSel]=useState(null);
+  const [nombreEdit,setNombreEdit]=useState("");
+  const [diasSusp,setDiasSusp]=useState("7");
+  const [guardando,setGuardando]=useState(false);
+  const [msg,setMsg]=useState("");
+
   useEffect(()=>{(async()=>{
     try{ const d=await db.select("usuarios","?order=created_at.desc"); setLista(d); }catch{}
     setCargando(false);
   })();},[]);
+
   const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🎨",admin:"🛡️"};
   const filtrados=filtro?lista.filter(u=>u.tipo===filtro):lista;
+  const suspendidoActivo=(u)=>u.suspendido_hasta&&new Date(u.suspendido_hasta)>new Date();
+
+  const abrir=(u)=>{ setSel(u); setNombreEdit(u.nombre||""); setDiasSusp("7"); setMsg(""); };
+
+  const guardarNombre=async()=>{
+    if(!sel||!nombreEdit.trim())return;
+    setGuardando(true);
+    try{
+      await db.updateMin("usuarios",{nombre:nombreEdit.trim()},`id=eq.${sel.id}`);
+      setLista(ls=>ls.map(u=>u.id===sel.id?{...u,nombre:nombreEdit.trim()}:u));
+      setSel(s=>s?{...s,nombre:nombreEdit.trim()}:s);
+      setMsg("✅ Nombre actualizado");
+    }catch(e){setMsg("❌ No se pudo guardar: "+(e.message||""));}
+    setGuardando(false);
+  };
+
+  const toggleBaja=async()=>{
+    if(!sel)return;
+    const nuevoActivo=sel.activo===false?true:false;
+    if(!window.confirm(nuevoActivo?"¿Reactivar esta cuenta?":"¿Dar de baja esta cuenta? No va a poder ingresar hasta que la reactives."))return;
+    setGuardando(true);
+    try{
+      await db.updateMin("usuarios",{activo:nuevoActivo},`id=eq.${sel.id}`);
+      setLista(ls=>ls.map(u=>u.id===sel.id?{...u,activo:nuevoActivo}:u));
+      setSel(s=>s?{...s,activo:nuevoActivo}:s);
+      setMsg(nuevoActivo?"✅ Cuenta reactivada":"✅ Cuenta dada de baja");
+    }catch(e){setMsg("❌ No se pudo guardar: "+(e.message||""));}
+    setGuardando(false);
+  };
+
+  const suspender=async()=>{
+    if(!sel)return;
+    const dias=Number(diasSusp)||0;
+    if(dias<=0){setMsg("❌ Poné una cantidad de días válida");return;}
+    const hasta=new Date(); hasta.setDate(hasta.getDate()+dias);
+    setGuardando(true);
+    try{
+      await db.updateMin("usuarios",{suspendido_hasta:hasta.toISOString()},`id=eq.${sel.id}`);
+      setLista(ls=>ls.map(u=>u.id===sel.id?{...u,suspendido_hasta:hasta.toISOString()}:u));
+      setSel(s=>s?{...s,suspendido_hasta:hasta.toISOString()}:s);
+      setMsg(`✅ Suspendida hasta el ${hasta.toLocaleDateString("es-AR")}`);
+    }catch(e){setMsg("❌ No se pudo guardar: "+(e.message||""));}
+    setGuardando(false);
+  };
+
+  const levantarSuspension=async()=>{
+    if(!sel)return;
+    setGuardando(true);
+    try{
+      await db.updateMin("usuarios",{suspendido_hasta:null},`id=eq.${sel.id}`);
+      setLista(ls=>ls.map(u=>u.id===sel.id?{...u,suspendido_hasta:null}:u));
+      setSel(s=>s?{...s,suspendido_hasta:null}:s);
+      setMsg("✅ Suspensión levantada");
+    }catch(e){setMsg("❌ No se pudo guardar: "+(e.message||""));}
+    setGuardando(false);
+  };
+
+  if(sel){
+    return(
+      <div>
+        <button style={{...S.btn("ghost"),marginBottom:16}} onClick={()=>setSel(null)}>← Volver</button>
+        <div style={S.card}>
+          <div style={{fontWeight:800,color:C.marron,fontSize:22,marginBottom:4}}>{EMOJIS[sel.tipo]||"👤"} {sel.nombre||"(sin nombre)"}</div>
+          <div style={{fontSize:15,color:C.textoSuave,marginBottom:14}}>{sel.email} · {sel.tipo} · alta {sel.created_at?new Date(sel.created_at).toLocaleDateString("es-AR"):""}</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
+            {sel.activo===false&&<span style={{background:C.error,color:"#fff",fontSize:13,fontWeight:700,padding:"4px 10px"}}>Dada de baja</span>}
+            {suspendidoActivo(sel)&&<span style={{background:C.rojo,color:"#fff",fontSize:13,fontWeight:700,padding:"4px 10px"}}>Suspendida hasta {new Date(sel.suspendido_hasta).toLocaleDateString("es-AR")}</span>}
+            {sel.activo!==false&&!suspendidoActivo(sel)&&<span style={{background:C.verde,color:"#fff",fontSize:13,fontWeight:700,padding:"4px 10px"}}>Activa</span>}
+          </div>
+
+          <Divider/>
+          <div style={S.secTitle}>✏️ Cambiar nombre</div>
+          <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+            <input style={{...S.input,flex:1,minWidth:200}} value={nombreEdit} onChange={e=>setNombreEdit(e.target.value)}/>
+            <button style={S.btn("dark")} disabled={guardando} onClick={guardarNombre}>Guardar</button>
+          </div>
+
+          <Divider/>
+          <div style={S.secTitle}>{sel.activo===false?"↩️ Reactivar cuenta":"🚫 Dar de baja"}</div>
+          <div style={{fontSize:15,color:C.textoSuave,marginBottom:8}}>{sel.activo===false?"La cuenta está dada de baja. Al reactivarla, vuelve a poder ingresar.":"La cuenta deja de poder ingresar hasta que la reactives."}</div>
+          <button style={S.btn(sel.activo===false?"dark":"ghost")} disabled={guardando} onClick={toggleBaja}>{sel.activo===false?"↩️ Reactivar":"🚫 Dar de baja"}</button>
+
+          <Divider/>
+          <div style={S.secTitle}>⏱️ Suspender temporalmente</div>
+          {suspendidoActivo(sel)?(
+            <div>
+              <div style={{fontSize:15,color:C.textoSuave,marginBottom:8}}>Suspendida hasta el {new Date(sel.suspendido_hasta).toLocaleDateString("es-AR")}.</div>
+              <button style={S.btn("ghost")} disabled={guardando} onClick={levantarSuspension}>✅ Levantar suspensión ahora</button>
+            </div>
+          ):(
+            <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
+              <div>
+                <label style={S.label}>Días</label>
+                <input type="number" value={diasSusp} onChange={e=>setDiasSusp(e.target.value)} style={{...S.input,width:100}}/>
+              </div>
+              <button style={S.btn("dark")} disabled={guardando} onClick={suspender}>⏱️ Suspender</button>
+            </div>
+          )}
+
+          {msg&&<div style={{marginTop:14,fontWeight:700,color:msg.startsWith("❌")?C.error:C.exito}}>{msg}</div>}
+        </div>
+      </div>
+    );
+  }
+
   return(
     <div>
       <div style={{...S.cardTitle,fontSize:26,marginBottom:16}}>👥 Usuarios registrados ({lista.length})</div>
@@ -5437,9 +5550,12 @@ function AdminUsuarios(){
         <div style={S.card}>
           {filtrados.length===0&&<div style={{color:C.textoSuave,textAlign:"center",padding:20}}>Sin usuarios en este filtro.</div>}
           {filtrados.map(u=>(
-            <div key={u.id} style={{padding:"12px 0",borderBottom:`1px dashed ${C.borde}`}}>
-              <div style={{fontWeight:700,color:C.marron,fontSize:17}}>{EMOJIS[u.tipo]||"👤"} {u.nombre||"(sin nombre)"}{u.activo===false&&<span style={{marginLeft:8,fontSize:12,color:C.error,fontWeight:700}}>(dado de baja)</span>}</div>
-              <div style={{fontSize:15,color:C.textoSuave}}>{u.email||"sin email"} · {u.telefono||"sin teléfono"} · {u.tipo} · {u.created_at?new Date(u.created_at).toLocaleDateString("es-AR"):""}</div>
+            <div key={u.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,padding:"12px 0",borderBottom:`1px dashed ${C.borde}`}}>
+              <div>
+                <div style={{fontWeight:700,color:C.marron,fontSize:17}}>{EMOJIS[u.tipo]||"👤"} {u.nombre||"(sin nombre)"}{u.activo===false&&<span style={{marginLeft:8,fontSize:12,color:C.error,fontWeight:700}}>(dado de baja)</span>}{suspendidoActivo(u)&&<span style={{marginLeft:8,fontSize:12,color:C.rojo,fontWeight:700}}>(suspendida)</span>}</div>
+                <div style={{fontSize:15,color:C.textoSuave}}>{u.email||"sin email"} · {u.telefono||"sin teléfono"} · {u.tipo} · {u.created_at?new Date(u.created_at).toLocaleDateString("es-AR"):""}</div>
+              </div>
+              <button style={{...S.btn("ghost"),whiteSpace:"nowrap"}} onClick={()=>abrir(u)}>⚙️ Configurar</button>
             </div>
           ))}
         </div>
