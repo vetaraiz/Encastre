@@ -1936,7 +1936,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.16</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.17</div>
     </div>
   );
 }
@@ -5679,6 +5679,7 @@ function VistaAdmin({usuario,onSalir}){
 function ReportarQueja({usuario,onCerrar}){
   const [tipo,setTipo]=useState("pedido");
   const [tipoPedidoRef,setTipoPedidoRef]=useState("cliente");
+  const [rolReportado,setRolReportado]=useState("");
   const [referencia,setReferencia]=useState("");
   const [descripcion,setDescripcion]=useState("");
   const [enviando,setEnviando]=useState(false);
@@ -5687,6 +5688,15 @@ function ReportarQueja({usuario,onCerrar}){
 
   const TIPOS=[["pedido","📦 Sobre un pedido"],["usuario","👤 Sobre un usuario"],["app","⚙️ Sobre la app"]];
   const CIRCUITOS=[["cliente","Cliente → Carpintería"],["aserradero","Carpintería → Aserradero"],["ferreteria","Carpintería → Ferretería"],["pintureria","Carpintería → Pinturería"],["flete","Flete"]];
+  const ROLES={cliente:"Cliente",carpinteria:"Carpintería",aserradero:"Aserradero",ferreteria:"Ferretería",pintureria:"Pinturería",flete:"Flete"};
+  // Con quién tiene trato cada tipo de usuario (define a quién puede reportar)
+  const opcionesUsuario=(usuario.tipo==="carpinteria"
+    ? ["cliente","aserradero","ferreteria","pintureria","flete"]
+    : usuario.tipo==="cliente"
+    ? ["carpinteria"]
+    : ["carpinteria","flete"]
+  ).filter(r=>r!==usuario.tipo);
+  useEffect(()=>{ if(!rolReportado&&opcionesUsuario.length) setRolReportado(opcionesUsuario[0]); },[]);
 
   const enviar=async()=>{
     if(!descripcion.trim()){ setErr("Contanos qué pasó."); setOk(""); return; }
@@ -5694,7 +5704,7 @@ function ReportarQueja({usuario,onCerrar}){
     try{
       let desc=descripcion.trim();
       if(tipo==="pedido") desc=`Circuito: ${CIRCUITOS.find(c=>c[0]===tipoPedidoRef)?.[1]||tipoPedidoRef}${referencia.trim()?` · Referencia: ${referencia.trim()}`:""}\n\n${desc}`;
-      else if(tipo==="usuario"&&referencia.trim()) desc=`Usuario reportado: ${referencia.trim()}\n\n${desc}`;
+      else if(tipo==="usuario") desc=`Usuario reportado: ${ROLES[rolReportado]||rolReportado}${referencia.trim()?` · ${referencia.trim()}`:""}\n\n${desc}`;
       await db.insertMin("quejas",{tipo,usuario_id:usuario.id,tipo_pedido:tipo==="pedido"?tipoPedidoRef:null,descripcion:desc,estado:"nueva"});
       setOk("¡Recibido! Lo vamos a revisar a la brevedad.");
       setDescripcion(""); setReferencia("");
@@ -5728,6 +5738,10 @@ function ReportarQueja({usuario,onCerrar}){
         {tipo==="usuario"&&(
           <div style={{marginBottom:14}}>
             <label style={S.label}>¿A quién querés reportar?</label>
+            <select value={rolReportado} onChange={e=>setRolReportado(e.target.value)} style={{...S.input,marginBottom:8}}>
+              {opcionesUsuario.map(r=><option key={r} value={r}>{ROLES[r]}</option>)}
+            </select>
+            <label style={S.label}>Nombre o email <span style={{fontWeight:400,color:C.textoSuave}}>(para identificarlo)</span></label>
             <input value={referencia} onChange={e=>setReferencia(e.target.value)} placeholder="Nombre o email del usuario" style={S.input}/>
           </div>
         )}
