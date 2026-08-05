@@ -1936,7 +1936,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.17</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.19</div>
     </div>
   );
 }
@@ -5646,6 +5646,131 @@ function AdminQuejas(){
   );
 }
 
+const CIRCUITOS_MOV=[
+  {id:"cliente",label:"🪑 Cliente → Carpintería",tablaPed:"pedidos",tablaCot:"presupuestos",campoReqId:"cliente_id",campoProvId:"carpinteria_id"},
+  {id:"aserradero",label:"🪵 Carpintería → Aserradero",tablaPed:"pedidos_aserradero",tablaCot:"cotizaciones_aserradero",campoReqId:"carpinteria_id",campoProvId:"aserradero_id"},
+  {id:"ferreteria",label:"🔩 Carpintería → Ferretería",tablaPed:"pedidos_ferreteria",tablaCot:"cotizaciones_ferreteria",campoReqId:"carpinteria_id",campoProvId:"ferreteria_id"},
+  {id:"pintureria",label:"🎨 Carpintería → Pinturería",tablaPed:"pedidos_pintureria",tablaCot:"cotizaciones_pintureria",campoReqId:"carpinteria_id",campoProvId:"pintureria_id"},
+  {id:"flete",label:"🚚 Flete",tablaPed:"pedidos_flete",tablaCot:"cotizaciones_flete",campoReqId:"solicitante_id",campoProvId:"flete_id"},
+];
+
+function AdminMovimientos(){
+  const [circuito,setCircuito]=useState("cliente");
+  const [pedidos,setPedidos]=useState([]);
+  const [nombres,setNombres]=useState({});
+  const [cargando,setCargando]=useState(true);
+  const [sel,setSel]=useState(null);
+  const [cots,setCots]=useState([]);
+  const [cargandoCots,setCargandoCots]=useState(false);
+  const [cotAbierta,setCotAbierta]=useState(null);
+
+  const cfg=CIRCUITOS_MOV.find(c=>c.id===circuito);
+
+  useEffect(()=>{
+    setSel(null); setCots([]); setCotAbierta(null);
+    (async()=>{
+      setCargando(true);
+      try{
+        const d=await db.select(cfg.tablaPed,"?order=created_at.desc");
+        const ids=[...new Set(d.map(p=>p[cfg.campoReqId]).filter(Boolean))];
+        let mapa={};
+        if(ids.length){
+          try{ const us=await db.select("usuarios",`?id=in.(${ids.join(",")})&select=id,nombre`); us.forEach(u=>{mapa[u.id]=u.nombre;}); }catch{}
+        }
+        setNombres(mapa);
+        setPedidos(d);
+      }catch{ setPedidos([]); }
+      setCargando(false);
+    })();
+  },[circuito]);
+
+  const abrir=async(p)=>{
+    setSel(p); setCotAbierta(null);
+    setCargandoCots(true);
+    try{
+      const c=await db.select(cfg.tablaCot,`?pedido_id=eq.${p.id}&order=created_at.desc`);
+      const idsProv=[...new Set(c.map(x=>x[cfg.campoProvId]).filter(Boolean))];
+      let mapaProv={};
+      if(idsProv.length){
+        try{ const us=await db.select("usuarios",`?id=in.(${idsProv.join(",")})`); us.forEach(u=>{mapaProv[u.id]=u;}); }catch{}
+      }
+      setCots(c.map(x=>({...x,_proveedor:mapaProv[x[cfg.campoProvId]]||{}})));
+    }catch{ setCots([]); }
+    setCargandoCots(false);
+  };
+
+  const tituloPedido=(p)=>p.descripcion||p.material||(p.origen?`${p.origen}${p.destino?" → "+p.destino:""}`:"(sin descripción)");
+
+  return(
+    <div>
+      <div style={{...S.cardTitle,fontSize:26,marginBottom:8}}>📊 Movimientos</div>
+      <div style={{fontSize:14,color:C.textoSuave,marginBottom:16}}>Acá se ven todas las cotizaciones de un mismo pedido juntas, incluso entre proveedores que compiten entre sí. Esta vista es exclusiva de administración — ningún otro usuario tiene acceso a esto ni sabe que existe.</div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+        {CIRCUITOS_MOV.map(c=><button key={c.id} style={S.btn(circuito===c.id?"dark":"ghost")} onClick={()=>setCircuito(c.id)}>{c.label}</button>)}
+      </div>
+
+      {sel?(
+        <div>
+          <button style={{...S.btn("ghost"),marginBottom:16}} onClick={()=>setSel(null)}>← Volver a la lista</button>
+          <div style={S.card}>
+            <div style={{fontWeight:800,color:C.marron,fontSize:20,marginBottom:6}}>{nombres[sel[cfg.campoReqId]]||"—"}</div>
+            <div style={{fontSize:15,color:C.textoSuave,marginBottom:14}}>{tituloPedido(sel)} · {sel.created_at?new Date(sel.created_at).toLocaleString("es-AR"):""}</div>
+            <Divider/>
+            <div style={{fontWeight:700,color:C.marron,marginBottom:10}}>💰 Cotizaciones recibidas ({cots.length})</div>
+            {cargandoCots?<div style={{color:C.textoSuave}}>Cargando...</div>:cots.length===0?(
+              <div style={{color:C.textoSuave,fontStyle:"italic"}}>Todavía no tiene cotizaciones.</div>
+            ):cots.map(ct=>{
+              const abierta=cotAbierta===ct.id;
+              return(
+                <div key={ct.id} style={{border:`1px solid ${abierta?C.acento:C.borde}`,borderRadius:0,marginBottom:10,overflow:"hidden"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}} onClick={()=>setCotAbierta(abierta?null:ct.id)}>
+                    <b style={{color:C.marron}}>{ct._proveedor?.nombre||"(proveedor)"}</b>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <b style={{color:C.verde}}>{fmtPeso(ct.precio_total)}</b>
+                      <span style={{color:C.textoSuave}}>{abierta?"▲":"▼"}</span>
+                    </div>
+                  </div>
+                  {abierta&&(
+                    <div style={{padding:"0 14px 14px"}}>
+                      <PresupuestoFormato
+                        empresa={ct._proveedor||{}}
+                        cliente={{}}
+                        items={ct.items||[]}
+                        opts={{descuento_tipo:ct.descuento_tipo,descuento_valor:ct.descuento_valor,iva_pct:ct.iva_porcentaje}}
+                        numero={ct.numero_presupuesto!=null?ct.numero_presupuesto:""}
+                        fecha={ct.created_at?new Date(ct.created_at).toLocaleDateString("es-AR"):null}
+                        tiempoEntrega={ct.tiempo_entrega}
+                        esEmpresa={false}
+                        aceptado={false}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ):cargando?(
+        <div style={S.card}>Cargando...</div>
+      ):(
+        <div style={S.card}>
+          <div style={{fontWeight:700,color:C.marron,marginBottom:10}}>{cfg.label} ({pedidos.length})</div>
+          {pedidos.length===0&&<div style={{color:C.textoSuave,textAlign:"center",padding:20}}>Sin pedidos en este circuito.</div>}
+          {pedidos.map(p=>(
+            <div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:`1px dashed ${C.borde}`,cursor:"pointer"}} onClick={()=>abrir(p)}>
+              <div>
+                <div style={{fontWeight:700,color:C.marron,fontSize:17}}>{nombres[p[cfg.campoReqId]]||"—"}</div>
+                <div style={{fontSize:15,color:C.textoSuave}}>{tituloPedido(p)} · {p.created_at?new Date(p.created_at).toLocaleDateString("es-AR"):""}</div>
+              </div>
+              <span style={{color:C.textoSuave}}>▶</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function VistaAdmin({usuario,onSalir}){
   const [tab,setTab]=useState("quejas");
   return(
@@ -5659,7 +5784,7 @@ function VistaAdmin({usuario,onSalir}){
           </div>
         </div>
         <nav style={{display:"flex",gap:6}}>
-          {[["quejas","⚠️ Quejas"],["usuarios","👥 Usuarios"]].map(([id,l])=>(
+          {[["quejas","⚠️ Quejas"],["usuarios","👥 Usuarios"],["movimientos","📊 Movimientos"]].map(([id,l])=>(
             <button key={id} style={{background:tab===id?C.acento:"transparent",color:tab===id?C.marron:C.suave,border:tab===id?"none":`1px solid ${C.acento}44`,borderRadius:0,padding:"10px 20px",cursor:"pointer",fontSize:18,fontWeight:700,fontFamily:"'Lato',sans-serif"}} onClick={()=>setTab(id)}>{l}</button>
           ))}
         </nav>
@@ -5671,6 +5796,7 @@ function VistaAdmin({usuario,onSalir}){
       <div style={S.main}>
         {tab==="quejas"&&<AdminQuejas/>}
         {tab==="usuarios"&&<AdminUsuarios/>}
+        {tab==="movimientos"&&<AdminMovimientos/>}
       </div>
     </div>
   );
