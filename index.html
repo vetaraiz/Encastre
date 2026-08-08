@@ -1936,7 +1936,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.19</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.20</div>
     </div>
   );
 }
@@ -5783,7 +5783,7 @@ function VistaAdmin({usuario,onSalir}){
             <span className="encastre-logo-sub">Panel de administración</span>
           </div>
         </div>
-        <nav style={{display:"flex",gap:6}}>
+        <nav className="tabs-mobile" style={{display:"flex",gap:6}}>
           {[["quejas","⚠️ Quejas"],["usuarios","👥 Usuarios"],["movimientos","📊 Movimientos"]].map(([id,l])=>(
             <button key={id} style={{background:tab===id?C.acento:"transparent",color:tab===id?C.marron:C.suave,border:tab===id?"none":`1px solid ${C.acento}44`,borderRadius:0,padding:"10px 20px",cursor:"pointer",fontSize:18,fontWeight:700,fontFamily:"'Lato',sans-serif"}} onClick={()=>setTab(id)}>{l}</button>
           ))}
@@ -6267,7 +6267,7 @@ function NavBar({usuario,navPrincipal,navTab,setNavTab}){
   if(usuario.tipo!=="flete") items.push(["flete","🚚 Fletes",badges.flete]);
   if(usuario.tipo==="cliente"||usuario.tipo==="carpinteria") items.push(["conversor","📐 Conversor",0]);
   return(
-    <nav style={{display:"flex",gap:6}}>
+    <nav className="tabs-mobile" style={{display:"flex",gap:6}}>
       {items.map(([id,l,n])=>(
         <button key={id} style={{background:navTab===id?C.acento:"transparent",color:navTab===id?C.marron:C.suave,border:navTab===id?"none":`1px solid ${C.acento}44`,borderRadius:0,padding:"10px 20px",cursor:"pointer",fontSize:18,fontWeight:n>0?900:700,fontFamily:"'Lato',sans-serif",transition:"all .15s"}} onClick={()=>setNavTab(id)}>{l}<Badge9 n={n}/></button>
       ))}
