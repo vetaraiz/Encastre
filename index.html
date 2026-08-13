@@ -1792,7 +1792,12 @@ function AuthScreen({onAuth}){
         const docLimpio=soloDigitos(documento);
         const signUpRes=await db.signUp(email.trim().toLowerCase(),pass);
         const error=signUpRes.error;
-        if(error){setErr(error.message||"Error al registrar");setCargando(false);return;}
+        if(error){
+          const msgErr=(error.message||"").toLowerCase();
+          const yaRegistrado=msgErr.includes("already registered")||msgErr.includes("already exists")||msgErr.includes("already been registered");
+          setErr(yaRegistrado?"No pudimos completar el registro con esos datos. Si ya tenés una cuenta, iniciá sesión, o usá '¿Olvidaste tu contraseña?' para recuperarla.":(error.message||"Error al registrar"));
+          setCargando(false);return;
+        }
         let tokenReg=signUpRes.access_token?{token:signUpRes.access_token,refresh:signUpRes.refresh_token,expira:Date.now()+((signUpRes.expires_in||3600)*1000)}:null;
         let userId=(signUpRes.data?.user||signUpRes.user||signUpRes)?.id||signUpRes?.id;
         if(!tokenReg){
@@ -1808,7 +1813,7 @@ function AuthScreen({onAuth}){
               if(ya.length>0){ db.limpiarSesion(); setOk("Esa cuenta ya existe y está completa. Iniciá sesión."); setModo("login"); setCargando(false); return; }
             }catch{}
           } else {
-            setErr("Este email ya está registrado. Iniciá sesión, o usá '¿Olvidaste tu contraseña?' para recuperarla.");
+            setErr("No pudimos completar el registro con esos datos. Si ya tenés una cuenta, iniciá sesión, o usá '¿Olvidaste tu contraseña?' para recuperarla.");
             setCargando(false);
             return;
           }
@@ -1936,7 +1941,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-07-28.21</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-13.1</div>
     </div>
   );
 }
