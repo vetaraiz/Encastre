@@ -1308,7 +1308,7 @@ const db = {
   async update(t,d,q){ const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?${q}`,{method:"PATCH",headers:await this.hdr(),body:JSON.stringify(d)}); if(!r.ok)throw new Error(await r.text()); return r.json(); },
   async updateMin(t,d,q){ const h=await this.hdr(); const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?${q}`,{method:"PATCH",headers:{...h,"Prefer":"return=minimal"},body:JSON.stringify(d)}); if(!r.ok)throw new Error(await r.text()); return true; },
   async remove(t,q){ const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?${q}`,{method:"DELETE",headers:await this.hdr()}); if(!r.ok)throw new Error(await r.text()); return true; },
-  async signUp(e,p,captchaToken){ const body={email:e,password:p}; if(captchaToken) body.gotrue_meta_security={captcha_token:captchaToken}; const r=await fetch(`${SUPABASE_URL}/auth/v1/signup`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify(body)}); return r.json(); },
+  async signUp(e,p,captchaToken){ const body={email:e,password:p}; if(captchaToken) body.gotrue_meta_security={captcha_token:captchaToken}; const r=await fetch(`${SUPABASE_URL}/auth/v1/signup`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify(body)}); const data=await r.json(); data._httpOk=r.ok; return data; },
   async signIn(e,p,captchaToken){ const body={email:e,password:p}; if(captchaToken) body.gotrue_meta_security={captcha_token:captchaToken}; const r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify(body)}); return r.json(); },
   async signOut(tk){ await fetch(`${SUPABASE_URL}/auth/v1/logout`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${tk}`}}); },
   async updatePassword(nueva){ const tk=await this.tokenActual(); const r=await fetch(`${SUPABASE_URL}/auth/v1/user`,{method:"PUT",headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${tk}`,"Content-Type":"application/json"},body:JSON.stringify({password:nueva})}); const d=await r.json(); if(!r.ok)throw new Error(d.msg||d.error_description||d.error||"No se pudo cambiar la contraseña"); return d; },
@@ -1824,11 +1824,12 @@ function AuthScreen({onAuth}){
         const tipoDoc=entidad==="empresa"?"CUIT":"DNI";
         const docLimpio=soloDigitos(documento);
         const signUpRes=await db.signUp(email.trim().toLowerCase(),pass,captchaToken);
-        const error=signUpRes.error;
-        if(error){
-          const msgErr=(error.message||"").toLowerCase();
+        if(!signUpRes._httpOk){
+          const rawMsg=(signUpRes.msg||signUpRes.error_description||signUpRes.message||(typeof signUpRes.error==="string"?signUpRes.error:signUpRes.error?.message)||"").toString();
+          const msgErr=rawMsg.toLowerCase();
           const yaRegistrado=msgErr.includes("already registered")||msgErr.includes("already exists")||msgErr.includes("already been registered");
-          setErr(yaRegistrado?"No pudimos completar el registro con esos datos. Si ya tenés una cuenta, iniciá sesión, o usá '¿Olvidaste tu contraseña?' para recuperarla.":(error.message||"Error al registrar"));
+          const passDebil=msgErr.includes("password")&&(msgErr.includes("character")||msgErr.includes("weak")||msgErr.includes("least"));
+          setErr(yaRegistrado?"No pudimos completar el registro con esos datos. Si ya tenés una cuenta, iniciá sesión, o usá '¿Olvidaste tu contraseña?' para recuperarla.":passDebil?"La contraseña no cumple los requisitos: mínimo 8 caracteres, con mayúsculas, minúsculas, números y símbolos.":(rawMsg||"No se pudo completar el registro. Revisá los datos e intentá de nuevo."));
           resetCaptcha();setCargando(false);return;
         }
         let tokenReg=signUpRes.access_token?{token:signUpRes.access_token,refresh:signUpRes.refresh_token,expira:Date.now()+((signUpRes.expires_in||3600)*1000)}:null;
@@ -1987,7 +1988,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-14.1</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-14.2</div>
     </div>
   );
 }
