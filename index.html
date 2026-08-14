@@ -101,6 +101,7 @@
       .row-mobile { flex-direction: column !important; }
     }
   </style>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
   <div id="root"></div>
@@ -1307,8 +1308,8 @@ const db = {
   async update(t,d,q){ const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?${q}`,{method:"PATCH",headers:await this.hdr(),body:JSON.stringify(d)}); if(!r.ok)throw new Error(await r.text()); return r.json(); },
   async updateMin(t,d,q){ const h=await this.hdr(); const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?${q}`,{method:"PATCH",headers:{...h,"Prefer":"return=minimal"},body:JSON.stringify(d)}); if(!r.ok)throw new Error(await r.text()); return true; },
   async remove(t,q){ const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?${q}`,{method:"DELETE",headers:await this.hdr()}); if(!r.ok)throw new Error(await r.text()); return true; },
-  async signUp(e,p){ const r=await fetch(`${SUPABASE_URL}/auth/v1/signup`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:e,password:p})}); return r.json(); },
-  async signIn(e,p){ const r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:e,password:p})}); return r.json(); },
+  async signUp(e,p,captchaToken){ const body={email:e,password:p}; if(captchaToken) body.gotrue_meta_security={captcha_token:captchaToken}; const r=await fetch(`${SUPABASE_URL}/auth/v1/signup`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify(body)}); return r.json(); },
+  async signIn(e,p,captchaToken){ const body={email:e,password:p}; if(captchaToken) body.gotrue_meta_security={captcha_token:captchaToken}; const r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify(body)}); return r.json(); },
   async signOut(tk){ await fetch(`${SUPABASE_URL}/auth/v1/logout`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${tk}`}}); },
   async updatePassword(nueva){ const tk=await this.tokenActual(); const r=await fetch(`${SUPABASE_URL}/auth/v1/user`,{method:"PUT",headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${tk}`,"Content-Type":"application/json"},body:JSON.stringify({password:nueva})}); const d=await r.json(); if(!r.ok)throw new Error(d.msg||d.error_description||d.error||"No se pudo cambiar la contraseña"); return d; },
   // ---- PUSH: suscribir / desuscribir este dispositivo ----
@@ -1758,6 +1759,31 @@ function AuthScreen({onAuth}){
   const [cargando,setCargando]=useState(false);
   const [entidad,setEntidad]=useState("");
   const [documento,setDocumento]=useState("");
+  const [captchaToken,setCaptchaToken]=useState("");
+  const captchaWidgetId=useRef(null);
+  const CAPTCHA_SITE_KEY="0x4AAAAAAEQA-qNlI1IMVVKL";
+
+  useEffect(()=>{
+    let intentos=0;
+    const montar=()=>{
+      if(window.turnstile&&document.getElementById("cf-turnstile-widget")){
+        if(captchaWidgetId.current!==null){ try{window.turnstile.remove(captchaWidgetId.current);}catch{} }
+        captchaWidgetId.current=window.turnstile.render("#cf-turnstile-widget",{
+          sitekey:CAPTCHA_SITE_KEY,
+          callback:(token)=>setCaptchaToken(token),
+          "expired-callback":()=>setCaptchaToken(""),
+          "error-callback":()=>setCaptchaToken(""),
+        });
+      } else if(intentos<20){ intentos++; setTimeout(montar,250); }
+    };
+    montar();
+    return ()=>{ if(window.turnstile&&captchaWidgetId.current!==null){ try{window.turnstile.remove(captchaWidgetId.current);}catch{} } };
+  },[modo]);
+
+  const resetCaptcha=()=>{
+    if(window.turnstile&&captchaWidgetId.current!==null){ try{window.turnstile.reset(captchaWidgetId.current);}catch{} }
+    setCaptchaToken("");
+  };
 
   const soloDigitos=s=>(s||"").replace(/\D/g,"");
   const validarCUIT=(raw)=>{
@@ -1790,19 +1816,19 @@ function AuthScreen({onAuth}){
         if(entidad==="persona"&&!validarDNI(documento)){setErr("El DNI no parece válido. Debe tener 7 u 8 números, sin puntos.");setCargando(false);return;}
         const tipoDoc=entidad==="empresa"?"CUIT":"DNI";
         const docLimpio=soloDigitos(documento);
-        const signUpRes=await db.signUp(email.trim().toLowerCase(),pass);
+        const signUpRes=await db.signUp(email.trim().toLowerCase(),pass,captchaToken);
         const error=signUpRes.error;
         if(error){
           const msgErr=(error.message||"").toLowerCase();
           const yaRegistrado=msgErr.includes("already registered")||msgErr.includes("already exists")||msgErr.includes("already been registered");
           setErr(yaRegistrado?"No pudimos completar el registro con esos datos. Si ya tenés una cuenta, iniciá sesión, o usá '¿Olvidaste tu contraseña?' para recuperarla.":(error.message||"Error al registrar"));
-          setCargando(false);return;
+          resetCaptcha();setCargando(false);return;
         }
         let tokenReg=signUpRes.access_token?{token:signUpRes.access_token,refresh:signUpRes.refresh_token,expira:Date.now()+((signUpRes.expires_in||3600)*1000)}:null;
         let userId=(signUpRes.data?.user||signUpRes.user||signUpRes)?.id||signUpRes?.id;
         if(!tokenReg){
           // El mail ya tenía credencial (intento anterior). Probamos entrar con esa clave para completar la ficha.
-          const reIn=await db.signIn(email.trim().toLowerCase(),pass);
+          const reIn=await db.signIn(email.trim().toLowerCase(),pass,captchaToken);
           if(reIn.access_token){
             tokenReg={token:reIn.access_token,refresh:reIn.refresh_token,expira:Date.now()+((reIn.expires_in||3600)*1000)};
             userId=reIn.user?.id||userId;
@@ -1813,6 +1839,7 @@ function AuthScreen({onAuth}){
               if(ya.length>0){ db.limpiarSesion(); setOk("Esa cuenta ya existe y está completa. Iniciá sesión."); setModo("login"); setCargando(false); return; }
             }catch{}
           } else {
+            resetCaptcha();
             setErr("No pudimos completar el registro con esos datos. Si ya tenés una cuenta, iniciá sesión, o usá '¿Olvidaste tu contraseña?' para recuperarla.");
             setCargando(false);
             return;
@@ -1831,10 +1858,10 @@ function AuthScreen({onAuth}){
         setOk("¡Cuenta creada! Ahora iniciá sesión.");
         setModo("login");
       }else{
-        const signInRes=await db.signIn(email.trim().toLowerCase(),pass);
+        const signInRes=await db.signIn(email.trim().toLowerCase(),pass,captchaToken);
         const access_token=signInRes.access_token;
         const error=signInRes.error;
-        if(error||!access_token){setErr("Email o contraseña incorrectos");setCargando(false);return;}
+        if(error||!access_token){resetCaptcha();setErr("Email o contraseña incorrectos");setCargando(false);return;}
         // Presentarse ante la base antes de buscar el perfil (necesario con la seguridad activada)
         db.setSesion({token:access_token,refresh:signInRes.refresh_token,expira:Date.now()+((signInRes.expires_in||3600)*1000)});
         const uidAuth=signInRes.user?.id;
@@ -1848,6 +1875,8 @@ function AuthScreen({onAuth}){
         onAuth({token:access_token,refresh:signInRes.refresh_token,expira:Date.now()+((signInRes.expires_in||3600)*1000),usuario:perfiles[0]});
       }
     }catch(e){setErr("Error: "+(e.message||"Revisá tu conexión"));}
+    if(window.turnstile&&captchaWidgetId.current!==null){ try{window.turnstile.reset(captchaWidgetId.current);}catch{} }
+    setCaptchaToken("");
     setCargando(false);
   };
 
@@ -1919,6 +1948,8 @@ function AuthScreen({onAuth}){
           </div>
         </div>
 
+        <div id="cf-turnstile-widget" style={{marginBottom:16,display:"flex",justifyContent:"center"}}></div>
+
         {err&&<div style={{fontSize:17,color:C.rojo,background:C.rojo+"11",border:`1px solid ${C.rojo}33`,borderRadius:0,padding:"8px 12px",marginBottom:12}}>{err}</div>}
         {ok&&<div style={{fontSize:17,color:C.verde,background:C.verde+"11",border:`1px solid ${C.verde}33`,borderRadius:0,padding:"8px 12px",marginBottom:12}}>✅ {ok}</div>}
 
@@ -1941,7 +1972,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-13.1</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-13.2</div>
     </div>
   );
 }
