@@ -1370,6 +1370,13 @@ const db = {
       await fetch(`${SUPABASE_URL}/functions/v1/enviar-mail`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${tk}`,"Content-Type":"application/json"},body:JSON.stringify({para,asunto,cuerpo})});
     }catch(e){ /* silencioso: el aviso es secundario */ }
   },
+  async crearPago(){
+    const tk=this.ses?.token; if(!tk) throw new Error("Sesión inválida");
+    const r=await fetch(`${SUPABASE_URL}/functions/v1/crear-pago`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${tk}`,"Content-Type":"application/json"}});
+    const data=await r.json();
+    if(!r.ok||data.error) throw new Error(data.error||"No se pudo generar el link de pago");
+    return data;
+  },
 };
 
 async function pedirIA(prompt) {
@@ -1849,10 +1856,18 @@ function AuthScreen({onAuth}){
         db.setSesion(tokenReg);
         const emailLimpio=email.trim().toLowerCase();
         try{
+          let nuevoUsuario;
           if(!userId){
-            await db.insert("usuarios",{tipo,nombre,email:emailLimpio,ciudad,tipo_documento:tipoDoc,documento:docLimpio});
+            nuevoUsuario=await db.insert("usuarios",{tipo,nombre,email:emailLimpio,ciudad,tipo_documento:tipoDoc,documento:docLimpio});
           } else {
-            await db.insert("usuarios",{auth_id:userId,tipo,nombre,email:emailLimpio,ciudad,tipo_documento:tipoDoc,documento:docLimpio});
+            nuevoUsuario=await db.insert("usuarios",{auth_id:userId,tipo,nombre,email:emailLimpio,ciudad,tipo_documento:tipoDoc,documento:docLimpio});
+          }
+          if(tipo!=="cliente"){
+            const idNuevo=(nuevoUsuario&&nuevoUsuario[0]&&nuevoUsuario[0].id)||null;
+            if(idNuevo){
+              const vencePrueba=new Date(); vencePrueba.setDate(vencePrueba.getDate()+60);
+              try{ await db.insert("suscripciones",{usuario_id:idNuevo,estado:"prueba",fecha_vencimiento:vencePrueba.toISOString()}); }catch{}
+            }
           }
         } finally { db.limpiarSesion(); }
         setOk("¡Cuenta creada! Ahora iniciá sesión.");
@@ -1972,7 +1987,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-13.2</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-14.1</div>
     </div>
   );
 }
@@ -6021,6 +6036,32 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja}){
   const [okPriv,setOkPriv]=useState("");
   const [errPriv,setErrPriv]=useState("");
 
+  // ── SUSCRIPCIÓN ──
+  const [susc,setSusc]=useState(null);
+  const [cargandoSusc,setCargandoSusc]=useState(true);
+  const [pagando,setPagando]=useState(false);
+  const [errSusc,setErrSusc]=useState("");
+  useEffect(()=>{
+    if(esCliente){ setCargandoSusc(false); return; }
+    (async()=>{
+      try{
+        const filas=await db.select("suscripciones",`?usuario_id=eq.${usuario.id}&order=fecha_vencimiento.desc&limit=1`);
+        setSusc(filas[0]||null);
+      }catch{}
+      setCargandoSusc(false);
+    })();
+  },[]);
+  const vencidaSusc = susc && new Date(susc.fecha_vencimiento) < new Date();
+  const pagar=async()=>{
+    setPagando(true); setErrSusc("");
+    try{
+      const data=await db.crearPago();
+      if(data.init_point) window.location.href=data.init_point;
+      else setErrSusc("No se pudo generar el link de pago.");
+    }catch(e){ setErrSusc(e.message||"No se pudo generar el link de pago."); }
+    setPagando(false);
+  };
+
   // ── CONTRASEÑA ──
   const [passActual,setPassActual]=useState("");
   const [pass1,setPass1]=useState("");
@@ -6127,6 +6168,7 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja}){
       <div style={{display:"flex",gap:8,marginBottom:18}}>
         <button style={solapaBtn("privado","🔒 Privado")} onClick={()=>setSolapa("privado")}>🔒 Privado</button>
         {!esCliente&&<button style={solapaBtn("publico","🌐 Público")} onClick={()=>setSolapa("publico")}>🌐 Público</button>}
+        {!esCliente&&<button style={solapaBtn("suscripcion","💳 Suscripción")} onClick={()=>setSolapa("suscripcion")}>💳 Suscripción</button>}
       </div>
 
       {solapa==="privado"&&(
@@ -6288,6 +6330,29 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja}){
           </div>
         </div>
       )}
+
+      {solapa==="suscripcion"&&!esCliente&&(
+        <div style={S.card}>
+          <div style={S.cardTitle}>💳 Suscripción</div>
+          {cargandoSusc?(
+            <div style={{fontSize:15,color:C.textoSuave}}>Cargando...</div>
+          ):!susc?(
+            <div style={{fontSize:15,color:C.textoSuave}}>No encontramos datos de suscripción. Escribí a administracion@encastre.com.ar si esto persiste.</div>
+          ):(
+            <div>
+              <div style={{fontSize:16,marginBottom:6}}>
+                Estado: <b style={{color:vencidaSusc?C.error:C.exito}}>{vencidaSusc?"Vencida":susc.estado==="prueba"?"Período de prueba":"Activa"}</b>
+              </div>
+              <div style={{fontSize:15,color:C.textoSuave,marginBottom:16}}>
+                {vencidaSusc?"Venció el ":"Vence el "}{new Date(susc.fecha_vencimiento).toLocaleDateString("es-AR")}
+              </div>
+              {vencidaSusc&&<div style={{fontSize:14,color:C.error,marginBottom:14}}>Tu acceso al panel está bloqueado hasta que renueves.</div>}
+              {msg(errSusc,"err")}
+              <button style={{...S.btn("gold"),width:"100%",justifyContent:"center"}} onClick={pagar} disabled={pagando}>{pagando?"⟳ Generando link...":"💳 Pagar suscripción mensual"}</button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -6313,6 +6378,32 @@ function NavBar({usuario,navPrincipal,navTab,setNavTab}){
   );
 }
 
+function PantallaSuscripcionVencida({onCerrar}){
+  const [pagando,setPagando]=useState(false);
+  const [err,setErr]=useState("");
+  const pagar=async()=>{
+    setPagando(true); setErr("");
+    try{
+      const data=await db.crearPago();
+      if(data.init_point) window.location.href=data.init_point;
+      else setErr("No se pudo generar el link de pago.");
+    }catch(e){ setErr(e.message||"No se pudo generar el link de pago."); }
+    setPagando(false);
+  };
+  return(
+    <div style={{...S.app,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"100vh",padding:20,textAlign:"center"}}>
+      <div style={{fontSize:48,marginBottom:12}}>💳</div>
+      <div style={{...S.cardTitle,fontSize:24,marginBottom:10}}>Tu suscripción venció</div>
+      <div style={{fontSize:16,color:C.textoSuave,marginBottom:24,maxWidth:420}}>
+        Para seguir usando Encastre como proveedor, renová tu suscripción mensual.
+      </div>
+      {err&&<div style={{fontSize:15,color:C.error,marginBottom:14}}>{err}</div>}
+      <button style={{...S.btn("gold"),maxWidth:340,width:"100%",justifyContent:"center",marginBottom:14}} onClick={pagar} disabled={pagando}>{pagando?"⟳ Generando link...":"💳 Pagar suscripción mensual"}</button>
+      <button style={{...S.btn("ghost"),maxWidth:340,width:"100%",justifyContent:"center"}} onClick={onCerrar}>Cerrar sesión</button>
+    </div>
+  );
+}
+
 function App(){
   const [sesion,setSesion]=useState(null);
   const [navTab,setNavTab]=useState("principal");
@@ -6323,6 +6414,22 @@ function App(){
   const [enContacto,setEnContacto]=useState(false);
   const [enPapelera,setEnPapelera]=useState(false);
   const [enQueja,setEnQueja]=useState(false);
+  const [suscInfo,setSuscInfo]=useState({cargando:true,vencida:false});
+
+  useEffect(()=>{
+    const usu=sesion?.usuario;
+    if(!usu||usu.tipo==="admin"||usu.tipo==="cliente"){ setSuscInfo({cargando:false,vencida:false}); return; }
+    let cancelado=false;
+    (async()=>{
+      try{
+        const filas=await db.select("suscripciones",`?usuario_id=eq.${usu.id}&order=fecha_vencimiento.desc&limit=1`);
+        const fila=filas[0];
+        const vencida = fila ? new Date(fila.fecha_vencimiento) < new Date() : false;
+        if(!cancelado) setSuscInfo({cargando:false,vencida});
+      }catch{ if(!cancelado) setSuscInfo({cargando:false,vencida:false}); }
+    })();
+    return ()=>{cancelado=true;};
+  },[sesion?.usuario?.id, sesion?.usuario?.tipo]);
 
   // Volver a la pantalla principal cerrando todo lo que esté abierto encima
   const irAPrincipal=(id)=>{
@@ -6394,6 +6501,8 @@ function App(){
     try{localStorage.removeItem("encastre_sesion");}catch{}
   };
   if(usuario.tipo==="admin") return <VistaAdmin usuario={usuario} onSalir={async()=>{await cerrar();setMostrarBienvenida(true);}}/>;
+  if(suscInfo.cargando) return <div style={{...S.app,display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",fontSize:16,color:C.textoSuave}}>Cargando...</div>;
+  if(suscInfo.vencida) return <PantallaSuscripcionVencida onCerrar={async()=>{await cerrar();setMostrarBienvenida(true);}}/>;
   const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🎨"};
   const navPrincipal=usuario.tipo==="cliente"?"🪑 Mis pedidos":usuario.tipo==="carpinteria"?"🔨 Pedidos":usuario.tipo==="aserradero"?"🪵 Pedidos":usuario.tipo==="ferreteria"?"🔩 Pedidos":usuario.tipo==="pintureria"?"🎨 Pedidos":"🚚 Pedidos";
 
