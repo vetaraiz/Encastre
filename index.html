@@ -1988,7 +1988,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-14.2</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-14.3</div>
     </div>
   );
 }
@@ -6003,9 +6003,9 @@ function Papelera({usuario,onCerrar}){
   );
 }
 
-function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja}){
+function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
   const esCliente = usuario.tipo==="cliente";
-  const [solapa,setSolapa]=useState("privado");
+  const [solapa,setSolapa]=useState(tabInicial||"privado");
 
   // ── PRIVADO ──
   const [nombre,setNombre]=useState(usuario.nombre||"");
@@ -6416,6 +6416,7 @@ function App(){
   const [enPapelera,setEnPapelera]=useState(false);
   const [enQueja,setEnQueja]=useState(false);
   const [suscInfo,setSuscInfo]=useState({cargando:true,vencida:false});
+  const [cuentaTab,setCuentaTab]=useState("privado");
 
   useEffect(()=>{
     const usu=sesion?.usuario;
@@ -6527,7 +6528,8 @@ function App(){
                   <div onClick={()=>setMenuAbierto(false)} style={{position:"fixed",inset:0,zIndex:200}}/>
                   <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:C.card,border:`1px solid ${C.borde}`,borderRadius:0,boxShadow:"0 6px 24px #5C2E0A44",zIndex:201,minWidth:190,overflow:"hidden"}}>
                     <div style={{padding:"12px 18px",borderBottom:`1px solid ${C.borde}`,fontSize:13,color:C.textoSuave,textTransform:"uppercase",letterSpacing:.5}}>{usuario.tipo}</div>
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setEnQueja(false);setMenuAbierto(false);}}>👤 Mi cuenta</button>
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("privado");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setEnQueja(false);setMenuAbierto(false);}}>👤 Mi cuenta</button>
+                    {usuario.tipo!=="admin"&&usuario.tipo!=="cliente"&&<button style={{display:"block",width:"100%",textAlign:"left",background:suscInfo.vencida?"#C0392B22":"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:suscInfo.vencida?"#C0392B":C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setEnQueja(false);setMenuAbierto(false);}}>💳 Suscripción{suscInfo.vencida?" ⚠️":""}</button>}
                     <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnQueja(true);setEnMiCuenta(false);setEnContacto(false);setEnPapelera(false);setMenuAbierto(false);}}>⚠️ Reportar un problema</button>
                     <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnContacto(true);setEnMiCuenta(false);setEnPapelera(false);setEnQueja(false);setMenuAbierto(false);}}>✉️ Enviar comentario</button>
                     <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnPapelera(true);setEnMiCuenta(false);setEnContacto(false);setEnQueja(false);setMenuAbierto(false);}}>🗑️ Papelera</button>
@@ -6544,7 +6546,7 @@ function App(){
       {/* CONTENIDO */}
       <div style={S.main}>
         {enMiCuenta ? (
-          <MiCuenta usuario={usuario} onCerrar={()=>setEnMiCuenta(false)} onActualizar={actualizarUsuario} onDarDeBaja={darDeBaja}/>
+          <MiCuenta usuario={usuario} onCerrar={()=>setEnMiCuenta(false)} onActualizar={actualizarUsuario} onDarDeBaja={darDeBaja} tabInicial={cuentaTab}/>
         ) : enQueja ? (
           <ReportarQueja usuario={usuario} onCerrar={()=>setEnQueja(false)}/>
         ) : enContacto ? (
