@@ -1988,7 +1988,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.5</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.6</div>
     </div>
   );
 }
@@ -6380,18 +6380,10 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
   );
 }
 
-function NavBar({usuario,navPrincipal,navTab,setNavTab}){
-  const badges=useBadges(usuario);
-  // El badge de "principal" depende del tipo: los proveedores ven ahí sus propios pedidos
-  const nPrincipal=usuario.tipo==="flete"?badges.flete
-    :usuario.tipo==="aserradero"?badges.aserradero
-    :usuario.tipo==="ferreteria"?badges.ferreteria
-    :usuario.tipo==="pintureria"?badges.pintureria
-    :usuario.tipo==="cliente"?badges.pedidos
-    :(badges.pedidos+badges.aserradero+badges.ferreteria+badges.pintureria); // carpintería: todo lo suyo
-  const items=[["principal",navPrincipal,nPrincipal]];
-  if(usuario.tipo!=="flete") items.push(["flete","🚚 Fletes",badges.flete]);
+function NavBar({usuario,navTab,setNavTab}){
+  const items=[];
   if(usuario.tipo==="cliente"||usuario.tipo==="carpinteria") items.push(["conversor","📐 Conversor",0]);
+  if(items.length===0) return null;
   return(
     <nav className="tabs-mobile" style={{display:"flex",gap:6,width:"100%"}}>
       {items.map(([id,l,n])=>(
@@ -6469,6 +6461,7 @@ function App(){
   const [enPapelera,setEnPapelera]=useState(false);
   const [suscInfo,setSuscInfo]=useState({cargando:true,vencida:false});
   const [cuentaTab,setCuentaTab]=useState("privado");
+  const badges=useBadges(sesion?.usuario);
 
   useEffect(()=>{
     const usu=sesion?.usuario;
@@ -6571,7 +6564,6 @@ function App(){
     return <AvisoDiasRestantes dias={suscInfo.diasRestantes} estado={suscInfo.estado} onContinuar={cerrarAvisoDias}/>;
   }
   const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🎨"};
-  const navPrincipal=usuario.tipo==="cliente"?"🪑 Mis pedidos":usuario.tipo==="carpinteria"?"🔨 Pedidos":usuario.tipo==="aserradero"?"🪵 Pedidos":usuario.tipo==="ferreteria"?"🔩 Pedidos":usuario.tipo==="pintureria"?"🎨 Pedidos":"🚚 Pedidos";
 
   return(
     <div style={S.app}>
@@ -6583,6 +6575,9 @@ function App(){
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <img src={LOGO_B64} alt="Encastre" style={{width:34,height:34,objectFit:"contain",borderRadius:0,flexShrink:0}}/>
             <div className="encastre-logo-name" style={{fontSize:17}}>ENCASTRE</div>
+            {usuario.tipo!=="flete"&&(
+              <button style={{background:navTab==="flete"?C.acento:"transparent",color:navTab==="flete"?C.marron:C.suave,border:`1px solid ${C.suave}44`,borderRadius:0,padding:"4px 10px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Lato',sans-serif",marginLeft:4}} onClick={()=>irAPrincipal("flete")}>Fletes<Badge9 n={badges.flete}/></button>
+            )}
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <div style={{fontSize:14,color:C.crema,fontWeight:700,whiteSpace:"nowrap"}}>{EMOJIS[usuario.tipo]} {usuario.nombre}</div>
@@ -6604,7 +6599,7 @@ function App(){
             </div>
           </div>
         </div>
-        <NavBar usuario={usuario} navPrincipal={navPrincipal} navTab={navTab} setNavTab={irAPrincipal}/>
+        <NavBar usuario={usuario} navTab={navTab} setNavTab={irAPrincipal}/>
       </div>
 
       {/* CONTENIDO */}
