@@ -1988,7 +1988,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.2</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.3</div>
     </div>
   );
 }
@@ -2521,6 +2521,23 @@ function VistaCliente({usuario,notif}){
   const DetallePedido=()=>{
     // Compatibilidad: pedidos viejos sin "items" muestran un solo mueble armado con las columnas planas
     const muebles=(sel.items&&sel.items.length>0)?sel.items:[{descripcion:sel.descripcion,alto:sel.alto,ancho:sel.ancho,profundidad:sel.profundidad,material:sel.material,especie:sel.especie,terminacion:sel.terminacion,color:sel.color}];
+    const abrirCot=(pr)=>{
+      setSelPresup(pr);
+      if(!pr.visto_cliente){marcarCotVista("presupuestos","visto_cliente",pr);setPresups(ps=>ps.map(x=>x.id===pr.id?{...x,visto_cliente:true}:x));}
+    };
+    // Pantalla dedicada: se abrió una cotización puntual desde el cuadro comparativo
+    if(selPresup){
+      const pr=presups.find(x=>x.id===selPresup.id)||selPresup;
+      return(
+        <div style={{marginTop:12,borderTop:`1px dashed ${C.borde}`,paddingTop:12}} className="fade">
+          <button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",marginBottom:8}} onClick={()=>setSelPresup(null)}>← Volver a la comparativa</button>
+          <DetallePresup pr={pr}/>
+          <div style={{textAlign:"right",marginTop:12,marginBottom:4,paddingTop:12,borderTop:`1px dashed ${C.borde}`}}>
+            <button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={()=>{archivarPresup(pr);setSelPresup(null);}}>🗑️ Archivar este presupuesto</button>
+          </div>
+        </div>
+      );
+    }
     return(
       <div style={{marginTop:12,borderTop:`1px dashed ${C.borde}`,paddingTop:12}} className="fade">
         {muebles.map((it,i)=>{
@@ -2550,24 +2567,30 @@ function VistaCliente({usuario,notif}){
           ):(
           <div style={{marginTop:6}}>
             <div style={{fontWeight:700,color:C.marron,marginBottom:8}}>💰 Presupuestos recibidos ({presupsVisibles.length})</div>
-            {presupsVisibles.map((pr,i)=>(
-              <div key={i}>
-                <div onClick={()=>{const ab=selPresup&&selPresup.id===pr.id?null:pr;setSelPresup(ab);if(ab&&!pr.visto_cliente){marcarCotVista("presupuestos","visto_cliente",pr);setPresups(ps=>ps.map(x=>x.id===pr.id?{...x,visto_cliente:true}:x));}}} style={{border:`1px solid ${pr.visto_cliente===false?"#009966":C.borde}`,borderRadius:0,padding:12,marginBottom:8,background:C.input,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div>
-                    <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,color:C.marron,fontSize:22}}>🔨 {pr.carpNombre}{pr.visto_cliente===false&&<span style={{marginLeft:8,fontSize:13,fontWeight:800,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</div>
-                    {pr.estado&&pr.estado!=="enviado"&&<div style={{marginTop:6}}><Badge e={pr.estado}/></div>}
-                  </div>
-                  <div style={{textAlign:"right"}}>
-                    <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:800,color:C.verde}}>$ {Number(pr.monto).toLocaleString("es-AR")}</div>
-                    <div style={{fontSize:15,color:C.textoSuave,marginTop:4}}>{selPresup&&selPresup.id===pr.id?"▲ ocultar":"ver todo ▼"}</div>
-                  </div>
-                </div>
-                {selPresup&&selPresup.id===pr.id&&<>
-                  <DetallePresup pr={presups.find(x=>x.id===selPresup.id)||selPresup}/>
-                  <div style={{textAlign:"right",marginTop:12,marginBottom:16,paddingTop:12,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarPresup(pr);}}>🗑️ Archivar este presupuesto</button></div>
-                </>}
-              </div>
-            ))}
+            <div style={{overflowX:"auto",border:`1px solid ${C.borde}`}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:15}}>
+                <thead>
+                  <tr style={{background:C.crema}}>
+                    <th style={{textAlign:"left",padding:"8px 10px",color:C.textoSuave,fontWeight:700}}>Carpintería</th>
+                    <th style={{textAlign:"right",padding:"8px 10px",color:C.textoSuave,fontWeight:700}}>Precio</th>
+                    <th style={{textAlign:"left",padding:"8px 10px",color:C.textoSuave,fontWeight:700}}>Entrega</th>
+                    <th style={{padding:"8px 10px"}}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...presupsVisibles].sort((a,b)=>Number(a.monto)-Number(b.monto)).map((pr,i)=>(
+                    <tr key={i} style={{borderTop:`1px solid ${C.borde}`,background:i===0?"#00996611":"transparent",cursor:"pointer"}} onClick={()=>abrirCot(pr)}>
+                      <td style={{padding:"8px 10px"}}>🔨 {pr.carpNombre}{pr.visto_cliente===false&&<span style={{marginLeft:6,fontSize:11,fontWeight:800,color:"#fff",background:"#009966",padding:"1px 6px"}}>NUEVO</span>}{pr.estado&&pr.estado!=="enviado"&&<span style={{marginLeft:6}}><Badge e={pr.estado}/></span>}</td>
+                      <td style={{padding:"8px 10px",textAlign:"right",fontWeight:800,color:i===0?C.verde:C.marron}}>$ {Number(pr.monto).toLocaleString("es-AR")}{i===0&&" ✓"}</td>
+                      <td style={{padding:"8px 10px",color:C.textoSuave}}>{pr.tiempo_entrega||"—"}</td>
+                      <td style={{padding:"8px 10px",textAlign:"right"}}>
+                        <button style={{...S.btn("ghost"),fontSize:13,padding:"4px 10px"}} onClick={(e)=>{e.stopPropagation();abrirCot(pr);}}>ver ▶</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
           );
         })()}
