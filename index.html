@@ -1988,7 +1988,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.4</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.5</div>
     </div>
   );
 }
@@ -5441,15 +5441,51 @@ function PresupuestoFormato({empresa,cliente,items,opts,numero,fecha,tiempoEntre
   );
 }
 
-function Contacto({usuario,onCerrar}){
+function ContactoUnificado({usuario,onCerrar}){
+  const [modo,setModo]=useState("problema"); // "problema" | "comentario"
+
+  // --- estado formulario "problema" ---
+  const [tipo,setTipo]=useState("pedido");
+  const [tipoPedidoRef,setTipoPedidoRef]=useState("cliente");
+  const [rolReportado,setRolReportado]=useState("");
+  const [referencia,setReferencia]=useState("");
+  const [descripcion,setDescripcion]=useState("");
+
+  // --- estado formulario "comentario" ---
   const [nombre,setNombre]=useState(usuario?.nombre||"");
   const [email,setEmail]=useState(usuario?.email||"");
   const [mensaje,setMensaje]=useState("");
+
   const [enviando,setEnviando]=useState(false);
   const [ok,setOk]=useState("");
   const [err,setErr]=useState("");
 
-  const enviar=async()=>{
+  const TIPOS=[["pedido","📦 Sobre un pedido"],["usuario","👤 Sobre un usuario"],["app","⚙️ Sobre la app"]];
+  const CIRCUITOS=[["cliente","Cliente → Carpintería"],["aserradero","Carpintería → Aserradero"],["ferreteria","Carpintería → Ferretería"],["pintureria","Carpintería → Pinturería"],["flete","Flete"]];
+  const ROLES={cliente:"Cliente",carpinteria:"Carpintería",aserradero:"Aserradero",ferreteria:"Ferretería",pintureria:"Pinturería",flete:"Flete"};
+  const opcionesUsuario=(usuario.tipo==="carpinteria"
+    ? ["cliente","aserradero","ferreteria","pintureria","flete"]
+    : usuario.tipo==="cliente"
+    ? ["carpinteria"]
+    : ["carpinteria","flete"]
+  ).filter(r=>r!==usuario.tipo);
+  useEffect(()=>{ if(!rolReportado&&opcionesUsuario.length) setRolReportado(opcionesUsuario[0]); },[]);
+
+  const enviarProblema=async()=>{
+    if(!descripcion.trim()){ setErr("Contanos qué pasó."); setOk(""); return; }
+    setEnviando(true); setErr(""); setOk("");
+    try{
+      let desc=descripcion.trim();
+      if(tipo==="pedido") desc=`Circuito: ${CIRCUITOS.find(c=>c[0]===tipoPedidoRef)?.[1]||tipoPedidoRef}${referencia.trim()?` · Referencia: ${referencia.trim()}`:""}\n\n${desc}`;
+      else if(tipo==="usuario") desc=`Usuario reportado: ${ROLES[rolReportado]||rolReportado}${referencia.trim()?` · ${referencia.trim()}`:""}\n\n${desc}`;
+      await db.insertMin("quejas",{tipo,usuario_id:usuario.id,tipo_pedido:tipo==="pedido"?tipoPedidoRef:null,descripcion:desc,estado:"nueva"});
+      setOk("¡Recibido! Lo vamos a revisar a la brevedad.");
+      setDescripcion(""); setReferencia("");
+    }catch(e){ setErr("No se pudo enviar: "+(e.message||"revisá tu conexión")); }
+    setEnviando(false);
+  };
+
+  const enviarComentario=async()=>{
     if(!mensaje.trim()){ setErr("Escribí un mensaje."); setOk(""); return; }
     setEnviando(true); setErr(""); setOk("");
     try{
@@ -5463,27 +5499,72 @@ function Contacto({usuario,onCerrar}){
     setEnviando(false);
   };
 
+  const enviar=()=>modo==="problema"?enviarProblema():enviarComentario();
+
   return(
     <div style={{maxWidth:640,margin:"0 auto"}}>
       <button style={{...S.btn("ghost"),marginBottom:16}} onClick={onCerrar}>← Volver</button>
-      <div style={{...S.cardTitle,fontSize:26,marginBottom:16}}>✉️ Enviar comentario</div>
+      <div style={{...S.cardTitle,fontSize:26,marginBottom:16}}>✉️ Reportar o comentar</div>
       <div style={S.card}>
-        <div style={{fontSize:14,color:C.textoSuave,marginBottom:14}}>Contanos sugerencias, problemas o lo que se te ocurra. Tu mensaje queda guardado y además se abre tu mail para mandarlo directo.</div>
-        <div style={{marginBottom:14}}>
-          <label style={S.label}>Nombre</label>
-          <input style={S.input} value={nombre} onChange={e=>setNombre(e.target.value)}/>
-        </div>
-        <div style={{marginBottom:14}}>
-          <label style={S.label}>Email (opcional, para responderte)</label>
-          <input style={S.input} value={email} onChange={e=>setEmail(e.target.value)}/>
-        </div>
-        <div style={{marginBottom:4}}>
-          <label style={S.label}>Mensaje</label>
-          <textarea style={{...S.input,minHeight:120,resize:"vertical"}} value={mensaje} onChange={e=>setMensaje(e.target.value)}/>
-        </div>
+        <label style={S.label}>¿Qué querés hacer?</label>
+        <select value={modo} onChange={e=>{setModo(e.target.value);setOk("");setErr("");}} style={{...S.input,marginBottom:16}}>
+          <option value="problema">⚠️ Reportar un problema</option>
+          <option value="comentario">✉️ Enviar un comentario</option>
+        </select>
+
+        {modo==="problema"?(
+          <>
+            <div style={{fontSize:14,color:C.textoSuave,marginBottom:14}}>Tu reporte llega directo a la administración de Encastre.</div>
+            <label style={S.label}>¿Sobre qué es?</label>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
+              {TIPOS.map(([id,l])=><button key={id} style={S.tag(tipo===id)} onClick={()=>setTipo(id)}>{l}</button>)}
+            </div>
+            {tipo==="pedido"&&(
+              <div style={{marginBottom:14}}>
+                <label style={S.label}>¿Con quién fue el pedido?</label>
+                <select value={tipoPedidoRef} onChange={e=>setTipoPedidoRef(e.target.value)} style={{...S.input,marginBottom:8}}>
+                  {CIRCUITOS.map(([id,l])=><option key={id} value={id}>{l}</option>)}
+                </select>
+                <label style={S.label}>Referencia <span style={{fontWeight:400,color:C.textoSuave}}>(fecha, con quién fue, lo que ayude a identificarlo)</span></label>
+                <input value={referencia} onChange={e=>setReferencia(e.target.value)} placeholder="Ej: pedido del 20/07 con Carpintería López" style={S.input}/>
+              </div>
+            )}
+            {tipo==="usuario"&&(
+              <div style={{marginBottom:14}}>
+                <label style={S.label}>¿A quién querés reportar?</label>
+                <select value={rolReportado} onChange={e=>setRolReportado(e.target.value)} style={{...S.input,marginBottom:8}}>
+                  {opcionesUsuario.map(r=><option key={r} value={r}>{ROLES[r]}</option>)}
+                </select>
+                <label style={S.label}>Nombre o email <span style={{fontWeight:400,color:C.textoSuave}}>(para identificarlo)</span></label>
+                <input value={referencia} onChange={e=>setReferencia(e.target.value)} placeholder="Nombre o email del usuario" style={S.input}/>
+              </div>
+            )}
+            <div style={{marginBottom:4}}>
+              <label style={S.label}>Contanos qué pasó</label>
+              <textarea style={{...S.input,minHeight:120,resize:"vertical"}} value={descripcion} onChange={e=>setDescripcion(e.target.value)}/>
+            </div>
+          </>
+        ):(
+          <>
+            <div style={{fontSize:14,color:C.textoSuave,marginBottom:14}}>Contanos sugerencias, problemas o lo que se te ocurra. Tu mensaje queda guardado y además se abre tu mail para mandarlo directo.</div>
+            <div style={{marginBottom:14}}>
+              <label style={S.label}>Nombre</label>
+              <input style={S.input} value={nombre} onChange={e=>setNombre(e.target.value)}/>
+            </div>
+            <div style={{marginBottom:14}}>
+              <label style={S.label}>Email (opcional, para responderte)</label>
+              <input style={S.input} value={email} onChange={e=>setEmail(e.target.value)}/>
+            </div>
+            <div style={{marginBottom:4}}>
+              <label style={S.label}>Mensaje</label>
+              <textarea style={{...S.input,minHeight:120,resize:"vertical"}} value={mensaje} onChange={e=>setMensaje(e.target.value)}/>
+            </div>
+          </>
+        )}
+
         {ok?<div style={{fontSize:15,fontWeight:700,color:C.exito,marginTop:10}}>{ok}</div>:null}
         {err?<div style={{fontSize:15,fontWeight:700,color:C.error,marginTop:10}}>{err}</div>:null}
-        <button style={{...S.btn("gold"),marginTop:16,width:"100%",justifyContent:"center"}} onClick={enviar} disabled={enviando}>{enviando?"Enviando...":"Enviar"}</button>
+        <button style={{...S.btn("gold"),marginTop:16,width:"100%",justifyContent:"center"}} onClick={enviar} disabled={enviando}>{enviando?"Enviando...":modo==="problema"?"Enviar reporte":"Enviar comentario"}</button>
       </div>
     </div>
   );
@@ -5874,88 +5955,6 @@ function VistaAdmin({usuario,onSalir}){
         {tab==="quejas"&&<AdminQuejas/>}
         {tab==="usuarios"&&<AdminUsuarios/>}
         {tab==="movimientos"&&<AdminMovimientos/>}
-      </div>
-    </div>
-  );
-}
-
-function ReportarQueja({usuario,onCerrar}){
-  const [tipo,setTipo]=useState("pedido");
-  const [tipoPedidoRef,setTipoPedidoRef]=useState("cliente");
-  const [rolReportado,setRolReportado]=useState("");
-  const [referencia,setReferencia]=useState("");
-  const [descripcion,setDescripcion]=useState("");
-  const [enviando,setEnviando]=useState(false);
-  const [ok,setOk]=useState("");
-  const [err,setErr]=useState("");
-
-  const TIPOS=[["pedido","📦 Sobre un pedido"],["usuario","👤 Sobre un usuario"],["app","⚙️ Sobre la app"]];
-  const CIRCUITOS=[["cliente","Cliente → Carpintería"],["aserradero","Carpintería → Aserradero"],["ferreteria","Carpintería → Ferretería"],["pintureria","Carpintería → Pinturería"],["flete","Flete"]];
-  const ROLES={cliente:"Cliente",carpinteria:"Carpintería",aserradero:"Aserradero",ferreteria:"Ferretería",pintureria:"Pinturería",flete:"Flete"};
-  // Con quién tiene trato cada tipo de usuario (define a quién puede reportar)
-  const opcionesUsuario=(usuario.tipo==="carpinteria"
-    ? ["cliente","aserradero","ferreteria","pintureria","flete"]
-    : usuario.tipo==="cliente"
-    ? ["carpinteria"]
-    : ["carpinteria","flete"]
-  ).filter(r=>r!==usuario.tipo);
-  useEffect(()=>{ if(!rolReportado&&opcionesUsuario.length) setRolReportado(opcionesUsuario[0]); },[]);
-
-  const enviar=async()=>{
-    if(!descripcion.trim()){ setErr("Contanos qué pasó."); setOk(""); return; }
-    setEnviando(true); setErr(""); setOk("");
-    try{
-      let desc=descripcion.trim();
-      if(tipo==="pedido") desc=`Circuito: ${CIRCUITOS.find(c=>c[0]===tipoPedidoRef)?.[1]||tipoPedidoRef}${referencia.trim()?` · Referencia: ${referencia.trim()}`:""}\n\n${desc}`;
-      else if(tipo==="usuario") desc=`Usuario reportado: ${ROLES[rolReportado]||rolReportado}${referencia.trim()?` · ${referencia.trim()}`:""}\n\n${desc}`;
-      await db.insertMin("quejas",{tipo,usuario_id:usuario.id,tipo_pedido:tipo==="pedido"?tipoPedidoRef:null,descripcion:desc,estado:"nueva"});
-      setOk("¡Recibido! Lo vamos a revisar a la brevedad.");
-      setDescripcion(""); setReferencia("");
-    }catch(e){ setErr("No se pudo enviar: "+(e.message||"revisá tu conexión")); }
-    setEnviando(false);
-  };
-
-  return(
-    <div style={{maxWidth:640,margin:"0 auto"}}>
-      <button style={{...S.btn("ghost"),marginBottom:16}} onClick={onCerrar}>← Volver</button>
-      <div style={{...S.cardTitle,fontSize:26,marginBottom:16}}>⚠️ Reportar un problema</div>
-      <div style={S.card}>
-        <div style={{fontSize:14,color:C.textoSuave,marginBottom:14}}>Tu reporte llega directo a la administración de Encastre.</div>
-
-        <label style={S.label}>¿Sobre qué es?</label>
-        <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
-          {TIPOS.map(([id,l])=><button key={id} style={S.tag(tipo===id)} onClick={()=>setTipo(id)}>{l}</button>)}
-        </div>
-
-        {tipo==="pedido"&&(
-          <div style={{marginBottom:14}}>
-            <label style={S.label}>¿Con quién fue el pedido?</label>
-            <select value={tipoPedidoRef} onChange={e=>setTipoPedidoRef(e.target.value)} style={{...S.input,marginBottom:8}}>
-              {CIRCUITOS.map(([id,l])=><option key={id} value={id}>{l}</option>)}
-            </select>
-            <label style={S.label}>Referencia <span style={{fontWeight:400,color:C.textoSuave}}>(fecha, con quién fue, lo que ayude a identificarlo)</span></label>
-            <input value={referencia} onChange={e=>setReferencia(e.target.value)} placeholder="Ej: pedido del 20/07 con Carpintería López" style={S.input}/>
-          </div>
-        )}
-
-        {tipo==="usuario"&&(
-          <div style={{marginBottom:14}}>
-            <label style={S.label}>¿A quién querés reportar?</label>
-            <select value={rolReportado} onChange={e=>setRolReportado(e.target.value)} style={{...S.input,marginBottom:8}}>
-              {opcionesUsuario.map(r=><option key={r} value={r}>{ROLES[r]}</option>)}
-            </select>
-            <label style={S.label}>Nombre o email <span style={{fontWeight:400,color:C.textoSuave}}>(para identificarlo)</span></label>
-            <input value={referencia} onChange={e=>setReferencia(e.target.value)} placeholder="Nombre o email del usuario" style={S.input}/>
-          </div>
-        )}
-
-        <div style={{marginBottom:4}}>
-          <label style={S.label}>Contanos qué pasó</label>
-          <textarea style={{...S.input,minHeight:120,resize:"vertical"}} value={descripcion} onChange={e=>setDescripcion(e.target.value)}/>
-        </div>
-        {ok?<div style={{fontSize:15,fontWeight:700,color:C.exito,marginTop:10}}>{ok}</div>:null}
-        {err?<div style={{fontSize:15,fontWeight:700,color:C.error,marginTop:10}}>{err}</div>:null}
-        <button style={{...S.btn("gold"),marginTop:16,width:"100%",justifyContent:"center"}} onClick={enviar} disabled={enviando}>{enviando?"Enviando...":"Enviar reporte"}</button>
       </div>
     </div>
   );
@@ -6428,6 +6427,37 @@ function PantallaSuscripcionVencida({onCerrar}){
   );
 }
 
+function AvisoDiasRestantes({dias,estado,onContinuar}){
+  const [pagando,setPagando]=useState(false);
+  const [err,setErr]=useState("");
+  const prueba=estado==="prueba";
+  const pagar=async()=>{
+    setPagando(true); setErr("");
+    try{
+      const data=await db.crearPago();
+      if(data.init_point) window.location.href=data.init_point;
+      else setErr("No se pudo generar el link de pago.");
+    }catch(e){ setErr(e.message||"No se pudo generar el link de pago."); }
+    setPagando(false);
+  };
+  return(
+    <div style={{...S.app,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"100vh",padding:20,textAlign:"center"}}>
+      <div style={{fontSize:48,marginBottom:12}}>⏳</div>
+      <div style={{...S.cardTitle,fontSize:24,marginBottom:10}}>
+        {dias!=null&&dias>=0?`Te quedan ${dias} día${dias===1?"":"s"} de ${prueba?"período de prueba":"suscripción"}`:"Estado de tu suscripción"}
+      </div>
+      <div style={{fontSize:16,color:C.textoSuave,marginBottom:24,maxWidth:420}}>
+        {prueba
+          ? "Cuando termine tu período de prueba vas a necesitar una suscripción activa para seguir usando Encastre como proveedor."
+          : "Renová a tiempo para no perder acceso al panel."}
+      </div>
+      {err&&<div style={{fontSize:15,color:C.error,marginBottom:14}}>{err}</div>}
+      <button style={{...S.btn("gold"),maxWidth:340,width:"100%",justifyContent:"center",marginBottom:14}} onClick={pagar} disabled={pagando}>{pagando?"⟳ Generando link...":"💳 Pagar suscripción mensual"}</button>
+      <button style={{...S.btn("ghost"),maxWidth:340,width:"100%",justifyContent:"center"}} onClick={onContinuar}>Continuar →</button>
+    </div>
+  );
+}
+
 function App(){
   const [sesion,setSesion]=useState(null);
   const [navTab,setNavTab]=useState("principal");
@@ -6437,7 +6467,6 @@ function App(){
   const [enMiCuenta,setEnMiCuenta]=useState(false);
   const [enContacto,setEnContacto]=useState(false);
   const [enPapelera,setEnPapelera]=useState(false);
-  const [enQueja,setEnQueja]=useState(false);
   const [suscInfo,setSuscInfo]=useState({cargando:true,vencida:false});
   const [cuentaTab,setCuentaTab]=useState("privado");
 
@@ -6450,11 +6479,21 @@ function App(){
         const filas=await db.select("suscripciones",`?usuario_id=eq.${usu.id}&order=creado_en.desc&limit=1`);
         const fila=filas[0];
         const vencida = fila ? new Date(fila.fecha_vencimiento) < new Date() : false;
-        if(!cancelado) setSuscInfo({cargando:false,vencida});
-      }catch{ if(!cancelado) setSuscInfo({cargando:false,vencida:false}); }
+        const diasRestantes = fila ? Math.ceil((new Date(fila.fecha_vencimiento)-new Date())/86400000) : null;
+        if(!cancelado) setSuscInfo({cargando:false,vencida,diasRestantes,estado:fila?.estado||null});
+      }catch{ if(!cancelado) setSuscInfo({cargando:false,vencida:false,diasRestantes:null,estado:null}); }
     })();
     return ()=>{cancelado=true;};
   },[sesion?.usuario?.id, sesion?.usuario?.tipo]);
+
+  const [avisoDiasCerrado,setAvisoDiasCerrado]=useState(false);
+  const cerrarAvisoDias=async()=>{
+    setAvisoDiasCerrado(true);
+    if(sesion?.usuario&&!sesion.usuario.vio_pantalla_prueba){
+      try{ await db.updateMin("usuarios",{vio_pantalla_prueba:true},`id=eq.${sesion.usuario.id}`); }catch{}
+      setSesion(s=>s?{...s,usuario:{...s.usuario,vio_pantalla_prueba:true}}:s);
+    }
+  };
 
   // Volver a la pantalla principal cerrando todo lo que esté abierto encima
   const irAPrincipal=(id)=>{
@@ -6528,6 +6567,9 @@ function App(){
   if(usuario.tipo==="admin") return <VistaAdmin usuario={usuario} onSalir={async()=>{await cerrar();setMostrarBienvenida(true);}}/>;
   if(suscInfo.cargando) return <div style={{...S.app,display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",fontSize:16,color:C.textoSuave}}>Cargando...</div>;
   if(suscInfo.vencida) return <PantallaSuscripcionVencida onCerrar={async()=>{await cerrar();setMostrarBienvenida(true);}}/>;
+  if(!avisoDiasCerrado&&usuario.tipo!=="cliente"&&suscInfo.diasRestantes!=null&&(suscInfo.diasRestantes<=7||!usuario.vio_pantalla_prueba)){
+    return <AvisoDiasRestantes dias={suscInfo.diasRestantes} estado={suscInfo.estado} onContinuar={cerrarAvisoDias}/>;
+  }
   const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🎨"};
   const navPrincipal=usuario.tipo==="cliente"?"🪑 Mis pedidos":usuario.tipo==="carpinteria"?"🔨 Pedidos":usuario.tipo==="aserradero"?"🪵 Pedidos":usuario.tipo==="ferreteria"?"🔩 Pedidos":usuario.tipo==="pintureria"?"🎨 Pedidos":"🚚 Pedidos";
 
@@ -6551,11 +6593,10 @@ function App(){
                   <div onClick={()=>setMenuAbierto(false)} style={{position:"fixed",inset:0,zIndex:200}}/>
                   <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:C.card,border:`1px solid ${C.borde}`,borderRadius:0,boxShadow:"0 6px 24px #5C2E0A44",zIndex:201,minWidth:190,overflow:"hidden"}}>
                     <div style={{padding:"12px 18px",borderBottom:`1px solid ${C.borde}`,fontSize:13,color:C.textoSuave,textTransform:"uppercase",letterSpacing:.5}}>{usuario.tipo}</div>
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("privado");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setEnQueja(false);setMenuAbierto(false);}}>• Mi cuenta</button>
-                    {usuario.tipo!=="admin"&&usuario.tipo!=="cliente"&&<button style={{display:"block",width:"100%",textAlign:"left",background:suscInfo.vencida?"#C0392B22":"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:suscInfo.vencida?"#C0392B":C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setEnQueja(false);setMenuAbierto(false);}}>• Suscripción{suscInfo.vencida?" ⚠️":""}</button>}
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnQueja(true);setEnMiCuenta(false);setEnContacto(false);setEnPapelera(false);setMenuAbierto(false);}}>• Reportar un problema</button>
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnContacto(true);setEnMiCuenta(false);setEnPapelera(false);setEnQueja(false);setMenuAbierto(false);}}>• Enviar comentario</button>
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnPapelera(true);setEnMiCuenta(false);setEnContacto(false);setEnQueja(false);setMenuAbierto(false);}}>• Papelera</button>
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("privado");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setMenuAbierto(false);}}>• Mi cuenta</button>
+                    {usuario.tipo!=="admin"&&usuario.tipo!=="cliente"&&<button style={{display:"block",width:"100%",textAlign:"left",background:suscInfo.vencida?"#C0392B22":"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:suscInfo.vencida?"#C0392B":C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setMenuAbierto(false);}}>• Suscripción{suscInfo.vencida?" ⚠️":""}</button>}
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnContacto(true);setEnMiCuenta(false);setEnPapelera(false);setMenuAbierto(false);}}>• Reportar o comentar</button>
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnPapelera(true);setEnMiCuenta(false);setEnContacto(false);setMenuAbierto(false);}}>• Papelera</button>
                     <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setMenuAbierto(false);cerrar();setMostrarBienvenida(true);}}>• Salir</button>
                   </div>
                 </>
@@ -6570,10 +6611,8 @@ function App(){
       <div style={S.main}>
         {enMiCuenta ? (
           <MiCuenta usuario={usuario} onCerrar={()=>setEnMiCuenta(false)} onActualizar={actualizarUsuario} onDarDeBaja={darDeBaja} tabInicial={cuentaTab}/>
-        ) : enQueja ? (
-          <ReportarQueja usuario={usuario} onCerrar={()=>setEnQueja(false)}/>
         ) : enContacto ? (
-          <Contacto usuario={usuario} onCerrar={()=>setEnContacto(false)}/>
+          <ContactoUnificado usuario={usuario} onCerrar={()=>setEnContacto(false)}/>
         ) : enPapelera ? (
           <Papelera usuario={usuario} onCerrar={()=>setEnPapelera(false)}/>
         ) : (
