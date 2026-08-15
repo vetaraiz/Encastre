@@ -1988,7 +1988,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-14.3</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.1</div>
     </div>
   );
 }
@@ -6046,7 +6046,7 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
     if(esCliente){ setCargandoSusc(false); return; }
     (async()=>{
       try{
-        const filas=await db.select("suscripciones",`?usuario_id=eq.${usuario.id}&order=fecha_vencimiento.desc&limit=1`);
+        const filas=await db.select("suscripciones",`?usuario_id=eq.${usuario.id}&order=creado_en.desc&limit=1`);
         setSusc(filas[0]||null);
       }catch{}
       setCargandoSusc(false);
@@ -6424,7 +6424,7 @@ function App(){
     let cancelado=false;
     (async()=>{
       try{
-        const filas=await db.select("suscripciones",`?usuario_id=eq.${usu.id}&order=fecha_vencimiento.desc&limit=1`);
+        const filas=await db.select("suscripciones",`?usuario_id=eq.${usu.id}&order=creado_en.desc&limit=1`);
         const fila=filas[0];
         const vencida = fila ? new Date(fila.fecha_vencimiento) < new Date() : false;
         if(!cancelado) setSuscInfo({cargando:false,vencida});
