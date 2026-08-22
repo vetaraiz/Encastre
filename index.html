@@ -1988,7 +1988,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.6</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.7</div>
     </div>
   );
 }
@@ -2639,7 +2639,7 @@ function VistaCliente({usuario,notif}){
           const mat=MATS.find(m=>m.id===p.material);
           const abierto=sel&&sel.id===p.id;
           return(
-          <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",...(abierto?{borderColor:C.acento}:{})}}>
+          <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",...(abierto?{borderColor:C.acento,borderWidth:2}:{borderColor:"#8B451399"})}}>
             <div onClick={()=>abrirPedido(p)} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
               <div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:21,color:C.marron,marginBottom:4}}>{p.descripcion}</div>
@@ -3188,7 +3188,7 @@ function VistaCarpinteria({usuario,notif}){
             else { et={t:"Para cotizar",bg:C.marron,fg:C.crema}; }
             const cerradoParaMi = p.estado==="aceptado" && p._miEstado!=="aceptado";
             return(
-              <div key={p.id} style={{...S.card,cursor:cerradoParaMi?"default":"pointer",transition:"all .15s",opacity:cerradoParaMi?0.7:1,borderColor:p._nuevo?"#009966":C.borde,borderWidth:p._nuevo?2:1}} onClick={()=>{ if(!cerradoParaMi) abrirPedidoCliente(p); }}
+              <div key={p.id} style={{...S.card,cursor:cerradoParaMi?"default":"pointer",transition:"all .15s",opacity:cerradoParaMi?0.7:1,borderColor:p._nuevo?"#009966":"#8B451399",borderWidth:p._nuevo?2:1}} onClick={()=>{ if(!cerradoParaMi) abrirPedidoCliente(p); }}
                 onMouseEnter={e=>{if(!cerradoParaMi){e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}}
                 onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
                 <div style={{display:"flex",justifyContent:"space-between",gap:10}}>
@@ -3261,7 +3261,7 @@ function VistaCarpinteria({usuario,notif}){
             {misPedidosAserr.map(p=>{
               const abierto=selAserr&&selAserr.id===p.id;
               return(
-              <div key={p.id} style={{...S.card,...(abierto?{borderColor:C.acento}:{})}}>
+              <div key={p.id} style={{...S.card,...(abierto?{borderColor:C.acento,borderWidth:2}:{borderColor:"#8B451399"})}}>
                 <div style={{display:"flex",justifyContent:"space-between",cursor:"pointer"}}
                   onClick={()=>{ if(abierto){setSelAserr(null);} else {setCotAserrAbierta(null);abrirPedidoAserr(p);} }}>
                   <div>
@@ -3404,7 +3404,7 @@ function VistaCarpinteria({usuario,notif}){
                 {misPedidosFerreria.map(p=>{
                   const abierto=selFerr&&selFerr.id===p.id;
                   return(
-                  <div key={p.id} style={{...S.card,...(abierto?{borderColor:C.acento}:{})}}>
+                  <div key={p.id} style={{...S.card,...(abierto?{borderColor:C.acento,borderWidth:2}:{borderColor:"#8B451399"})}}>
                     <div style={{display:"flex",justifyContent:"space-between",cursor:"pointer"}}
                       onClick={()=>{ if(abierto){setSelFerr(null);} else {abrirPedidoFerr(p);} }}>
                       <div>
@@ -3548,7 +3548,7 @@ function VistaCarpinteria({usuario,notif}){
                 {misPedidosPint.map(p=>{
                   const abierto=selPint&&selPint.id===p.id;
                   return(
-                  <div key={p.id} style={{...S.card,...(abierto?{borderColor:C.acento}:{})}}>
+                  <div key={p.id} style={{...S.card,...(abierto?{borderColor:C.acento,borderWidth:2}:{borderColor:"#8B451399"})}}>
                     <div style={{display:"flex",justifyContent:"space-between",cursor:"pointer"}}
                       onClick={()=>{ if(abierto){setSelPint(null);} else {abrirPedidoPint(p);} }}>
                       <div>
@@ -3911,7 +3911,7 @@ function VistaAserradero({usuario,notif}){
       {lista.map(p=>{
         const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
         return(
-        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",borderColor:p._nuevo?"#009966":C.borde,borderWidth:p._nuevo?2:1}} onClick={()=>abrirPedido(p)}
+        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",borderColor:p._nuevo?"#009966":"#8B451399",borderWidth:p._nuevo?2:1}} onClick={()=>abrirPedido(p)}
           onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
           onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
           <div style={{display:"flex",justifyContent:"space-between"}}>
@@ -4331,7 +4331,7 @@ function VistaFlete({usuario,notif}){
         {lista.map(p=>{
           const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
           return(
-          <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",borderColor:p._nuevo?"#009966":C.borde,borderWidth:p._nuevo?2:1}} onClick={()=>abrirPedido(p)}
+          <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",borderColor:p._nuevo?"#009966":"#8B451399",borderWidth:p._nuevo?2:1}} onClick={()=>abrirPedido(p)}
             onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
             onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
             <div style={{display:"flex",justifyContent:"space-between"}}>
@@ -4743,7 +4743,7 @@ function VistaFerreteria({usuario,notif}){
       {lista.map(p=>{
         const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
         return(
-        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",borderColor:p._nuevo?"#009966":C.borde,borderWidth:p._nuevo?2:1}} onClick={()=>abrirPedido(p)}
+        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",borderColor:p._nuevo?"#009966":"#8B451399",borderWidth:p._nuevo?2:1}} onClick={()=>abrirPedido(p)}
           onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
           onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
           <div style={{display:"flex",justifyContent:"space-between"}}>
@@ -5035,7 +5035,7 @@ function VistaPintureria({usuario,notif}){
       {lista.map(p=>{
         const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
         return(
-        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",borderColor:p._nuevo?"#009966":C.borde,borderWidth:p._nuevo?2:1}} onClick={()=>abrirPedido(p)}
+        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",borderColor:p._nuevo?"#009966":"#8B451399",borderWidth:p._nuevo?2:1}} onClick={()=>abrirPedido(p)}
           onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
           onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
           <div style={{display:"flex",justifyContent:"space-between"}}>
