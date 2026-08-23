@@ -1988,7 +1988,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.12</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.13</div>
     </div>
   );
 }
@@ -5467,7 +5467,10 @@ function ContactoUnificado({usuario,onCerrar}){
   const [err,setErr]=useState("");
 
   const TIPOS=[["pedido","📦 Sobre un pedido"],["usuario","👤 Sobre un usuario"],["app","⚙️ Sobre la app"]];
-  const CIRCUITOS=[["cliente","Cliente → Carpintería"],["aserradero","Carpintería → Aserradero"],["ferreteria","Carpintería → Ferretería"],["pintureria","Carpintería → Pinturería"],["flete","Flete"]];
+  const CIRCUITOS_TODOS=[["cliente","Cliente → Carpintería"],["aserradero","Carpintería → Aserradero"],["ferreteria","Carpintería → Ferretería"],["pintureria","Carpintería → Pinturería"],["flete","Flete"]];
+  const CIRCUITOS_POR_TIPO={cliente:["cliente","flete"],carpinteria:["cliente","aserradero","ferreteria","pintureria","flete"],aserradero:["aserradero","flete"],ferreteria:["ferreteria","flete"],pintureria:["pintureria","flete"],flete:["flete"]};
+  const circuitosPermitidos=CIRCUITOS_POR_TIPO[usuario.tipo]||["flete"];
+  const CIRCUITOS=CIRCUITOS_TODOS.filter(([id])=>circuitosPermitidos.includes(id));
   const ROLES={cliente:"Cliente",carpinteria:"Carpintería",aserradero:"Aserradero",ferreteria:"Ferretería",pintureria:"Pinturería",flete:"Flete"};
   const opcionesUsuario=(usuario.tipo==="carpinteria"
     ? ["cliente","aserradero","ferreteria","pintureria","flete"]
@@ -5476,6 +5479,7 @@ function ContactoUnificado({usuario,onCerrar}){
     : ["carpinteria","flete"]
   ).filter(r=>r!==usuario.tipo);
   useEffect(()=>{ if(!rolReportado&&opcionesUsuario.length) setRolReportado(opcionesUsuario[0]); },[]);
+  useEffect(()=>{ if(!circuitosPermitidos.includes(tipoPedidoRef)&&CIRCUITOS.length) setTipoPedidoRef(CIRCUITOS[0][0]); },[]);
 
   const enviarProblema=async()=>{
     if(!descripcion.trim()){ setErr("Contanos qué pasó."); setOk(""); return; }
