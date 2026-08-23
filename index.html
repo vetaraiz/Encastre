@@ -1988,7 +1988,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.11</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.12</div>
     </div>
   );
 }
@@ -5472,7 +5472,7 @@ function ContactoUnificado({usuario,onCerrar}){
   const opcionesUsuario=(usuario.tipo==="carpinteria"
     ? ["cliente","aserradero","ferreteria","pintureria","flete"]
     : usuario.tipo==="cliente"
-    ? ["carpinteria"]
+    ? ["carpinteria","flete"]
     : ["carpinteria","flete"]
   ).filter(r=>r!==usuario.tipo);
   useEffect(()=>{ if(!rolReportado&&opcionesUsuario.length) setRolReportado(opcionesUsuario[0]); },[]);
