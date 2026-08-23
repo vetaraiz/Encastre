@@ -1988,7 +1988,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.8</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.10</div>
     </div>
   );
 }
@@ -6564,13 +6564,10 @@ function App(){
             <div className="encastre-logo-name" style={{fontSize:17}}>ENCASTRE</div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            {(usuario.tipo==="cliente"||usuario.tipo==="carpinteria")&&(
-              <button style={{background:navTab==="conversor"?C.acento:"transparent",color:navTab==="conversor"?C.marron:C.suave,border:`1px solid ${C.suave}44`,borderRadius:0,padding:"4px 10px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Lato',sans-serif"}} onClick={()=>irAPrincipal("conversor")}>Conversor</button>
-            )}
+            <div style={{fontSize:18,color:C.crema,fontWeight:700,whiteSpace:"nowrap"}}>{usuario.nombre}</div>
             {usuario.tipo!=="flete"&&(
               <button style={{background:navTab==="flete"?C.acento:"transparent",color:navTab==="flete"?C.marron:C.suave,border:`1px solid ${C.suave}44`,borderRadius:0,padding:"4px 10px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Lato',sans-serif"}} onClick={()=>irAPrincipal("flete")}>Fletes<Badge9 n={badges.flete}/></button>
             )}
-            <div style={{fontSize:14,color:C.crema,fontWeight:700,whiteSpace:"nowrap"}}>{EMOJIS[usuario.tipo]} {usuario.nombre}</div>
             <div style={{position:"relative"}}>
               <button aria-label="Menú" style={{background:"transparent",color:C.suave,border:`1px solid ${C.suave}44`,borderRadius:0,padding:"5px 12px",cursor:"pointer",fontSize:22,fontWeight:700,lineHeight:1,fontFamily:"'Lato',sans-serif"}} onClick={()=>setMenuAbierto(v=>!v)}>⋮</button>
               {menuAbierto&&(
@@ -6578,11 +6575,12 @@ function App(){
                   <div onClick={()=>setMenuAbierto(false)} style={{position:"fixed",inset:0,zIndex:200}}/>
                   <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:C.card,border:`1px solid ${C.borde}`,borderRadius:0,boxShadow:"0 6px 24px #5C2E0A44",zIndex:201,minWidth:190,overflow:"hidden"}}>
                     <div style={{padding:"12px 18px",borderBottom:`1px solid ${C.borde}`,fontSize:13,color:C.textoSuave,textTransform:"uppercase",letterSpacing:.5}}>{usuario.tipo}</div>
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("privado");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setMenuAbierto(false);}}>• Mi cuenta</button>
-                    {usuario.tipo!=="admin"&&usuario.tipo!=="cliente"&&<button style={{display:"block",width:"100%",textAlign:"left",background:suscInfo.vencida?"#C0392B22":"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:suscInfo.vencida?"#C0392B":C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setMenuAbierto(false);}}>• Suscripción{suscInfo.vencida?" ⚠️":""}</button>}
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnContacto(true);setEnMiCuenta(false);setEnPapelera(false);setMenuAbierto(false);}}>• Reportar o comentar</button>
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnPapelera(true);setEnMiCuenta(false);setEnContacto(false);setMenuAbierto(false);}}>• Papelera</button>
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setMenuAbierto(false);cerrar();setMostrarBienvenida(true);}}>• Salir</button>
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("privado");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setMenuAbierto(false);}}><span style={{fontWeight:400}}>•</span> Mi cuenta</button>
+                    {(usuario.tipo==="cliente"||usuario.tipo==="carpinteria")&&<button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>irAPrincipal("conversor")}><span style={{fontWeight:400}}>•</span> Conversor</button>}
+                    {usuario.tipo!=="admin"&&usuario.tipo!=="cliente"&&<button style={{display:"block",width:"100%",textAlign:"left",background:suscInfo.vencida?"#C0392B22":"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:suscInfo.vencida?"#C0392B":C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setMenuAbierto(false);}}><span style={{fontWeight:400}}>•</span> Suscripción{suscInfo.vencida?" ⚠️":""}</button>}
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnContacto(true);setEnMiCuenta(false);setEnPapelera(false);setMenuAbierto(false);}}><span style={{fontWeight:400}}>•</span> Reportar o comentar</button>
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnPapelera(true);setEnMiCuenta(false);setEnContacto(false);setMenuAbierto(false);}}><span style={{fontWeight:400}}>•</span> Papelera</button>
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setMenuAbierto(false);cerrar();setMostrarBienvenida(true);}}><span style={{fontWeight:400}}>•</span> Salir</button>
                   </div>
                 </>
               )}
