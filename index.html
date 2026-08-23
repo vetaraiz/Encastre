@@ -1988,7 +1988,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.7</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.8</div>
     </div>
   );
 }
@@ -6380,19 +6380,6 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
   );
 }
 
-function NavBar({usuario,navTab,setNavTab}){
-  const items=[];
-  if(usuario.tipo==="cliente"||usuario.tipo==="carpinteria") items.push(["conversor","📐 Conversor",0]);
-  if(items.length===0) return null;
-  return(
-    <nav className="tabs-mobile" style={{display:"flex",gap:6,width:"100%"}}>
-      {items.map(([id,l,n])=>(
-        <button key={id} style={{flex:1,minWidth:0,background:navTab===id?C.acento:"transparent",color:navTab===id?C.marron:C.suave,border:navTab===id?"none":`1px solid ${C.acento}44`,borderRadius:0,padding:"10px 12px",cursor:"pointer",fontSize:16,fontWeight:n>0?900:700,fontFamily:"'Lato',sans-serif",transition:"all .15s",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",textAlign:"center"}} onClick={()=>setNavTab(id)}>{l}<Badge9 n={n}/></button>
-      ))}
-    </nav>
-  );
-}
-
 function PantallaSuscripcionVencida({onCerrar}){
   const [pagando,setPagando]=useState(false);
   const [err,setErr]=useState("");
@@ -6571,15 +6558,18 @@ function App(){
 
       {/* TOPBAR */}
       <div style={{...S.topbar,flexDirection:"column",alignItems:"stretch",gap:8,padding:"8px 12px"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",flexWrap:"wrap",rowGap:6}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <img src={LOGO_B64} alt="Encastre" style={{width:34,height:34,objectFit:"contain",borderRadius:0,flexShrink:0}}/>
             <div className="encastre-logo-name" style={{fontSize:17}}>ENCASTRE</div>
-            {usuario.tipo!=="flete"&&(
-              <button style={{background:navTab==="flete"?C.acento:"transparent",color:navTab==="flete"?C.marron:C.suave,border:`1px solid ${C.suave}44`,borderRadius:0,padding:"4px 10px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Lato',sans-serif",marginLeft:4}} onClick={()=>irAPrincipal("flete")}>Fletes<Badge9 n={badges.flete}/></button>
-            )}
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+            {(usuario.tipo==="cliente"||usuario.tipo==="carpinteria")&&(
+              <button style={{background:navTab==="conversor"?C.acento:"transparent",color:navTab==="conversor"?C.marron:C.suave,border:`1px solid ${C.suave}44`,borderRadius:0,padding:"4px 10px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Lato',sans-serif"}} onClick={()=>irAPrincipal("conversor")}>Conversor</button>
+            )}
+            {usuario.tipo!=="flete"&&(
+              <button style={{background:navTab==="flete"?C.acento:"transparent",color:navTab==="flete"?C.marron:C.suave,border:`1px solid ${C.suave}44`,borderRadius:0,padding:"4px 10px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Lato',sans-serif"}} onClick={()=>irAPrincipal("flete")}>Fletes<Badge9 n={badges.flete}/></button>
+            )}
             <div style={{fontSize:14,color:C.crema,fontWeight:700,whiteSpace:"nowrap"}}>{EMOJIS[usuario.tipo]} {usuario.nombre}</div>
             <div style={{position:"relative"}}>
               <button aria-label="Menú" style={{background:"transparent",color:C.suave,border:`1px solid ${C.suave}44`,borderRadius:0,padding:"5px 12px",cursor:"pointer",fontSize:22,fontWeight:700,lineHeight:1,fontFamily:"'Lato',sans-serif"}} onClick={()=>setMenuAbierto(v=>!v)}>⋮</button>
@@ -6599,7 +6589,6 @@ function App(){
             </div>
           </div>
         </div>
-        <NavBar usuario={usuario} navTab={navTab} setNavTab={irAPrincipal}/>
       </div>
 
       {/* CONTENIDO */}
