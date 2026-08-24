@@ -47,7 +47,7 @@
     .encastre-logo-name {
       font-size: 22px !important;
       font-weight: 800 !important;
-      color: #F0EDD8 !important;
+      color: #F2EAD9 !important;
       text-transform: uppercase !important;
       letter-spacing: 1px !important;
     }
@@ -57,7 +57,7 @@
       text-transform: uppercase !important;
       letter-spacing: 2px !important;
     }
-    ::-webkit-scrollbar-track { background:#F0EDD8; }
+    ::-webkit-scrollbar-track { background:#F2EAD9; }
     ::-webkit-scrollbar-thumb { background:#C4892A66; border-radius:3px; }
     @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
     @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
@@ -1390,12 +1390,12 @@ async function pedirIA(prompt) {
 
 // ─── PALETA ───────────────────────────────────────────────────────────────────
 const C = {
-  crema:"#F0EDD8", marron:"#5C2E0A", medio:"#8B4513", acento:"#C4892A",
-  suave:"#E8D5B7", texto:"#3A1A05", textoSuave:"#7A5C2A",
-  borde:"#C4892A33", card:"#FAF7EE", input:"#F5F0E0",
+  crema:"#F2EAD9", marron:"#3D2818", medio:"#8A5A32", acento:"#C4892A",
+  suave:"#E8D9BF", texto:"#2D3436", textoSuave:"#6B5A48",
+  borde:"#C4892A33", card:"#FAF7EE", input:"#F5EFDE",
   verde:"#4A7C3F", rojo:"#8B2020", azul:"#2A5C8B",
   exito:"#4A7C3F", error:"#8B2020",
-  fondo:"#F0EDD8",
+  fondo:"#F2EAD9",
 };
 
 const MATS = [
@@ -1986,7 +1986,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.15</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-24.1</div>
     </div>
   );
 }
