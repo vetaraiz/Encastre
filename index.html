@@ -1761,6 +1761,7 @@ function AuthScreen({onAuth}){
   const [nombre,setNombre]=useState("");
   const [tipo,setTipo]=useState("");
   const [ciudad,setCiudad]=useState("");
+  const [provincia,setProvincia]=useState("");
   const [err,setErr]=useState("");
   const [ok,setOk]=useState("");
   const [cargando,setCargando]=useState(false);
@@ -1859,9 +1860,9 @@ function AuthScreen({onAuth}){
         try{
           let nuevoUsuario;
           if(!userId){
-            nuevoUsuario=await db.insert("usuarios",{tipo,nombre,email:emailLimpio,ciudad,tipo_documento:tipoDoc,documento:docLimpio});
+            nuevoUsuario=await db.insert("usuarios",{tipo,nombre,email:emailLimpio,ciudad,provincia:provincia||null,tipo_documento:tipoDoc,documento:docLimpio});
           } else {
-            nuevoUsuario=await db.insert("usuarios",{auth_id:userId,tipo,nombre,email:emailLimpio,ciudad,tipo_documento:tipoDoc,documento:docLimpio});
+            nuevoUsuario=await db.insert("usuarios",{auth_id:userId,tipo,nombre,email:emailLimpio,ciudad,provincia:provincia||null,tipo_documento:tipoDoc,documento:docLimpio});
           }
           if(tipo!=="cliente"){
             const idNuevo=(nuevoUsuario&&nuevoUsuario[0]&&nuevoUsuario[0].id)||null;
@@ -1931,10 +1932,7 @@ function AuthScreen({onAuth}){
               <label style={S.label}>Nombre / Razón social</label>
               <input value={nombre} onChange={e=>setNombre(e.target.value)} placeholder="Tu nombre o el de tu negocio" style={S.input}/>
             </div>
-            <div style={{marginBottom:12}}>
-              <label style={S.label}>Ciudad</label>
-              <input value={ciudad} onChange={e=>setCiudad(e.target.value)} placeholder="Ej: Buenos Aires" style={S.input}/>
-            </div>
+            <SelectorUbicacion provincia={provincia} ciudad={ciudad} onProvincia={setProvincia} onCiudad={setCiudad}/>
             <div style={{marginBottom:12}}>
               <label style={S.label}>¿Empresa o persona?</label>
               <div style={{display:"flex",gap:8}}>
@@ -1988,7 +1986,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Hecho con 🌿 para el oficio de la madera</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.13</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-15.15</div>
     </div>
   );
 }
@@ -6042,6 +6040,7 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
   // ── PRIVADO ──
   const [nombre,setNombre]=useState(usuario.nombre||"");
   const [ciudad,setCiudad]=useState(usuario.ciudad||"");
+  const [provincia,setProvincia]=useState(usuario.provincia||"");
   const [direccion,setDireccion]=useState(usuario.direccion||"");
   const [barrio,setBarrio]=useState(usuario.barrio||"");
   const [telefono,setTelefono]=useState(usuario.telefono||"");
@@ -6127,7 +6126,7 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
     setErrPriv(""); setOkPriv("");
     if(!nombre.trim()){ setErrPriv("El nombre no puede quedar vacío."); return; }
     setGuardandoPriv(true);
-    const campos={nombre:nombre.trim(),ciudad:ciudad.trim(),direccion:direccion.trim()||null,barrio:barrio.trim()||null,telefono:telefono.trim()||null,mostrar_telefono:mostrarTel,mostrar_direccion:mostrarDir,tipo_documento:tipoDoc,documento:documento.trim(),recibir_avisos:recibirAvisos};
+    const campos={nombre:nombre.trim(),ciudad:ciudad.trim(),provincia:provincia.trim()||null,direccion:direccion.trim()||null,barrio:barrio.trim()||null,telefono:telefono.trim()||null,mostrar_telefono:mostrarTel,mostrar_direccion:mostrarDir,tipo_documento:tipoDoc,documento:documento.trim(),recibir_avisos:recibirAvisos};
     try{
       await db.updateMin("usuarios",campos,`id=eq.${usuario.id}`);
       parchearSesion(campos);
@@ -6212,10 +6211,7 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
               <label style={S.label}>Nombre / Razón social</label>
               <input style={S.input} value={nombre} onChange={e=>setNombre(e.target.value)}/>
             </div>
-            <div style={{marginBottom:14}}>
-              <label style={S.label}>Ciudad</label>
-              <input style={S.input} value={ciudad} onChange={e=>setCiudad(e.target.value)}/>
-            </div>
+            <SelectorUbicacion provincia={provincia} ciudad={ciudad} onProvincia={setProvincia} onCiudad={setCiudad}/>
             <div style={{marginBottom:14}}>
               <label style={S.label}>Dirección</label>
               <input style={S.input} value={direccion} onChange={e=>setDireccion(e.target.value)} placeholder="Calle y número"/>
@@ -6444,6 +6440,61 @@ function AvisoDiasRestantes({dias,estado,onContinuar}){
       <button style={{...S.btn("gold"),maxWidth:340,width:"100%",justifyContent:"center",marginBottom:14}} onClick={pagar} disabled={pagando}>{pagando?"⟳ Generando link...":"💳 Pagar suscripción mensual"}</button>
       <button style={{...S.btn("ghost"),maxWidth:340,width:"100%",justifyContent:"center"}} onClick={onContinuar}>Continuar →</button>
     </div>
+  );
+}
+
+// --- Ubicación (API Georef Argentina) ---
+const GEOREF_CACHE={provincias:null,localidades:{}};
+async function cargarProvincias(){
+  if(GEOREF_CACHE.provincias) return GEOREF_CACHE.provincias;
+  try{
+    const r=await fetch("https://apis.datos.gob.ar/georef/api/provincias?campos=id,nombre&orden=nombre&max=30");
+    const d=await r.json();
+    GEOREF_CACHE.provincias=(d.provincias||[]).map(p=>p.nombre);
+  }catch{ GEOREF_CACHE.provincias=[]; }
+  return GEOREF_CACHE.provincias;
+}
+async function cargarLocalidades(provinciaNombre){
+  if(!provinciaNombre) return [];
+  if(GEOREF_CACHE.localidades[provinciaNombre]) return GEOREF_CACHE.localidades[provinciaNombre];
+  try{
+    const r=await fetch("https://apis.datos.gob.ar/georef/api/localidades?provincia="+encodeURIComponent(provinciaNombre)+"&campos=nombre&max=5000&orden=nombre");
+    const d=await r.json();
+    const vistos=new Set(); const lista=[];
+    (d.localidades||[]).forEach(l=>{ if(!vistos.has(l.nombre)){ vistos.add(l.nombre); lista.push(l.nombre); } });
+    GEOREF_CACHE.localidades[provinciaNombre]=lista;
+  }catch{ GEOREF_CACHE.localidades[provinciaNombre]=[]; }
+  return GEOREF_CACHE.localidades[provinciaNombre];
+}
+function SelectorUbicacion({provincia,ciudad,onProvincia,onCiudad}){
+  const [provincias,setProvincias]=useState([]);
+  const [localidades,setLocalidades]=useState([]);
+  const [cargando,setCargando]=useState(false);
+  useEffect(()=>{ cargarProvincias().then(setProvincias); },[]);
+  useEffect(()=>{
+    if(!provincia){ setLocalidades([]); return; }
+    let cancelado=false;
+    setCargando(true);
+    cargarLocalidades(provincia).then(l=>{ if(!cancelado){ setLocalidades(l); setCargando(false); } });
+    return ()=>{cancelado=true;};
+  },[provincia]);
+  return(
+    <>
+      <div style={{marginBottom:14}}>
+        <label style={S.label}>Provincia</label>
+        <select style={S.input} value={provincia} onChange={e=>{onProvincia(e.target.value);onCiudad("");}}>
+          <option value="">Elegí una provincia</option>
+          {provincias.map(p=><option key={p} value={p}>{p}</option>)}
+        </select>
+      </div>
+      <div style={{marginBottom:14}}>
+        <label style={S.label}>Localidad</label>
+        <select style={S.input} value={ciudad} onChange={e=>onCiudad(e.target.value)} disabled={!provincia||cargando}>
+          <option value="">{cargando?"Cargando...":provincia?"Elegí una localidad":"Elegí primero la provincia"}</option>
+          {localidades.map(l=><option key={l} value={l}>{l}</option>)}
+        </select>
+      </div>
+    </>
   );
 }
 
