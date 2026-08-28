@@ -1558,7 +1558,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-24.15</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-28.1</div>
     </div>
   );
 }
@@ -4644,7 +4644,7 @@ function PantallaBienvenida({onEntrar}){
       <button style={{...S.btn("ghost"),marginBottom:16}} onClick={()=>setVista("inicio")}>← Volver</button>
       <div style={{background:C.card,borderRadius:0,padding:24,border:`1px solid ${C.borde}`}}>
         <div style={{fontFamily:"'Lato',sans-serif",fontSize:23,fontWeight:700,color:C.marron,marginBottom:16}}>📖 Manual de Usuario</div>
-        <p style={{fontSize:17,color:C.texto,lineHeight:1.7,marginBottom:14}}><b>Encastre — La Comunidad de la Madera</b> reúne en un mismo lugar a todos los actores del rubro: el consumidor final, la carpintería, el aserradero, la ferretería y el flete. La idea es simple: pedir, presupuestar y coordinar trabajos en madera de forma rápida, clara y ordenada.</p>
+        <p style={{fontSize:17,color:C.texto,lineHeight:1.7,marginBottom:14}}><b>Encastre — La Comunidad de la Madera</b> reúne en un mismo lugar a todos los actores del rubro: el consumidor final, la carpintería, el aserradero, la ferretería, la pinturería y el flete. La idea es simple: pedir, presupuestar y coordinar trabajos en madera de forma rápida, clara y ordenada — cada presupuesto es un <b>sobre cerrado</b>: nadie ve las cotizaciones de la competencia.</p>
 
         <div style={{fontFamily:"'Lato',sans-serif",fontSize:18,fontWeight:700,color:C.marron,margin:"6px 0 10px"}}>¿Quién es quién?</div>
         {[
@@ -4661,10 +4661,11 @@ function PantallaBienvenida({onEntrar}){
 
         <div style={{fontFamily:"'Lato',sans-serif",fontSize:18,fontWeight:700,color:C.marron,margin:"18px 0 10px"}}>¿Cómo funciona?</div>
         {[
-          "Registrate y elegí tu tipo de usuario.",
+          "Registrate, elegí tu tipo de usuario y cargá tu provincia y localidad.",
           "El cliente crea un pedido con medidas, materiales y, si quiere, una foto del croquis.",
-          "Las carpinterías envían sus presupuestos y el cliente acepta el que prefiere.",
-          "Coordinan los detalles por el chat interno y, si hace falta, suman aserradero, ferretería y flete.",
+          "Las carpinterías envían sus presupuestos por sobre cerrado: cada una ve solo el suyo, nunca los de la competencia. El cliente compara y acepta el que prefiere.",
+          "Coordinan los detalles por el chat interno de cada pedido y, si hace falta, suman aserradero, ferretería, pinturería y flete.",
+          "Al terminar el trabajo, se pueden calificar entre sí con estrellas y un comentario.",
         ].map((p,i)=>(<div key={i} style={{display:"flex",gap:10,marginBottom:10,alignItems:"flex-start"}}>
           <div style={{minWidth:26,height:26,borderRadius:"50%",background:C.marron,color:C.crema,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:15}}>{i+1}</div>
           <div style={{fontSize:16,color:C.texto,lineHeight:1.6}}>{p}</div>
@@ -4676,7 +4677,11 @@ function PantallaBienvenida({onEntrar}){
           "💬 Chat interno entre los usuarios de cada operación.",
           "📐 Conversor de medidas (centímetros, milímetros y pulgadas).",
           "🚚 Agenda de fletes para coordinar los traslados.",
+          "⭐ Calificaciones con estrellas al finalizar un trabajo.",
+          "📍 Ubicación por provincia y localidad, para encontrar trabajos y proveedores cerca.",
+          "✉️ Reportar un problema o enviar un comentario a la administración.",
         ].map((p,i)=>(<div key={i} style={{fontSize:16,color:C.textoSuave,lineHeight:1.7,marginBottom:6}}>{p}</div>))}
+        <div style={{fontSize:14,color:C.textoSuave,lineHeight:1.6,marginTop:10,fontStyle:"italic"}}>Los talleres y proveedores (carpintería, aserradero, ferretería, pinturería y flete) tienen 30 días de prueba gratis al registrarse. El consumidor final no paga suscripción.</div>
         <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",marginTop:8}} onClick={onEntrar}>Registrarme / Ingresar →</button>
       </div>
     </div>
