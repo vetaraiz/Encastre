@@ -1558,7 +1558,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-28.1</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-28.2</div>
     </div>
   );
 }
@@ -5024,6 +5024,75 @@ function PresupuestoFormato({empresa,cliente,items,opts,numero,fecha,tiempoEntre
   );
 }
 
+function ManualUsuario({tipo,onCerrar}){
+  const MANUALES={
+    carpinteria:{
+      titulo:"🔨 Manual — Carpintería",
+      secciones:[
+        {t:"Pedidos de clientes",items:[
+          "Los pedidos nuevos aparecen en la pestaña Pedidos, filtro «Para cotizar».",
+          "Filtros disponibles: Para cotizar, Cotizados, Cerrados, Vencidos, Todos.",
+          "Abrí un pedido para ver medidas, materiales y la foto del croquis si el cliente la subió.",
+        ]},
+        {t:"Enviar tu presupuesto",items:[
+          "Cargá los ítems, el precio y el tiempo de entrega. Podés aplicar descuento e IVA si querés.",
+          "Tu presupuesto es un sobre cerrado: ningún otro carpintero ve tu precio, y vos no ves los de la competencia.",
+          "Cuando el cliente acepta un presupuesto (el tuyo o el de otro), el pedido pasa a «Cerrados».",
+        ]},
+        {t:"Pedir materiales",items:[
+          "Desde tu panel podés pedir madera al aserradero, herrajes a la ferretería y pinturas a la pinturería.",
+          "Cada rubro te responde con su propia cotización, también por sobre cerrado.",
+        ]},
+        {t:"Fletes",items:[
+          "Usá el botón «Fletes» del encabezado para coordinar el traslado de un trabajo terminado.",
+        ]},
+        {t:"Chat interno",items:[
+          "Cada pedido y cada cotización tienen su propio chat para coordinar detalles con el cliente o el proveedor.",
+        ]},
+        {t:"Calificaciones",items:[
+          "Al cerrar un trabajo podés calificar al cliente con estrellas y un comentario, y él puede calificarte a vos.",
+        ]},
+        {t:"Ubicación",items:[
+          "Cargá tu provincia y localidad en Mi cuenta para que los clientes de tu zona te encuentren más fácil.",
+        ]},
+        {t:"Suscripción",items:[
+          "Tenés 30 días de prueba gratis desde que te registrás. Después, la suscripción se paga mensualmente.",
+          "Podés ver el estado y pagar desde el menú → Suscripción.",
+        ]},
+        {t:"Reportar o comentar",items:[
+          "Si tenés un problema con un pedido o con otro usuario, o querés dejar un comentario, usá «Reportar o comentar» en el menú.",
+        ]},
+      ]
+    },
+  };
+  const m=MANUALES[tipo];
+  return(
+    <div style={{maxWidth:640,margin:"0 auto"}}>
+      <button style={{...S.btn("ghost"),marginBottom:16}} onClick={onCerrar}>← Volver</button>
+      <div style={S.card}>
+        {!m?(
+          <>
+            <div style={{...S.cardTitle,fontSize:24,marginBottom:10}}>📖 Manual</div>
+            <div style={{fontSize:16,color:C.textoSuave,lineHeight:1.7}}>Muy pronto vas a tener acá el manual completo de tu circuito. Mientras tanto, podés consultar el Manual general desde la pantalla de bienvenida.</div>
+          </>
+        ):(
+          <>
+            <div style={{...S.cardTitle,fontSize:24,marginBottom:16}}>{m.titulo}</div>
+            {m.secciones.map(s=>(
+              <div key={s.t} style={{marginBottom:18}}>
+                <div style={{fontFamily:"'Lato',sans-serif",fontSize:17,fontWeight:700,color:C.marron,marginBottom:6}}>{s.t}</div>
+                {s.items.map((it,i)=>(
+                  <div key={i} style={{fontSize:16,color:C.texto,lineHeight:1.6,marginBottom:4,paddingLeft:14,borderLeft:`3px solid ${C.acento}`}}>{it}</div>
+                ))}
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ContactoUnificado({usuario,onCerrar}){
   const [modo,setModo]=useState("problema"); // "problema" | "comentario"
 
@@ -6086,6 +6155,7 @@ function App(){
   const [enMiCuenta,setEnMiCuenta]=useState(false);
   const [enContacto,setEnContacto]=useState(false);
   const [enPapelera,setEnPapelera]=useState(false);
+  const [enManual,setEnManual]=useState(false);
   const [suscInfo,setSuscInfo]=useState({cargando:true,vencida:false});
   const [cuentaTab,setCuentaTab]=useState("privado");
   const badges=useBadges(sesion?.usuario);
@@ -6215,11 +6285,12 @@ function App(){
                   <div onClick={()=>setMenuAbierto(false)} style={{position:"fixed",inset:0,zIndex:200}}/>
                   <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:C.card,border:`1px solid ${C.borde}`,borderRadius:0,boxShadow:"0 6px 24px #5A4A3A44",zIndex:201,minWidth:190,overflow:"hidden"}}>
                     <div style={{padding:"12px 18px",borderBottom:`1px solid ${C.borde}`,fontSize:13,color:C.textoSuave,textTransform:"uppercase",letterSpacing:.5}}>{usuario.tipo}</div>
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("privado");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setMenuAbierto(false);}}><span style={{fontWeight:700}}>•</span> Mi cuenta</button>
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("privado");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setEnManual(false);setMenuAbierto(false);}}><span style={{fontWeight:700}}>•</span> Mi cuenta</button>
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnManual(true);setEnMiCuenta(false);setEnContacto(false);setEnPapelera(false);setMenuAbierto(false);}}><span style={{fontWeight:700}}>•</span> Manual</button>
                     {(usuario.tipo==="cliente"||usuario.tipo==="carpinteria")&&<button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>irAPrincipal("conversor")}><span style={{fontWeight:700}}>•</span> Conversor</button>}
-                    {usuario.tipo!=="admin"&&usuario.tipo!=="cliente"&&<button style={{display:"block",width:"100%",textAlign:"left",background:suscInfo.vencida?"#C0392B22":"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:suscInfo.vencida?"#C0392B":C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setMenuAbierto(false);}}><span style={{fontWeight:700}}>•</span> Suscripción{suscInfo.vencida?" ⚠️":""}</button>}
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnContacto(true);setEnMiCuenta(false);setEnPapelera(false);setMenuAbierto(false);}}><span style={{fontWeight:700}}>•</span> Reportar o comentar</button>
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnPapelera(true);setEnMiCuenta(false);setEnContacto(false);setMenuAbierto(false);}}><span style={{fontWeight:700}}>•</span> Papelera</button>
+                    {usuario.tipo!=="admin"&&usuario.tipo!=="cliente"&&<button style={{display:"block",width:"100%",textAlign:"left",background:suscInfo.vencida?"#C0392B22":"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:suscInfo.vencida?"#C0392B":C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setEnManual(false);setMenuAbierto(false);}}><span style={{fontWeight:700}}>•</span> Suscripción{suscInfo.vencida?" ⚠️":""}</button>}
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnContacto(true);setEnMiCuenta(false);setEnPapelera(false);setEnManual(false);setMenuAbierto(false);}}><span style={{fontWeight:700}}>•</span> Reportar o comentar</button>
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnPapelera(true);setEnMiCuenta(false);setEnContacto(false);setEnManual(false);setMenuAbierto(false);}}><span style={{fontWeight:700}}>•</span> Papelera</button>
                     <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setMenuAbierto(false);cerrar();setMostrarBienvenida(true);}}><span style={{fontWeight:700}}>•</span> Salir</button>
                   </div>
                 </>
@@ -6237,6 +6308,8 @@ function App(){
           <ContactoUnificado usuario={usuario} onCerrar={()=>setEnContacto(false)}/>
         ) : enPapelera ? (
           <Papelera usuario={usuario} onCerrar={()=>setEnPapelera(false)}/>
+        ) : enManual ? (
+          <ManualUsuario tipo={usuario.tipo} onCerrar={()=>setEnManual(false)}/>
         ) : (
           <>
             {navTab==="principal"&&usuario.tipo==="cliente"&&<VistaCliente usuario={usuario} notif={setNotifMsg}/>}
