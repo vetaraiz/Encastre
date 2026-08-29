@@ -1558,7 +1558,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-28.2</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-28.3</div>
     </div>
   );
 }
@@ -5024,68 +5024,191 @@ function PresupuestoFormato({empresa,cliente,items,opts,numero,fecha,tiempoEntre
   );
 }
 
+function FlowStep({n,icon,title,lines,color}){
+  const bc=color||C.acento;
+  return (
+    <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+      <div style={{minWidth:34,height:34,borderRadius:"50%",background:C.marron,color:C.crema,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:16,flexShrink:0}}>{n}</div>
+      <div style={{flex:1,background:C.card,border:`2px solid ${bc}`,padding:"12px 14px",borderRadius:0,minWidth:0}}>
+        <div style={{fontSize:17,fontWeight:700,color:C.marron,marginBottom:7}}>{icon} {title}</div>
+        {lines.map((l,i)=>(
+          <div key={i} style={{fontSize:15,color:C.texto,lineHeight:1.55,marginBottom:i<lines.length-1?5:0,display:"flex",gap:7}}>
+            <span style={{color:C.acento,fontWeight:700,flexShrink:0}}>•</span><span>{l}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FlowArrow({label}){
+  return (
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"3px 0",marginLeft:17}}>
+      <div style={{width:2,height:label?8:16,background:C.acento}}/>
+      {label&&<div style={{fontSize:12,fontWeight:700,color:C.marron,background:C.suave,padding:"3px 12px",borderRadius:12,margin:"2px 0"}}>{label}</div>}
+      <div style={{width:0,height:0,borderLeft:"7px solid transparent",borderRight:"7px solid transparent",borderTop:`10px solid ${C.acento}`,marginTop:label?1:0}}/>
+    </div>
+  );
+}
+
+function FlowBranch({label,options}){
+  return (
+    <div style={{marginLeft:34}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.marron,background:C.suave,display:"inline-block",padding:"5px 12px",borderRadius:12,marginBottom:10}}>🔀 {label}</div>
+      <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+        {options.map((o,i)=>(
+          <div key={i} style={{flex:"1 1 240px",background:C.card,border:`2px solid ${o.color}`,padding:"12px 14px",borderRadius:0,minWidth:0}}>
+            <div style={{fontSize:16,fontWeight:700,color:o.color,marginBottom:7}}>{o.icon} {o.title}</div>
+            {o.lines.map((l,i2)=>(
+              <div key={i2} style={{fontSize:14,color:C.texto,lineHeight:1.5,marginBottom:i2<o.lines.length-1?5:0,display:"flex",gap:7}}>
+                <span style={{color:o.color,fontWeight:700,flexShrink:0}}>•</span><span>{l}</span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const FLUJOS = {
+  carpinteria:{
+    titulo:"🔨 Tu circuito como Carpintería",
+    leyenda:[
+      {e:"🔒",t:"Sobre cerrado: nadie ve tu precio ni vos el de otros."},
+      {e:"💬",t:"Chat: para hablar con el cliente o el proveedor."},
+      {e:"⭐",t:"Calificación: se hace al terminar el trabajo."},
+      {e:"⋮",t:"Los tres puntitos arriba a la derecha: ahí está el menú."},
+    ],
+    pasos:[
+      {type:"step",n:1,icon:"📝",title:"Te registrás",lines:[
+        "Elegís «Carpintería» como tipo de usuario.",
+        "Completás nombre, email, teléfono y contraseña.",
+        "Cargás tu provincia y tu localidad.",
+        "Tocás el botón «Registrarme».",
+      ]},
+      {type:"arrow",label:"automático"},
+      {type:"step",n:2,icon:"🎁",title:"Arranca tu prueba gratis",lines:[
+        "Desde el momento en que te registrás tenés 30 días gratis.",
+        "No hace falta cargar ninguna tarjeta para empezar a usarlo.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:3,icon:"🔑",title:"Iniciás sesión",lines:[
+        "Entrás con tu email y tu contraseña.",
+        "Caés directo en la pantalla de «Pedidos».",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:4,icon:"📥",title:"Mirás la lista de pedidos",lines:[
+        "Arriba hay 5 filtros: Para cotizar, Cotizados, Cerrados, Vencidos, Todos.",
+        "Se abre por defecto en «Para cotizar»: ahí están los pedidos que todavía no presupuestaste.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:5,icon:"👀",title:"Abrís un pedido",lines:[
+        "Tocás el pedido en la lista para verlo entero.",
+        "Ves medidas, materiales pedidos y las notas del cliente.",
+        "Si el cliente subió una foto del croquis, también aparece ahí.",
+      ]},
+      {type:"branch",label:"¿Te faltan materiales para poder presupuestar?",options:[
+        {icon:"🪵",title:"Sí, necesito comprar",color:C.azul,lines:[
+          "Desde tu panel armás un pedido a aserradero (madera), ferretería (herrajes) o pinturería (pintura).",
+          "Esperás que te manden su cotización — también por sobre cerrado, solo la ves vos.",
+          "Con ese precio en la mano, armás tu presupuesto para el cliente.",
+        ]},
+        {icon:"✅",title:"No, ya tengo todo claro",color:C.verde,lines:[
+          "Pasás directo a armar tu presupuesto para el cliente.",
+        ]},
+      ]},
+      {type:"arrow"},
+      {type:"step",n:6,icon:"💰",title:"Armás tu presupuesto",lines:[
+        "Cargás cada ítem: descripción, cantidad y precio.",
+        "Cargás el tiempo de entrega estimado.",
+        "Si querés, activás descuento y/o IVA.",
+      ]},
+      {type:"arrow",label:"🔒 sobre cerrado"},
+      {type:"step",n:7,icon:"🔒",title:"Tu precio queda protegido",lines:[
+        "Ningún otro carpintero ve cuánto cotizaste vos.",
+        "Vos tampoco ves lo que cotizaron las otras carpinterías.",
+        "Nadie puede bajar su precio copiándose del tuyo.",
+      ],color:C.medio},
+      {type:"arrow"},
+      {type:"step",n:8,icon:"📤",title:"Enviás el presupuesto",lines:[
+        "Tocás el botón «Enviar».",
+        "El pedido pasa de «Para cotizar» a «Cotizados» en tu lista.",
+        "El cliente recibe un aviso de que le llegó un presupuesto nuevo.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:9,icon:"⏳",title:"Esperás la respuesta del cliente",lines:[
+        "El cliente compara los presupuestos que le llegaron (solo ve los montos, no quién cotizó qué precio de más).",
+        "Puede tardar horas o días en decidirse.",
+      ]},
+      {type:"branch",label:"¿Qué decide el cliente?",options:[
+        {icon:"✅",title:"Te elige a vos",color:C.verde,lines:[
+          "El pedido pasa al filtro «Cerrados».",
+          "Se abre el chat del pedido para coordinar entrega, pago y detalles.",
+          "Si hay que trasladar el mueble, coordinás el flete con el botón «Fletes» de arriba.",
+          "Al terminar el trabajo, se califican mutuamente con estrellas y comentario.",
+        ]},
+        {icon:"❌",title:"Elige a otro, o se vence el plazo",color:C.rojo,lines:[
+          "El pedido queda guardado en «Cotizados», o pasa a «Vencidos» si se venció la fecha.",
+          "No perdés nada: presupuestar no cuesta ni se descuenta de tu suscripción.",
+          "Seguís viendo pedidos nuevos con normalidad.",
+        ]},
+      ]},
+      {type:"arrow"},
+      {type:"step",n:10,icon:"💬",title:"Usás el chat cuando lo necesites",lines:[
+        "Cada pedido y cada cotización tienen su propio chat.",
+        "Podés escribir antes de que te elijan, para aclarar dudas, o después, para coordinar la entrega.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:11,icon:"📍",title:"Mantenés tu ubicación al día",lines:[
+        "Tocás los tres puntitos (⋮) arriba a la derecha.",
+        "Tocás «Mi cuenta».",
+        "Cambiás tu provincia y localidad si cambiás de zona de trabajo.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:12,icon:"💳",title:"Controlás tu suscripción",lines:[
+        "Tocás los tres puntitos (⋮) → «Suscripción».",
+        "Ahí ves cuántos días de prueba o de suscripción activa te quedan.",
+        "Cuando se vencen los 30 días gratis, pagás la suscripción mensual para seguir recibiendo pedidos.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:13,icon:"✉️",title:"Reportás un problema o dejás un comentario",lines:[
+        "Tocás los tres puntitos (⋮) → «Reportar o comentar».",
+        "Elegís «Reportar un problema» si tuviste un inconveniente con un cliente u otro usuario.",
+        "Elegís «Enviar un comentario» si querés sugerir algo o avisar otra cosa.",
+        "El mensaje llega directo a la administración de Encastre.",
+      ]},
+    ]
+  }
+};
+
 function ManualUsuario({tipo,onCerrar}){
-  const MANUALES={
-    carpinteria:{
-      titulo:"🔨 Manual — Carpintería",
-      secciones:[
-        {t:"Pedidos de clientes",items:[
-          "Los pedidos nuevos aparecen en la pestaña Pedidos, filtro «Para cotizar».",
-          "Filtros disponibles: Para cotizar, Cotizados, Cerrados, Vencidos, Todos.",
-          "Abrí un pedido para ver medidas, materiales y la foto del croquis si el cliente la subió.",
-        ]},
-        {t:"Enviar tu presupuesto",items:[
-          "Cargá los ítems, el precio y el tiempo de entrega. Podés aplicar descuento e IVA si querés.",
-          "Tu presupuesto es un sobre cerrado: ningún otro carpintero ve tu precio, y vos no ves los de la competencia.",
-          "Cuando el cliente acepta un presupuesto (el tuyo o el de otro), el pedido pasa a «Cerrados».",
-        ]},
-        {t:"Pedir materiales",items:[
-          "Desde tu panel podés pedir madera al aserradero, herrajes a la ferretería y pinturas a la pinturería.",
-          "Cada rubro te responde con su propia cotización, también por sobre cerrado.",
-        ]},
-        {t:"Fletes",items:[
-          "Usá el botón «Fletes» del encabezado para coordinar el traslado de un trabajo terminado.",
-        ]},
-        {t:"Chat interno",items:[
-          "Cada pedido y cada cotización tienen su propio chat para coordinar detalles con el cliente o el proveedor.",
-        ]},
-        {t:"Calificaciones",items:[
-          "Al cerrar un trabajo podés calificar al cliente con estrellas y un comentario, y él puede calificarte a vos.",
-        ]},
-        {t:"Ubicación",items:[
-          "Cargá tu provincia y localidad en Mi cuenta para que los clientes de tu zona te encuentren más fácil.",
-        ]},
-        {t:"Suscripción",items:[
-          "Tenés 30 días de prueba gratis desde que te registrás. Después, la suscripción se paga mensualmente.",
-          "Podés ver el estado y pagar desde el menú → Suscripción.",
-        ]},
-        {t:"Reportar o comentar",items:[
-          "Si tenés un problema con un pedido o con otro usuario, o querés dejar un comentario, usá «Reportar o comentar» en el menú.",
-        ]},
-      ]
-    },
-  };
-  const m=MANUALES[tipo];
+  const f=FLUJOS[tipo];
   return(
-    <div style={{maxWidth:640,margin:"0 auto"}}>
+    <div style={{maxWidth:680,margin:"0 auto"}}>
       <button style={{...S.btn("ghost"),marginBottom:16}} onClick={onCerrar}>← Volver</button>
       <div style={S.card}>
-        {!m?(
+        {!f?(
           <>
             <div style={{...S.cardTitle,fontSize:24,marginBottom:10}}>📖 Manual</div>
-            <div style={{fontSize:16,color:C.textoSuave,lineHeight:1.7}}>Muy pronto vas a tener acá el manual completo de tu circuito. Mientras tanto, podés consultar el Manual general desde la pantalla de bienvenida.</div>
+            <div style={{fontSize:16,color:C.textoSuave,lineHeight:1.7}}>Muy pronto vas a tener acá el manual completo de tu circuito, con el mismo formato paso a paso. Mientras tanto, podés consultar el Manual general desde la pantalla de bienvenida.</div>
           </>
         ):(
           <>
-            <div style={{...S.cardTitle,fontSize:24,marginBottom:16}}>{m.titulo}</div>
-            {m.secciones.map(s=>(
-              <div key={s.t} style={{marginBottom:18}}>
-                <div style={{fontFamily:"'Lato',sans-serif",fontSize:17,fontWeight:700,color:C.marron,marginBottom:6}}>{s.t}</div>
-                {s.items.map((it,i)=>(
-                  <div key={i} style={{fontSize:16,color:C.texto,lineHeight:1.6,marginBottom:4,paddingLeft:14,borderLeft:`3px solid ${C.acento}`}}>{it}</div>
-                ))}
-              </div>
-            ))}
+            <div style={{...S.cardTitle,fontSize:24,marginBottom:14}}>{f.titulo}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:20}}>
+              {f.leyenda.map((l,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:6,background:C.suave,border:`1px solid ${C.acento}55`,borderRadius:16,padding:"5px 12px",fontSize:13,color:C.marron,fontWeight:600}}>
+                  <span style={{fontSize:15}}>{l.e}</span><span>{l.t}</span>
+                </div>
+              ))}
+            </div>
+            {f.pasos.map((p,i)=>{
+              if(p.type==="step")return <FlowStep key={i} n={p.n} icon={p.icon} title={p.title} lines={p.lines} color={p.color}/>;
+              if(p.type==="arrow")return <FlowArrow key={i} label={p.label}/>;
+              if(p.type==="branch")return <FlowBranch key={i} label={p.label} options={p.options}/>;
+              return null;
+            })}
           </>
         )}
       </div>
