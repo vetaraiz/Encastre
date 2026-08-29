@@ -941,9 +941,9 @@ const db = {
       await fetch(`${SUPABASE_URL}/functions/v1/enviar-mail`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${tk}`,"Content-Type":"application/json"},body:JSON.stringify({para,asunto,cuerpo})});
     }catch(e){ /* silencioso: el aviso es secundario */ }
   },
-  async crearPago(){
+  async crearPago(preview){
     const tk=this.ses?.token; if(!tk) throw new Error("Sesión inválida");
-    const r=await fetch(`${SUPABASE_URL}/functions/v1/crear-pago`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${tk}`,"Content-Type":"application/json"}});
+    const r=await fetch(`${SUPABASE_URL}/functions/v1/crear-pago`,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":`Bearer ${tk}`,"Content-Type":"application/json"},body:JSON.stringify({preview:!!preview})});
     const data=await r.json();
     if(!r.ok||data.error) throw new Error(data.error||"No se pudo generar el link de pago");
     return data;
@@ -1557,7 +1557,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-28.4</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.1</div>
     </div>
   );
 }
@@ -5854,10 +5854,21 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
     })();
   },[]);
   const vencidaSusc = susc && new Date(susc.fecha_vencimiento) < new Date();
+  const [confirmarPago,setConfirmarPago]=useState(null);
+  const [cargandoPreview,setCargandoPreview]=useState(false);
+  const verPrecio=async()=>{
+    setCargandoPreview(true); setErrSusc("");
+    try{
+      const data=await db.crearPago(true);
+      if(data.precio!=null) setConfirmarPago({precio:data.precio,numeroMes:data.numeroMes});
+      else setErrSusc("No se pudo calcular el precio.");
+    }catch(e){ setErrSusc(e.message||"No se pudo calcular el precio."); }
+    setCargandoPreview(false);
+  };
   const pagar=async()=>{
     setPagando(true); setErrSusc("");
     try{
-      const data=await db.crearPago();
+      const data=await db.crearPago(false);
       if(data.init_point) window.location.href=data.init_point;
       else setErrSusc("No se pudo generar el link de pago.");
     }catch(e){ setErrSusc(e.message||"No se pudo generar el link de pago."); }
@@ -6147,7 +6158,11 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
               </div>
               {vencidaSusc&&<div style={{fontSize:14,color:C.error,marginBottom:14}}>Tu acceso al panel está bloqueado hasta que renueves.</div>}
               {msg(errSusc,"err")}
-              <button style={{...S.btn("gold"),width:"100%",justifyContent:"center"}} onClick={pagar} disabled={pagando}>{pagando?"⟳ Generando link...":"💳 Pagar suscripción mensual"}</button>
+              {!confirmarPago?(
+                <button style={{...S.btn("gold"),width:"100%",justifyContent:"center"}} onClick={verPrecio} disabled={cargandoPreview}>{cargandoPreview?"⟳ Calculando...":"💳 Pagar suscripción mensual"}</button>
+              ):(
+                <ConfirmarPago precio={confirmarPago.precio} numeroMes={confirmarPago.numeroMes} cargando={pagando} onContinuar={pagar} onDarDeBaja={onDarDeBaja} onVolver={()=>setConfirmarPago(null)}/>
+              )}
             </div>
           )}
         </div>
@@ -6156,14 +6171,38 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
   );
 }
 
-function PantallaSuscripcionVencida({onCerrar,estado}){
+function ConfirmarPago({precio,numeroMes,cargando,onContinuar,onDarDeBaja,onVolver}){
+  return(
+    <div style={{maxWidth:340,width:"100%"}}>
+      <div style={{fontSize:17,color:C.texto,marginBottom:4}}>Tu próximo pago es de</div>
+      <div style={{fontSize:32,fontWeight:700,color:C.marron,marginBottom:6}}>${(precio||0).toLocaleString("es-AR")}</div>
+      {numeroMes&&<div style={{fontSize:13,color:C.textoSuave,marginBottom:18}}>{numeroMes===1?"Primer mes":`Mes ${numeroMes} de tu suscripción`}</div>}
+      <button style={{...S.btn("gold"),width:"100%",justifyContent:"center",marginBottom:10}} onClick={onContinuar} disabled={cargando}>{cargando?"⟳ Generando link...":"✅ Continuar y pagar"}</button>
+      {onDarDeBaja&&<button style={{...S.btn("ghost"),width:"100%",justifyContent:"center",color:C.error,borderColor:C.error,marginBottom:10}} onClick={onDarDeBaja}>🚫 Dar de baja mi cuenta</button>}
+      {onVolver&&<button style={{...S.btn("ghost"),width:"100%",justifyContent:"center"}} onClick={onVolver}>← Volver</button>}
+    </div>
+  );
+}
+
+function PantallaSuscripcionVencida({onCerrar,estado,onDarDeBaja}){
   const [pagando,setPagando]=useState(false);
+  const [cargandoPreview,setCargandoPreview]=useState(false);
+  const [confirmar,setConfirmar]=useState(null);
   const [err,setErr]=useState("");
   const esPrimeraVez=estado==="pendiente";
+  const verPrecio=async()=>{
+    setCargandoPreview(true); setErr("");
+    try{
+      const data=await db.crearPago(true);
+      if(data.precio!=null) setConfirmar({precio:data.precio,numeroMes:data.numeroMes});
+      else setErr("No se pudo calcular el precio.");
+    }catch(e){ setErr(e.message||"No se pudo calcular el precio."); }
+    setCargandoPreview(false);
+  };
   const pagar=async()=>{
     setPagando(true); setErr("");
     try{
-      const data=await db.crearPago();
+      const data=await db.crearPago(false);
       if(data.init_point) window.location.href=data.init_point;
       else setErr("No se pudo generar el link de pago.");
     }catch(e){ setErr(e.message||"No se pudo generar el link de pago."); }
@@ -6179,20 +6218,37 @@ function PantallaSuscripcionVencida({onCerrar,estado}){
           : "Para seguir usando Encastre como proveedor, renová tu suscripción mensual."}
       </div>
       {err&&<div style={{fontSize:15,color:C.error,marginBottom:14}}>{err}</div>}
-      <button style={{...S.btn("gold"),maxWidth:340,width:"100%",justifyContent:"center",marginBottom:14}} onClick={pagar} disabled={pagando}>{pagando?"⟳ Generando link...":"💳 Pagar suscripción mensual"}</button>
-      <button style={{...S.btn("ghost"),maxWidth:340,width:"100%",justifyContent:"center"}} onClick={onCerrar}>Cerrar sesión</button>
+      {!confirmar?(
+        <>
+          <button style={{...S.btn("gold"),maxWidth:340,width:"100%",justifyContent:"center",marginBottom:14}} onClick={verPrecio} disabled={cargandoPreview}>{cargandoPreview?"⟳ Calculando...":"💳 Pagar suscripción mensual"}</button>
+          <button style={{...S.btn("ghost"),maxWidth:340,width:"100%",justifyContent:"center"}} onClick={onCerrar}>Cerrar sesión</button>
+        </>
+      ):(
+        <ConfirmarPago precio={confirmar.precio} numeroMes={confirmar.numeroMes} cargando={pagando} onContinuar={pagar} onDarDeBaja={onDarDeBaja} onVolver={()=>setConfirmar(null)}/>
+      )}
     </div>
   );
 }
 
-function AvisoDiasRestantes({dias,estado,onContinuar}){
+function AvisoDiasRestantes({dias,estado,onContinuar,onDarDeBaja}){
   const [pagando,setPagando]=useState(false);
+  const [cargandoPreview,setCargandoPreview]=useState(false);
+  const [confirmar,setConfirmar]=useState(null);
   const [err,setErr]=useState("");
   const prueba=estado==="prueba";
+  const verPrecio=async()=>{
+    setCargandoPreview(true); setErr("");
+    try{
+      const data=await db.crearPago(true);
+      if(data.precio!=null) setConfirmar({precio:data.precio,numeroMes:data.numeroMes});
+      else setErr("No se pudo calcular el precio.");
+    }catch(e){ setErr(e.message||"No se pudo calcular el precio."); }
+    setCargandoPreview(false);
+  };
   const pagar=async()=>{
     setPagando(true); setErr("");
     try{
-      const data=await db.crearPago();
+      const data=await db.crearPago(false);
       if(data.init_point) window.location.href=data.init_point;
       else setErr("No se pudo generar el link de pago.");
     }catch(e){ setErr(e.message||"No se pudo generar el link de pago."); }
@@ -6210,8 +6266,14 @@ function AvisoDiasRestantes({dias,estado,onContinuar}){
           : "Renová a tiempo para no perder acceso al panel."}
       </div>
       {err&&<div style={{fontSize:15,color:C.error,marginBottom:14}}>{err}</div>}
-      <button style={{...S.btn("gold"),maxWidth:340,width:"100%",justifyContent:"center",marginBottom:14}} onClick={pagar} disabled={pagando}>{pagando?"⟳ Generando link...":"💳 Pagar suscripción mensual"}</button>
-      <button style={{...S.btn("ghost"),maxWidth:340,width:"100%",justifyContent:"center"}} onClick={onContinuar}>Continuar →</button>
+      {!confirmar?(
+        <>
+          <button style={{...S.btn("gold"),maxWidth:340,width:"100%",justifyContent:"center",marginBottom:14}} onClick={verPrecio} disabled={cargandoPreview}>{cargandoPreview?"⟳ Calculando...":"💳 Pagar suscripción mensual"}</button>
+          <button style={{...S.btn("ghost"),maxWidth:340,width:"100%",justifyContent:"center"}} onClick={onContinuar}>Continuar →</button>
+        </>
+      ):(
+        <ConfirmarPago precio={confirmar.precio} numeroMes={confirmar.numeroMes} cargando={pagando} onContinuar={pagar} onDarDeBaja={onDarDeBaja} onVolver={()=>setConfirmar(null)}/>
+      )}
     </div>
   );
 }
@@ -6381,9 +6443,9 @@ function App(){
   };
   if(usuario.tipo==="admin") return <VistaAdmin usuario={usuario} onSalir={async()=>{await cerrar();setMostrarBienvenida(true);}}/>;
   if(suscInfo.cargando) return <div style={{...S.app,display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",fontSize:16,color:C.textoSuave}}>Cargando...</div>;
-  if(suscInfo.vencida) return <PantallaSuscripcionVencida estado={suscInfo.estado} onCerrar={async()=>{await cerrar();setMostrarBienvenida(true);}}/>;
+  if(suscInfo.vencida) return <PantallaSuscripcionVencida estado={suscInfo.estado} onDarDeBaja={darDeBaja} onCerrar={async()=>{await cerrar();setMostrarBienvenida(true);}}/>;
   if(!avisoDiasCerrado&&usuario.tipo!=="cliente"&&suscInfo.diasRestantes!=null&&(suscInfo.diasRestantes<=7||!usuario.vio_pantalla_prueba)){
-    return <AvisoDiasRestantes dias={suscInfo.diasRestantes} estado={suscInfo.estado} onContinuar={cerrarAvisoDias}/>;
+    return <AvisoDiasRestantes dias={suscInfo.diasRestantes} estado={suscInfo.estado} onDarDeBaja={darDeBaja} onContinuar={cerrarAvisoDias}/>;
   }
   const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🎨"};
 
