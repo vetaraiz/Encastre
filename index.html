@@ -1438,8 +1438,7 @@ function AuthScreen({onAuth}){
           if(tipo!=="cliente"){
             const idNuevo=(nuevoUsuario&&nuevoUsuario[0]&&nuevoUsuario[0].id)||null;
             if(idNuevo){
-              const vencePrueba=new Date(); vencePrueba.setDate(vencePrueba.getDate()+30);
-              try{ await db.insert("suscripciones",{usuario_id:idNuevo,estado:"prueba",fecha_vencimiento:vencePrueba.toISOString()}); }catch{}
+              try{ await db.insert("suscripciones",{usuario_id:idNuevo,estado:"pendiente",fecha_vencimiento:new Date().toISOString()}); }catch{}
             }
           }
         } finally { db.limpiarSesion(); }
@@ -1558,7 +1557,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-28.3</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-28.4</div>
     </div>
   );
 }
@@ -6157,9 +6156,10 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
   );
 }
 
-function PantallaSuscripcionVencida({onCerrar}){
+function PantallaSuscripcionVencida({onCerrar,estado}){
   const [pagando,setPagando]=useState(false);
   const [err,setErr]=useState("");
+  const esPrimeraVez=estado==="pendiente";
   const pagar=async()=>{
     setPagando(true); setErr("");
     try{
@@ -6172,9 +6172,11 @@ function PantallaSuscripcionVencida({onCerrar}){
   return(
     <div style={{...S.app,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"100vh",padding:20,textAlign:"center"}}>
       <div style={{fontSize:48,marginBottom:12}}>💳</div>
-      <div style={{...S.cardTitle,fontSize:24,marginBottom:10}}>Tu suscripción venció</div>
+      <div style={{...S.cardTitle,fontSize:24,marginBottom:10}}>{esPrimeraVez?"Activá tu suscripción":"Tu suscripción venció"}</div>
       <div style={{fontSize:16,color:C.textoSuave,marginBottom:24,maxWidth:420}}>
-        Para seguir usando Encastre como proveedor, renová tu suscripción mensual.
+        {esPrimeraVez
+          ? "Para empezar a recibir pedidos como proveedor en Encastre, activá tu suscripción mensual."
+          : "Para seguir usando Encastre como proveedor, renová tu suscripción mensual."}
       </div>
       {err&&<div style={{fontSize:15,color:C.error,marginBottom:14}}>{err}</div>}
       <button style={{...S.btn("gold"),maxWidth:340,width:"100%",justifyContent:"center",marginBottom:14}} onClick={pagar} disabled={pagando}>{pagando?"⟳ Generando link...":"💳 Pagar suscripción mensual"}</button>
@@ -6379,7 +6381,7 @@ function App(){
   };
   if(usuario.tipo==="admin") return <VistaAdmin usuario={usuario} onSalir={async()=>{await cerrar();setMostrarBienvenida(true);}}/>;
   if(suscInfo.cargando) return <div style={{...S.app,display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",fontSize:16,color:C.textoSuave}}>Cargando...</div>;
-  if(suscInfo.vencida) return <PantallaSuscripcionVencida onCerrar={async()=>{await cerrar();setMostrarBienvenida(true);}}/>;
+  if(suscInfo.vencida) return <PantallaSuscripcionVencida estado={suscInfo.estado} onCerrar={async()=>{await cerrar();setMostrarBienvenida(true);}}/>;
   if(!avisoDiasCerrado&&usuario.tipo!=="cliente"&&suscInfo.diasRestantes!=null&&(suscInfo.diasRestantes<=7||!usuario.vio_pantalla_prueba)){
     return <AvisoDiasRestantes dias={suscInfo.diasRestantes} estado={suscInfo.estado} onContinuar={cerrarAvisoDias}/>;
   }
