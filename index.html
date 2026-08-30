@@ -1557,7 +1557,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.4</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.5</div>
     </div>
   );
 }
@@ -5087,9 +5087,10 @@ const FLUJOS = {
         "Tocás el botón «Registrarme».",
       ]},
       {type:"arrow",label:"automático"},
-      {type:"step",n:2,icon:"🎁",title:"Arranca tu prueba gratis",lines:[
-        "Desde el momento en que te registrás tenés 30 días gratis.",
-        "No hace falta cargar ninguna tarjeta para empezar a usarlo.",
+      {type:"step",n:2,icon:"💳",title:"Activás tu suscripción",lines:[
+        "El primer mes de suscripción cuesta $5.000.",
+        "Antes de que se cobre, la app te muestra el monto exacto y podés elegir «Continuar y pagar» o «Dar de baja».",
+        "Sin pagar, la cuenta queda bloqueada — no se puede usar como proveedor sin suscripción activa.",
       ]},
       {type:"arrow"},
       {type:"step",n:3,icon:"🔑",title:"Iniciás sesión",lines:[
@@ -5145,7 +5146,7 @@ const FLUJOS = {
           "El pedido pasa al filtro «Cerrados».",
           "Se abre el chat del pedido para coordinar entrega, pago y detalles.",
           "Si hay que trasladar el mueble, coordinás el flete con el botón «Fletes» de arriba.",
-          "Al terminar el trabajo, se califican mutuamente con estrellas y comentario.",
+          "El cliente puede calificarte con estrellas y comentario al terminar el trabajo.",
         ]},
         {icon:"❌",title:"Elige a otro, o se vence el plazo",color:C.rojo,lines:[
           "El pedido queda guardado en «Cotizados», o pasa a «Vencidos» si se venció la fecha.",
@@ -5167,8 +5168,8 @@ const FLUJOS = {
       {type:"arrow"},
       {type:"step",n:12,icon:"💳",title:"Controlás tu suscripción",lines:[
         "Tocás los tres puntitos (⋮) → «Suscripción».",
-        "Ahí ves cuántos días de prueba o de suscripción activa te quedan.",
-        "Cuando se vencen los 30 días gratis, pagás la suscripción mensual para seguir recibiendo pedidos.",
+        "El primer mes pagás $5.000. Los meses 2, 3 y 4 pagás $7.000 cada uno. Del mes 5 en adelante, $7.000 (este valor se puede ajustar más adelante, siempre avisando antes).",
+        "Antes de cada pago te mostramos el monto exacto y podés elegir «Continuar y pagar» o «Dar de baja mi cuenta» — te podés dar de baja cuando quieras, sin trámites.",
       ]},
       {type:"arrow"},
       {type:"step",n:13,icon:"✉️",title:"Reportás un problema o dejás un comentario",lines:[
@@ -5178,7 +5179,380 @@ const FLUJOS = {
         "El mensaje llega directo a la administración de Encastre.",
       ]},
     ]
-  }
+  },
+
+  cliente:{
+    titulo:"🪑 Tu circuito como Cliente",
+    leyenda:[
+      {e:"🔒",t:"Sobre cerrado: cada presupuesto es privado entre vos y esa carpintería."},
+      {e:"💬",t:"Chat: para hablar con la carpintería que elegiste."},
+      {e:"⭐",t:"Calificación: la hacés vos al terminar el trabajo."},
+      {e:"🎁",t:"Como cliente, Encastre es gratis. No pagás suscripción."},
+    ],
+    pasos:[
+      {type:"step",n:1,icon:"📝",title:"Te registrás",lines:[
+        "Elegís «Cliente» como tipo de usuario.",
+        "Completás nombre, email, teléfono y contraseña.",
+        "Cargás tu provincia y tu localidad.",
+        "Tocás «Registrarme».",
+      ]},
+      {type:"arrow",label:"gratis, sin suscripción"},
+      {type:"step",n:2,icon:"🔑",title:"Iniciás sesión",lines:[
+        "Entrás con tu email y tu contraseña.",
+        "Caés en la pantalla de «Pedidos».",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:3,icon:"➕",title:"Creás tu pedido",lines:[
+        "Tocás «Crear pedido».",
+        "Por cada mueble cargás: qué necesitás, alto, ancho, profundidad, material y terminación.",
+        "Opcional: color, si tiene cajones, y una foto del croquis.",
+        "Podés agregar más de un mueble al mismo pedido.",
+        "Ponés una fecha límite para recibir presupuestos.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:4,icon:"📤",title:"El pedido queda publicado",lines:[
+        "Las carpinterías lo ven en su lista y pueden mandarte presupuesto.",
+        "Tu pedido aparece en el filtro «Abiertos» de tu lista.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:5,icon:"👀",title:"Revisás los presupuestos que te llegan",lines:[
+        "Abrís tu pedido y ves cada presupuesto: precio, ítems y tiempo de entrega.",
+        "🔒 Cada carpintería mandó el suyo sin ver el de las demás, y vos ves todos los que te llegaron a vos.",
+      ]},
+      {type:"branch",label:"¿Qué hacés con los presupuestos?",options:[
+        {icon:"✅",title:"Aceptás uno",color:C.verde,lines:[
+          "El pedido pasa al filtro «Aceptados».",
+          "Los demás presupuestos de ese pedido se cierran automáticamente.",
+          "Se habilita el chat con esa carpintería para coordinar entrega y pago.",
+        ]},
+        {icon:"⏳",title:"No elegís ninguno todavía",color:C.rojo,lines:[
+          "Podés esperar más presupuestos hasta la fecha límite.",
+          "Si se pasa la fecha sin que aceptes ninguno, el pedido pasa a «Vencidos».",
+        ]},
+      ]},
+      {type:"arrow"},
+      {type:"step",n:6,icon:"💬",title:"Coordinás por el chat",lines:[
+        "Cada pedido tiene su chat con la carpintería elegida.",
+        "Lo usás para acordar forma de entrega, pago y detalles del trabajo.",
+      ]},
+      {type:"arrow",label:"si te arrepentís"},
+      {type:"step",n:7,icon:"↩️",title:"Podés deshacer la aceptación",lines:[
+        "Si aceptaste por error o cambiaste de idea, podés deshacerlo.",
+        "El pedido vuelve a quedar abierto y las carpinterías pueden ser elegidas de nuevo.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:8,icon:"⭐",title:"Calificás al terminar el trabajo",lines:[
+        "Le dejás estrellas y un comentario a la carpintería que te atendió.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:9,icon:"📍",title:"Mantenés tu ubicación al día",lines:[
+        "Tocás los tres puntitos (⋮) → «Mi cuenta».",
+        "Ahí cambiás tu provincia y localidad si hace falta.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:10,icon:"✉️",title:"Reportás un problema o dejás un comentario",lines:[
+        "Tocás los tres puntitos (⋮) → «Reportar o comentar».",
+        "Elegís si es un problema con una carpintería u otro usuario, o un comentario general.",
+        "El mensaje llega directo a la administración de Encastre.",
+      ]},
+    ]
+  },
+
+  aserradero:{
+    titulo:"🪵 Tu circuito como Aserradero",
+    leyenda:[
+      {e:"🔒",t:"Sobre cerrado: nadie ve tu precio ni vos el de otros aserraderos."},
+      {e:"💬",t:"Chat: para hablar con la carpintería que te pidió el material."},
+      {e:"⋮",t:"Los tres puntitos arriba a la derecha: ahí está el menú."},
+    ],
+    pasos:[
+      {type:"step",n:1,icon:"📝",title:"Te registrás",lines:[
+        "Elegís «Aserradero» como tipo de usuario.",
+        "Completás nombre, email, teléfono y contraseña.",
+        "Cargás tu provincia y tu localidad.",
+        "Tocás «Registrarme».",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:2,icon:"💳",title:"Activás tu suscripción",lines:[
+        "El primer mes cuesta $5.000. Antes de cobrarte, la app te muestra el monto y podés elegir «Continuar y pagar» o «Dar de baja».",
+        "Sin suscripción activa, la cuenta queda bloqueada para operar como proveedor.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:3,icon:"🔑",title:"Iniciás sesión",lines:[
+        "Entrás con tu email y tu contraseña.",
+        "Caés directo en tu lista de pedidos de madera.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:4,icon:"📥",title:"Mirás los pedidos que te llegan",lines:[
+        "Te llegan los pedidos de madera que hacen las carpinterías.",
+        "Filtros: Para cotizar, Cotizados, Vencidos, Todos.",
+        "Por defecto se abre en «Para cotizar».",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:5,icon:"👀",title:"Abrís un pedido",lines:[
+        "Ves qué madera pidieron: tipo, medidas (pies, pulgadas, espesor) y cantidad.",
+        "La app precarga esos datos en tu presupuesto para que no tengas que tipearlos de nuevo.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:6,icon:"💰",title:"Armás y enviás tu cotización",lines:[
+        "Completás precio y cantidad de cada ítem precargado (podés editarlos si hace falta).",
+        "Cargás el tiempo de entrega.",
+        "Si querés, activás descuento y/o IVA.",
+        "Tocás «Enviar».",
+      ],color:C.medio},
+      {type:"arrow",label:"🔒 sobre cerrado"},
+      {type:"step",n:7,icon:"🔒",title:"Tu precio queda protegido",lines:[
+        "Ningún otro aserradero ve cuánto cotizaste.",
+        "Vos tampoco ves lo que cotizaron los demás.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:8,icon:"❓",title:"No te enterás directamente si te eligieron",lines:[
+        "La carpintería decide con quién trabajar y no hay un aviso automático de «ganaste» o «perdiste».",
+        "Si te eligió, lo más probable es que te escriba por el chat del pedido para coordinar la entrega.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:9,icon:"💬",title:"Usás el chat para coordinar",lines:[
+        "Cada pedido tiene su chat con la carpintería que lo hizo.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:10,icon:"📍",title:"Mantenés tu ubicación al día",lines:[
+        "Tocás los tres puntitos (⋮) → «Mi cuenta» para actualizar provincia y localidad.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:11,icon:"💳",title:"Controlás tu suscripción",lines:[
+        "Tocás los tres puntitos (⋮) → «Suscripción».",
+        "Mes 1: $5.000. Meses 2 a 4: $7.000 cada uno. Del mes 5 en adelante: $7.000, ajustable con aviso previo.",
+        "Te podés dar de baja cuando quieras, sin trámites.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:12,icon:"✉️",title:"Reportás un problema o dejás un comentario",lines:[
+        "Tocás los tres puntitos (⋮) → «Reportar o comentar».",
+        "El mensaje llega directo a la administración de Encastre.",
+      ]},
+    ]
+  },
+
+  ferreteria:{
+    titulo:"🔩 Tu circuito como Ferretería",
+    leyenda:[
+      {e:"🔒",t:"Sobre cerrado: nadie ve tu precio ni vos el de otras ferreterías."},
+      {e:"💬",t:"Chat: para hablar con la carpintería que te pidió los herrajes."},
+      {e:"⋮",t:"Los tres puntitos arriba a la derecha: ahí está el menú."},
+    ],
+    pasos:[
+      {type:"step",n:1,icon:"📝",title:"Te registrás",lines:[
+        "Elegís «Ferretería» como tipo de usuario.",
+        "Completás nombre, email, teléfono y contraseña.",
+        "Cargás tu provincia y tu localidad.",
+        "Tocás «Registrarme».",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:2,icon:"💳",title:"Activás tu suscripción",lines:[
+        "El primer mes cuesta $5.000. Antes de cobrarte, la app te muestra el monto y podés elegir «Continuar y pagar» o «Dar de baja».",
+        "Sin suscripción activa, la cuenta queda bloqueada para operar como proveedor.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:3,icon:"🔑",title:"Iniciás sesión",lines:[
+        "Entrás con tu email y tu contraseña.",
+        "Caés directo en tu lista de pedidos de herrajes.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:4,icon:"📥",title:"Mirás los pedidos que te llegan",lines:[
+        "Te llegan los pedidos de herrajes que hacen las carpinterías.",
+        "Filtros: Para cotizar, Cotizados, Vencidos, Todos.",
+        "Por defecto se abre en «Para cotizar».",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:5,icon:"👀",title:"Abrís un pedido",lines:[
+        "Ves qué herrajes pidieron y en qué cantidad.",
+        "La app precarga esos datos en tu presupuesto para que no tengas que tipearlos de nuevo.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:6,icon:"💰",title:"Armás y enviás tu cotización",lines:[
+        "Completás precio y cantidad de cada ítem (podés editarlos si hace falta).",
+        "Cargás el tiempo de entrega.",
+        "Si querés, activás descuento y/o IVA.",
+        "Tocás «Enviar».",
+      ],color:C.medio},
+      {type:"arrow",label:"🔒 sobre cerrado"},
+      {type:"step",n:7,icon:"🔒",title:"Tu precio queda protegido",lines:[
+        "Ninguna otra ferretería ve cuánto cotizaste.",
+        "Vos tampoco ves lo que cotizaron las demás.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:8,icon:"❓",title:"No te enterás directamente si te eligieron",lines:[
+        "No hay un aviso automático de «ganaste» o «perdiste».",
+        "Si te eligió, lo más probable es que te escriba por el chat del pedido para coordinar la entrega.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:9,icon:"💬",title:"Usás el chat para coordinar",lines:[
+        "Cada pedido tiene su chat con la carpintería que lo hizo.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:10,icon:"📍",title:"Mantenés tu ubicación al día",lines:[
+        "Tocás los tres puntitos (⋮) → «Mi cuenta» para actualizar provincia y localidad.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:11,icon:"💳",title:"Controlás tu suscripción",lines:[
+        "Tocás los tres puntitos (⋮) → «Suscripción».",
+        "Mes 1: $5.000. Meses 2 a 4: $7.000 cada uno. Del mes 5 en adelante: $7.000, ajustable con aviso previo.",
+        "Te podés dar de baja cuando quieras, sin trámites.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:12,icon:"✉️",title:"Reportás un problema o dejás un comentario",lines:[
+        "Tocás los tres puntitos (⋮) → «Reportar o comentar».",
+        "El mensaje llega directo a la administración de Encastre.",
+      ]},
+    ]
+  },
+
+  pintureria:{
+    titulo:"🎨 Tu circuito como Pinturería",
+    leyenda:[
+      {e:"🔒",t:"Sobre cerrado: nadie ve tu precio ni vos el de otras pinturerías."},
+      {e:"💬",t:"Chat: para hablar con la carpintería que te pidió la pintura."},
+      {e:"⋮",t:"Los tres puntitos arriba a la derecha: ahí está el menú."},
+    ],
+    pasos:[
+      {type:"step",n:1,icon:"📝",title:"Te registrás",lines:[
+        "Elegís «Pinturería» como tipo de usuario.",
+        "Completás nombre, email, teléfono y contraseña.",
+        "Cargás tu provincia y tu localidad.",
+        "Tocás «Registrarme».",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:2,icon:"💳",title:"Activás tu suscripción",lines:[
+        "El primer mes cuesta $5.000. Antes de cobrarte, la app te muestra el monto y podés elegir «Continuar y pagar» o «Dar de baja».",
+        "Sin suscripción activa, la cuenta queda bloqueada para operar como proveedor.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:3,icon:"🔑",title:"Iniciás sesión",lines:[
+        "Entrás con tu email y tu contraseña.",
+        "Caés directo en tu lista de pedidos de pintura.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:4,icon:"📥",title:"Mirás los pedidos que te llegan",lines:[
+        "Te llegan los pedidos de pintura que hacen las carpinterías.",
+        "Filtros: Para cotizar, Cotizados, Vencidos, Todos.",
+        "Por defecto se abre en «Para cotizar».",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:5,icon:"👀",title:"Abrís un pedido",lines:[
+        "Ves qué pintura o terminación pidieron y en qué cantidad.",
+        "La app precarga esos datos en tu presupuesto para que no tengas que tipearlos de nuevo.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:6,icon:"💰",title:"Armás y enviás tu cotización",lines:[
+        "Completás precio y cantidad de cada ítem (podés editarlos si hace falta).",
+        "Cargás el tiempo de entrega.",
+        "Si querés, activás descuento y/o IVA.",
+        "Tocás «Enviar».",
+      ],color:C.medio},
+      {type:"arrow",label:"🔒 sobre cerrado"},
+      {type:"step",n:7,icon:"🔒",title:"Tu precio queda protegido",lines:[
+        "Ninguna otra pinturería ve cuánto cotizaste.",
+        "Vos tampoco ves lo que cotizaron las demás.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:8,icon:"❓",title:"No te enterás directamente si te eligieron",lines:[
+        "No hay un aviso automático de «ganaste» o «perdiste».",
+        "Si te eligió, lo más probable es que te escriba por el chat del pedido para coordinar la entrega.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:9,icon:"💬",title:"Usás el chat para coordinar",lines:[
+        "Cada pedido tiene su chat con la carpintería que lo hizo.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:10,icon:"📍",title:"Mantenés tu ubicación al día",lines:[
+        "Tocás los tres puntitos (⋮) → «Mi cuenta» para actualizar provincia y localidad.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:11,icon:"💳",title:"Controlás tu suscripción",lines:[
+        "Tocás los tres puntitos (⋮) → «Suscripción».",
+        "Mes 1: $5.000. Meses 2 a 4: $7.000 cada uno. Del mes 5 en adelante: $7.000, ajustable con aviso previo.",
+        "Te podés dar de baja cuando quieras, sin trámites.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:12,icon:"✉️",title:"Reportás un problema o dejás un comentario",lines:[
+        "Tocás los tres puntitos (⋮) → «Reportar o comentar».",
+        "El mensaje llega directo a la administración de Encastre.",
+      ]},
+    ]
+  },
+
+  flete:{
+    titulo:"🚚 Tu circuito como Flete",
+    leyenda:[
+      {e:"🔒",t:"Sobre cerrado: nadie ve tu precio ni vos el de otros fletes."},
+      {e:"💬",t:"Chat: para hablar con quien te pidió el traslado."},
+      {e:"⋮",t:"Los tres puntitos arriba a la derecha: ahí está el menú."},
+    ],
+    pasos:[
+      {type:"step",n:1,icon:"📝",title:"Te registrás",lines:[
+        "Elegís «Flete» como tipo de usuario.",
+        "Completás nombre, email, teléfono y contraseña.",
+        "Cargás tu provincia y tu localidad.",
+        "Tocás «Registrarme».",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:2,icon:"💳",title:"Activás tu suscripción",lines:[
+        "El primer mes cuesta $5.000. Antes de cobrarte, la app te muestra el monto y podés elegir «Continuar y pagar» o «Dar de baja».",
+        "Sin suscripción activa, la cuenta queda bloqueada para operar como proveedor.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:3,icon:"🔑",title:"Iniciás sesión",lines:[
+        "Entrás con tu email y tu contraseña.",
+        "Caés directo en tu lista de pedidos de flete.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:4,icon:"📥",title:"Mirás los pedidos de traslado",lines:[
+        "Te llegan pedidos para trasladar trabajos terminados.",
+        "Filtros: Para cotizar, Cotizados, Vencidos, Todos.",
+        "Por defecto se abre en «Para cotizar».",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:5,icon:"👀",title:"Abrís un pedido",lines:[
+        "Ves los detalles del traslado que piden.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:6,icon:"💰",title:"Armás y enviás tu cotización",lines:[
+        "Cargás cada ítem: podés cobrar «por viaje» o «por hora».",
+        "Completás el precio (y la cantidad de horas si elegiste «por hora»).",
+        "Cargás el tiempo de entrega.",
+        "Si querés, activás descuento y/o IVA.",
+        "Tocás «Enviar».",
+      ],color:C.medio},
+      {type:"arrow",label:"🔒 sobre cerrado"},
+      {type:"step",n:7,icon:"🔒",title:"Tu precio queda protegido",lines:[
+        "Ningún otro flete ve cuánto cotizaste.",
+        "Vos tampoco ves lo que cotizaron los demás.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:8,icon:"❓",title:"No te enterás directamente si te eligieron",lines:[
+        "No hay un aviso automático de «ganaste» o «perdiste».",
+        "Si te eligió, lo más probable es que te escriba por el chat del pedido para coordinar el traslado.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:9,icon:"💬",title:"Usás el chat para coordinar",lines:[
+        "Cada pedido tiene su chat con quien lo solicitó.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:10,icon:"📍",title:"Mantenés tu ubicación al día",lines:[
+        "Tocás los tres puntitos (⋮) → «Mi cuenta» para actualizar provincia y localidad.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:11,icon:"💳",title:"Controlás tu suscripción",lines:[
+        "Tocás los tres puntitos (⋮) → «Suscripción».",
+        "Mes 1: $5.000. Meses 2 a 4: $7.000 cada uno. Del mes 5 en adelante: $7.000, ajustable con aviso previo.",
+        "Te podés dar de baja cuando quieras, sin trámites.",
+      ]},
+      {type:"arrow"},
+      {type:"step",n:12,icon:"✉️",title:"Reportás un problema o dejás un comentario",lines:[
+        "Tocás los tres puntitos (⋮) → «Reportar o comentar».",
+        "El mensaje llega directo a la administración de Encastre.",
+      ]},
+    ]
+  },
 };
 
 function ManualUsuario({tipo,onCerrar}){
