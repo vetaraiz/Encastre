@@ -1456,7 +1456,7 @@ function AuthScreen({onAuth}){
         if(uidAuth){ try{ perfiles=await db.select("usuarios",`?auth_id=eq.${uidAuth}&limit=1`); }catch{} }
         if(perfiles.length===0){ try{ perfiles=await db.select("usuarios",`?email=eq.${encodeURIComponent(email.trim().toLowerCase())}&limit=1`); }catch{} }
         if(perfiles.length===0){db.limpiarSesion();setErr("Perfil no encontrado");setCargando(false);return;}
-        if(perfiles[0].activo===false){db.limpiarSesion();setErr("Esta cuenta fue dada de baja. Escribí a carpinteriavetaraiz@gmail.com si querés reactivarla.");setCargando(false);return;}
+        if(perfiles[0].activo===false){db.limpiarSesion();setErr("Esta cuenta fue dada de baja. Escribí a administracion@encastre.com.ar si querés reactivarla.");setCargando(false);return;}
         if(perfiles[0].suspendido_hasta&&new Date(perfiles[0].suspendido_hasta)>new Date()){db.limpiarSesion();setErr(`Esta cuenta está suspendida hasta el ${new Date(perfiles[0].suspendido_hasta).toLocaleDateString("es-AR")}. Escribí a administracion@encastre.com.ar si tenés dudas.`);setCargando(false);return;}
         console.log("Usuario al login:",perfiles[0]);
         onAuth({token:access_token,refresh:signInRes.refresh_token,expira:Date.now()+((signInRes.expires_in||3600)*1000),usuario:perfiles[0]});
@@ -1557,7 +1557,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.1</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.4</div>
     </div>
   );
 }
@@ -4704,7 +4704,7 @@ function PantallaBienvenida({onEntrar}){
           {t:"11. Suspensión o baja de cuentas",d:"Encastre podrá suspender o eliminar cuentas que incumplan estos términos, sin perjuicio de las acciones legales que correspondan."},
           {t:"12. Modificaciones",d:"Encastre podrá actualizar estos términos cuando lo considere necesario. Los cambios se informarán dentro de la plataforma y el uso continuado implica la aceptación de la versión vigente."},
           {t:"13. Ley aplicable y jurisdicción",d:"Estos términos se rigen por las leyes de la República Argentina. Ante cualquier controversia, las partes se someten a los tribunales ordinarios de la Ciudad Autónoma de Buenos Aires, salvo las normas de orden público que correspondan, en especial en materia de defensa del consumidor (Ley 24.240)."},
-          {t:"14. Contacto",d:"Ante dudas o reclamos sobre estos términos, escribinos a carpinteriavetaraiz@gmail.com."},
+          {t:"14. Contacto",d:"Ante dudas o reclamos sobre estos términos, escribinos a administracion@encastre.com.ar."},
         ].map(t=>(<div key={t.t} style={{marginBottom:14}}>
           <div style={{fontWeight:700,color:C.marron,fontSize:17,marginBottom:3}}>{t.t}</div>
           <div style={{fontSize:16,color:C.texto,lineHeight:1.7}}>{t.d}</div>
@@ -4719,14 +4719,14 @@ function PantallaBienvenida({onEntrar}){
       <div style={{background:C.card,borderRadius:0,padding:24,border:`1px solid ${C.borde}`}}>
         <div style={{fontFamily:"'Lato',sans-serif",fontSize:23,fontWeight:700,color:C.marron,marginBottom:16}}>🔒 Política de Privacidad</div>
         {[
-          {t:"1. Responsable del tratamiento",d:"El responsable de los datos personales recopilados en Encastre es Veta Raíz. Para cualquier consulta sobre tus datos podés escribir a carpinteriavetaraiz@gmail.com."},
+          {t:"1. Responsable del tratamiento",d:"El responsable de los datos personales recopilados en Encastre es Veta Raíz. Para cualquier consulta sobre tus datos podés escribir a administracion@encastre.com.ar."},
           {t:"2. Datos que recopilamos",d:"Los datos que ingresás al registrarte y usar la app: nombre o razón social, correo electrónico, ciudad, tipo de usuario, número de documento (CUIT en el caso de empresas o DNI en el caso de personas) y el contenido de tus pedidos, presupuestos, mensajes y croquis (incluidas las fotos que adjuntes). El número de documento se solicita a fines de identificación y es de uso interno: solo accede a él la administración y nunca se muestra a otros usuarios. No solicitamos ni almacenamos datos de tarjetas ni información bancaria."},
           {t:"3. Finalidad del uso",d:"Usamos tus datos exclusivamente para el funcionamiento de la plataforma: crear y mostrar tu perfil, gestionar pedidos y presupuestos, permitir la comunicación entre usuarios y mejorar el servicio."},
           {t:"4. Base del tratamiento",d:"Tratamos tus datos sobre la base del consentimiento que otorgás al registrarte y de la necesidad de prestar el servicio que solicitás."},
           {t:"5. Con quién se comparte",d:"No vendemos ni cedemos tus datos a terceros con fines comerciales. Otros usuarios solo ven la información necesaria para operar (por ejemplo, nombre, ciudad, tipo de usuario y el contenido de los pedidos o presupuestos que compartís con ellos)."},
           {t:"6. Proveedores tecnológicos",d:"La información se almacena en servidores de Supabase, proveedor de infraestructura que aplica medidas de seguridad estándar de la industria. Las contraseñas se guardan cifradas y nunca en texto plano."},
           {t:"7. Conservación de los datos",d:"Conservamos tus datos mientras tu cuenta esté activa. Si solicitás la baja, los eliminamos, salvo aquellos que debamos conservar por obligaciones legales."},
-          {t:"8. Tus derechos",d:"Como titular de los datos tenés derecho a acceder, rectificar, actualizar y solicitar la supresión de tu información. Podés dar de baja tu cuenta en cualquier momento desde la propia app (botón al pie de la pantalla principal), o escribirnos a carpinteriavetaraiz@gmail.com para ejercer cualquiera de estos derechos."},
+          {t:"8. Tus derechos",d:"Como titular de los datos tenés derecho a acceder, rectificar, actualizar y solicitar la supresión de tu información. Podés dar de baja tu cuenta en cualquier momento desde la propia app (botón al pie de la pantalla principal), o escribirnos a administracion@encastre.com.ar para ejercer cualquiera de estos derechos."},
           {t:"9. Normativa y autoridad de control",d:"El tratamiento se realiza conforme a la Ley 25.326 de Protección de los Datos Personales de la República Argentina. La Agencia de Acceso a la Información Pública (AAIP) es el organismo de control ante quien podés presentar denuncias si considerás afectados tus derechos."},
           {t:"10. Datos de menores",d:"Encastre está dirigida a personas mayores de edad. No recopilamos intencionalmente datos de menores sin autorización de sus responsables."},
           {t:"11. Almacenamiento en tu dispositivo",d:"La app puede guardar información en tu dispositivo para funcionar como aplicación instalada (PWA) y mantener tu sesión iniciada."},
@@ -6024,7 +6024,7 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
             <div style={{marginBottom:14}}>
               <label style={S.label}>Correo electrónico</label>
               <input style={{...S.input,background:"#EDE7D5",color:C.textoSuave}} value={usuario.email||""} disabled/>
-              <div style={{fontSize:13,color:C.textoSuave,marginTop:5}}>El correo de acceso no puede modificarse desde acá. Si lo escribiste mal, escribí a carpinteriavetaraiz@gmail.com.</div>
+              <div style={{fontSize:13,color:C.textoSuave,marginTop:5}}>El correo de acceso no puede modificarse desde acá. Si lo escribiste mal, escribí a administracion@encastre.com.ar.</div>
             </div>
             <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:4}}>
               <div style={{flex:"0 0 130px"}}>
@@ -6172,13 +6172,29 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
 }
 
 function ConfirmarPago({precio,numeroMes,cargando,onContinuar,onDarDeBaja,onVolver}){
+  const PM1=5000, PM24=7000, PVIG=7000;
+  let etiqueta, siguiente;
+  if(numeroMes===1){
+    etiqueta="Primer mes";
+    siguiente=`Del mes 2 al mes 4 vas a pagar $${PM24.toLocaleString("es-AR")} por mes.`;
+  } else if(numeroMes>=2&&numeroMes<=4){
+    etiqueta=`Mes ${numeroMes} de 4`;
+    siguiente=numeroMes<4
+      ? `Los meses ${numeroMes+1===4?4:`${numeroMes+1} y 4`} también son $${PM24.toLocaleString("es-AR")}.`
+      : `A partir del mes 5 tu suscripción queda en $${PVIG.toLocaleString("es-AR")} por mes.`;
+  } else {
+    etiqueta="Suscripción vigente";
+    siguiente="Si el precio cambia más adelante, te vamos a avisar antes de cobrarte — siempre vas a poder elegir continuar o dar de baja.";
+  }
   return(
     <div style={{maxWidth:340,width:"100%"}}>
-      <div style={{fontSize:17,color:C.texto,marginBottom:4}}>Tu próximo pago es de</div>
-      <div style={{fontSize:32,fontWeight:700,color:C.marron,marginBottom:6}}>${(precio||0).toLocaleString("es-AR")}</div>
-      {numeroMes&&<div style={{fontSize:13,color:C.textoSuave,marginBottom:18}}>{numeroMes===1?"Primer mes":`Mes ${numeroMes} de tu suscripción`}</div>}
+      <div style={{fontSize:17,color:C.texto,marginBottom:4}}>Este mes pagás</div>
+      <div style={{fontSize:32,fontWeight:700,color:C.marron,marginBottom:4}}>${(precio||0).toLocaleString("es-AR")}</div>
+      {numeroMes&&<div style={{fontSize:13,color:C.textoSuave,marginBottom:14}}>{etiqueta}</div>}
+      {siguiente&&<div style={{fontSize:14,color:C.textoSuave,background:C.suave,border:`1px solid ${C.acento}55`,borderRadius:8,padding:"10px 12px",marginBottom:18,textAlign:"left"}}>ℹ️ {siguiente}</div>}
       <button style={{...S.btn("gold"),width:"100%",justifyContent:"center",marginBottom:10}} onClick={onContinuar} disabled={cargando}>{cargando?"⟳ Generando link...":"✅ Continuar y pagar"}</button>
-      {onDarDeBaja&&<button style={{...S.btn("ghost"),width:"100%",justifyContent:"center",color:C.error,borderColor:C.error,marginBottom:10}} onClick={onDarDeBaja}>🚫 Dar de baja mi cuenta</button>}
+      {onDarDeBaja&&<button style={{...S.btn("ghost"),width:"100%",justifyContent:"center",color:C.error,borderColor:C.error,marginBottom:6}} onClick={onDarDeBaja}>🚫 Dar de baja mi cuenta</button>}
+      {onDarDeBaja&&<div style={{fontSize:12,color:C.textoSuave,marginBottom:10}}>Podés darte de baja cuando quieras, no solo ahora — es un solo toque desde el menú, en cualquier momento.</div>}
       {onVolver&&<button style={{...S.btn("ghost"),width:"100%",justifyContent:"center"}} onClick={onVolver}>← Volver</button>}
     </div>
   );
