@@ -1324,6 +1324,40 @@ Respondé SOLO con JSON válido:
 }
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
+const TERMINOS_CLAUSULAS=[
+  {t:"1. Aceptación de los términos",d:"Al registrarse o utilizar Encastre, el usuario declara haber leído, comprendido y aceptado estos Términos y Condiciones, así como la Política de Privacidad. Si no está de acuerdo, debe abstenerse de usar la plataforma."},
+  {t:"2. Descripción del servicio",d:"Encastre es una plataforma digital que conecta a consumidores finales, carpinterías, aserraderos, ferreterías, pinturerías y servicios de flete del rubro maderero, facilitando el contacto, la solicitud de presupuestos y la comunicación entre las partes."},
+  {t:"3. Rol de Encastre (intermediación)",d:"Encastre actúa únicamente como punto de encuentro entre usuarios. No es parte de los acuerdos, presupuestos, ventas ni contrataciones que se concreten entre ellos: no fabrica, vende, transporta ni garantiza los productos o trabajos ofrecidos, ni interviene en la formación del precio, la negociación, la entrega o la calidad del resultado. La negociación, el presupuesto, el pago y la entrega se acuerdan en forma directa y exclusiva entre los usuarios involucrados. Ante un conflicto entre usuarios, Encastre podrá —sin estar obligada a ello— facilitar una mediación informal a través de su canal de contacto, pero no actúa como árbitro vinculante ni garante de ninguna de las partes."},
+  {t:"4. Registro y cuenta",d:"El usuario debe brindar información veraz, completa y actualizada. Es responsable de mantener la confidencialidad de su contraseña y de toda actividad realizada desde su cuenta, que es personal e intransferible."},
+  {t:"5. Obligaciones del usuario",d:"El usuario se compromete a utilizar la plataforma de buena fe, a cumplir los compromisos que asuma con otros usuarios y a respetar la legislación vigente."},
+  {t:"6. Presupuestos y contrataciones",d:"Los presupuestos, plazos y condiciones son responsabilidad de quien los emite. La aceptación de un presupuesto genera un acuerdo directo entre las partes, ajeno a Encastre."},
+  {t:"7. Seguridad en encuentros presenciales",d:"La entrega de un trabajo, el retiro de materiales o cualquier otro encuentro presencial que coordinen los usuarios se realiza bajo su exclusiva responsabilidad. Encastre es una plataforma digital y no participa, acompaña, supervisa ni controla esos encuentros físicos. Se recomienda a los usuarios tomar precauciones razonables: coordinar en horario diurno, en un lugar público o de fácil acceso, e informar a un tercero sobre el encuentro cuando sea posible. Encastre no será responsable por daños físicos, robos, hurtos, lesiones ni ningún otro incidente que ocurra antes, durante o después de un encuentro presencial coordinado a través de la plataforma, sin perjuicio de los derechos irrenunciables que asisten al consumidor conforme a la Ley 24.240. Si un usuario sufre o presencia un hecho delictivo durante un encuentro, debe denunciarlo ante la autoridad policial competente y, además, reportarlo a administracion@encastre.com.ar para que Encastre pueda evaluar medidas sobre la cuenta involucrada."},
+  {t:"8. Suscripción de proveedores y pagos entre usuarios",d:"Los proveedores (carpintería, aserradero, ferretería, pinturería y flete) abonan una suscripción mensual a Encastre para operar en la plataforma, procesada a través de Mercado Pago. El primer mes tiene un valor promocional; los valores siguientes pueden ajustarse, y Encastre avisa dentro de la plataforma antes de aplicar cualquier cambio. El proveedor puede dar de baja su suscripción cuando quiera. Por otro lado, Encastre no procesa ni cobra comisión sobre los pagos que los usuarios se hacen entre sí por el trabajo, los materiales o el flete contratado: esos pagos se realizan por fuera de la plataforma, bajo exclusiva responsabilidad de las partes."},
+  {t:"9. Contenido publicado",d:"El usuario es el único responsable de la información, imágenes y croquis que publica, y garantiza contar con los derechos para hacerlo. Encastre podrá remover contenido que infrinja estos términos o la ley."},
+  {t:"10. Conductas prohibidas",d:"Está prohibido publicar información falsa o engañosa, suplantar identidades, acosar, discriminar o amenazar a otros usuarios, difundir contenido ilegal u ofensivo, y utilizar la plataforma con fines fraudulentos."},
+  {t:"11. Limitación de responsabilidad",d:"Encastre no será responsable por daños, pérdidas, incumplimientos o conflictos derivados de los acuerdos entre usuarios, ni por la calidad, seguridad o legalidad de los productos y servicios ofrecidos, ni por lo ocurrido en los encuentros presenciales entre usuarios (ver cláusula 7). Tampoco será responsable por pérdidas derivadas de estafas, fraudes o negociaciones que un usuario realice por fuera del flujo de pedidos, presupuestos y chat de Encastre."},
+  {t:"12. Suspensión o baja de cuentas",d:"Encastre podrá suspender o eliminar cuentas que incumplan estos términos, sin perjuicio de las acciones legales que correspondan."},
+  {t:"13. Modificaciones",d:"Encastre podrá actualizar estos términos cuando lo considere necesario. Los cambios se informarán dentro de la plataforma y el uso continuado implica la aceptación de la versión vigente."},
+  {t:"14. Ley aplicable y jurisdicción",d:"Estos términos se rigen por las leyes de la República Argentina. Ante cualquier controversia, las partes se someten a los tribunales ordinarios de la Ciudad Autónoma de Buenos Aires, salvo las normas de orden público que correspondan, en especial en materia de defensa del consumidor (Ley 24.240)."},
+  {t:"15. Divisibilidad",d:"Si alguna cláusula de estos Términos y Condiciones fuera declarada inválida o inaplicable por autoridad competente, las restantes cláusulas mantendrán plena vigencia y efecto."},
+  {t:"16. Contacto",d:"Ante dudas o reclamos sobre estos términos, escribinos a administracion@encastre.com.ar."},
+];
+
+const PRIVACIDAD_CLAUSULAS=[
+  {t:"1. Responsable del tratamiento",d:"El responsable de los datos personales recopilados en Encastre es Veta Raíz. Para cualquier consulta sobre tus datos podés escribir a administracion@encastre.com.ar."},
+  {t:"2. Datos que recopilamos",d:"Los datos que ingresás al registrarte y usar la app: nombre o razón social, correo electrónico, ciudad, tipo de usuario, número de documento (CUIT en el caso de empresas o DNI en el caso de personas) y el contenido de tus pedidos, presupuestos, mensajes y croquis (incluidas las fotos que adjuntes). El número de documento se solicita a fines de identificación y es de uso interno: solo accede a él la administración y nunca se muestra a otros usuarios. Si sos proveedor (carpintería, aserradero, ferretería, pinturería o flete), también registramos el historial de tus pagos de suscripción: fecha, monto y estado de cada pago. No solicitamos ni almacenamos datos de tarjetas ni información bancaria — eso lo procesa directamente Mercado Pago."},
+  {t:"3. Finalidad del uso",d:"Usamos tus datos exclusivamente para el funcionamiento de la plataforma: crear y mostrar tu perfil, gestionar pedidos y presupuestos, permitir la comunicación entre usuarios, procesar el cobro de la suscripción si sos proveedor, y mejorar el servicio."},
+  {t:"4. Base del tratamiento",d:"Tratamos tus datos sobre la base del consentimiento que otorgás al registrarte y de la necesidad de prestar el servicio que solicitás, incluido el cobro de la suscripción cuando corresponde."},
+  {t:"5. Con quién se comparte",d:"No vendemos ni cedemos tus datos a terceros con fines comerciales. Otros usuarios solo ven la información necesaria para operar (por ejemplo, nombre, ciudad, tipo de usuario y el contenido de los pedidos o presupuestos que compartís con ellos). Si sos proveedor y pagás tu suscripción, compartimos con Mercado Pago los datos mínimos necesarios para procesar ese pago (nombre y correo electrónico); Mercado Pago procesa el pago bajo su propia política de privacidad."},
+  {t:"6. Proveedores tecnológicos",d:"La información se almacena en servidores de Supabase, proveedor de infraestructura que aplica medidas de seguridad estándar de la industria. El cobro de suscripciones se procesa a través de Mercado Pago. Las contraseñas se guardan cifradas y nunca en texto plano."},
+  {t:"7. Conservación de los datos",d:"Conservamos tus datos mientras tu cuenta esté activa. Si solicitás la baja, los eliminamos, salvo aquellos que debamos conservar por obligaciones legales o fiscales — entre ellos, el historial de pagos de suscripción, que se conserva por esas obligaciones aunque la cuenta esté dada de baja."},
+  {t:"8. Tus derechos",d:"Como titular de los datos tenés derecho a acceder, rectificar, actualizar y solicitar la supresión de tu información. Podés dar de baja tu cuenta en cualquier momento desde la propia app (botón al pie de la pantalla principal), o escribirnos a administracion@encastre.com.ar para ejercer cualquiera de estos derechos."},
+  {t:"9. Normativa y autoridad de control",d:"El tratamiento se realiza conforme a la Ley 25.326 de Protección de los Datos Personales de la República Argentina. La Agencia de Acceso a la Información Pública (AAIP) es el organismo de control ante quien podés presentar denuncias si considerás afectados tus derechos."},
+  {t:"10. Datos de menores",d:"Encastre está dirigida a personas mayores de edad. No recopilamos intencionalmente datos de menores sin autorización de sus responsables."},
+  {t:"11. Almacenamiento en tu dispositivo",d:"La app puede guardar información en tu dispositivo para funcionar como aplicación instalada (PWA) y mantener tu sesión iniciada."},
+  {t:"12. Cambios en esta política",d:"Podemos actualizar esta Política de Privacidad. Te avisaremos dentro de la plataforma y el uso continuado implicará la aceptación de la versión vigente."},
+];
+
 function AuthScreen({onAuth}){
   const [modo,setModo]=useState("login");
   const [email,setEmail]=useState("");
@@ -1339,6 +1373,8 @@ function AuthScreen({onAuth}){
   const [entidad,setEntidad]=useState("");
   const [documento,setDocumento]=useState("");
   const [captchaToken,setCaptchaToken]=useState("");
+  const [aceptaTerminos,setAceptaTerminos]=useState(false);
+  const [verLegal,setVerLegal]=useState(null); // null | "terminos" | "privacidad"
   const captchaWidgetId=useRef(null);
   const CAPTCHA_SITE_KEY="0x4AAAAAAEQA-qNlI1IMVVKL";
 
@@ -1393,6 +1429,7 @@ function AuthScreen({onAuth}){
         if(!entidad){setErr("Elegí si sos empresa o persona");setCargando(false);return;}
         if(entidad==="empresa"&&!validarCUIT(documento)){setErr("El CUIT no parece válido. Revisá que tenga los 11 números correctos.");setCargando(false);return;}
         if(entidad==="persona"&&!validarDNI(documento)){setErr("El DNI no parece válido. Debe tener 7 u 8 números, sin puntos.");setCargando(false);return;}
+        if(!aceptaTerminos){setErr("Tenés que aceptar los Términos y Condiciones y la Política de Privacidad para registrarte.");setCargando(false);return;}
         const tipoDoc=entidad==="empresa"?"CUIT":"DNI";
         const docLimpio=soloDigitos(documento);
         const signUpRes=await db.signUp(email.trim().toLowerCase(),pass,captchaToken);
@@ -1467,6 +1504,20 @@ function AuthScreen({onAuth}){
     setCargando(false);
   };
 
+  if(verLegal) return(
+    <div style={{maxWidth:640,margin:"0 auto",padding:20}}>
+      <button style={{...S.btn("ghost"),marginBottom:16}} onClick={()=>setVerLegal(null)}>← Volver al registro</button>
+      <div style={{background:C.card,borderRadius:0,padding:24,border:`1px solid ${C.borde}`}}>
+        <div style={{fontFamily:"'Lato',sans-serif",fontSize:23,fontWeight:700,color:C.marron,marginBottom:16}}>{verLegal==="terminos"?"📋 Términos y Condiciones":"🔒 Política de Privacidad"}</div>
+        {(verLegal==="terminos"?TERMINOS_CLAUSULAS:PRIVACIDAD_CLAUSULAS).map(t=>(<div key={t.t} style={{marginBottom:14}}>
+          <div style={{fontWeight:700,color:C.marron,fontSize:17,marginBottom:3}}>{t.t}</div>
+          <div style={{fontSize:16,color:C.texto,lineHeight:1.7}}>{t.d}</div>
+        </div>))}
+        <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",marginTop:8}} onClick={()=>setVerLegal(null)}>← Volver al registro</button>
+      </div>
+    </div>
+  );
+
   return(
     <div style={{...S.app,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"100vh",padding:20,background:`linear-gradient(160deg,${C.crema} 60%,${C.suave} 100%)`}}>
       {/* Logo */}
@@ -1535,10 +1586,23 @@ function AuthScreen({onAuth}){
 
         <div id="cf-turnstile-widget" style={{marginBottom:16,display:"flex",justifyContent:"center"}}></div>
 
+        {modo==="registro"&&(
+          <label style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:16,cursor:"pointer",fontSize:15,color:C.texto,lineHeight:1.5}}>
+            <input type="checkbox" checked={aceptaTerminos} onChange={e=>setAceptaTerminos(e.target.checked)} style={{marginTop:3,minWidth:16,minHeight:16}}/>
+            <span>
+              Leí y acepto los{" "}
+              <span style={{color:C.marron,fontWeight:700,textDecoration:"underline"}} onClick={(e)=>{e.preventDefault();setVerLegal("terminos");}}>Términos y Condiciones</span>
+              {" "}y la{" "}
+              <span style={{color:C.marron,fontWeight:700,textDecoration:"underline"}} onClick={(e)=>{e.preventDefault();setVerLegal("privacidad");}}>Política de Privacidad</span>
+              {" "}de Encastre.
+            </span>
+          </label>
+        )}
+
         {err&&<div style={{fontSize:17,color:C.rojo,background:C.rojo+"11",border:`1px solid ${C.rojo}33`,borderRadius:0,padding:"8px 12px",marginBottom:12}}>{err}</div>}
         {ok&&<div style={{fontSize:17,color:C.verde,background:C.verde+"11",border:`1px solid ${C.verde}33`,borderRadius:0,padding:"8px 12px",marginBottom:12}}>✅ {ok}</div>}
 
-        <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",fontSize:17,padding:"11px"}} onClick={submit} disabled={cargando}>
+        <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",fontSize:17,padding:"11px"}} onClick={submit} disabled={cargando||(modo==="registro"&&!aceptaTerminos)}>
           {cargando?"⟳ Procesando...":(modo==="login"?"Entrar →":"Crear cuenta →")}
         </button>
         {modo==="login"&&(
@@ -1557,7 +1621,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.7</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.11</div>
     </div>
   );
 }
@@ -4743,22 +4807,7 @@ function PantallaBienvenida({onEntrar}){
       <button style={{...S.btn("ghost"),marginBottom:16}} onClick={()=>setVista("inicio")}>← Volver</button>
       <div style={{background:C.card,borderRadius:0,padding:24,border:`1px solid ${C.borde}`}}>
         <div style={{fontFamily:"'Lato',sans-serif",fontSize:23,fontWeight:700,color:C.marron,marginBottom:16}}>📋 Términos y Condiciones</div>
-        {[
-          {t:"1. Aceptación de los términos",d:"Al registrarse o utilizar Encastre, el usuario declara haber leído, comprendido y aceptado estos Términos y Condiciones, así como la Política de Privacidad. Si no está de acuerdo, debe abstenerse de usar la plataforma."},
-          {t:"2. Descripción del servicio",d:"Encastre es una plataforma digital que conecta a consumidores finales, carpinterías, aserraderos, ferreterías y servicios de flete del rubro maderero, facilitando el contacto, la solicitud de presupuestos y la comunicación entre las partes."},
-          {t:"3. Rol de Encastre (intermediación)",d:"Encastre actúa únicamente como punto de encuentro entre usuarios. No fabrica, vende, transporta ni garantiza los productos o trabajos ofrecidos. La negociación, el presupuesto, el pago y la entrega se acuerdan en forma directa y exclusiva entre los usuarios involucrados."},
-          {t:"4. Registro y cuenta",d:"El usuario debe brindar información veraz, completa y actualizada. Es responsable de mantener la confidencialidad de su contraseña y de toda actividad realizada desde su cuenta, que es personal e intransferible."},
-          {t:"5. Obligaciones del usuario",d:"El usuario se compromete a utilizar la plataforma de buena fe, a cumplir los compromisos que asuma con otros usuarios y a respetar la legislación vigente."},
-          {t:"6. Presupuestos y contrataciones",d:"Los presupuestos, plazos y condiciones son responsabilidad de quien los emite. La aceptación de un presupuesto genera un acuerdo directo entre las partes, ajeno a Encastre."},
-          {t:"7. Pagos",d:"Encastre no procesa pagos ni cobra comisiones sobre las operaciones. Cualquier pago se realiza por fuera de la plataforma, bajo exclusiva responsabilidad de las partes."},
-          {t:"8. Contenido publicado",d:"El usuario es el único responsable de la información, imágenes y croquis que publica, y garantiza contar con los derechos para hacerlo. Encastre podrá remover contenido que infrinja estos términos o la ley."},
-          {t:"9. Conductas prohibidas",d:"Está prohibido publicar información falsa o engañosa, suplantar identidades, acosar, discriminar o amenazar a otros usuarios, difundir contenido ilegal u ofensivo, y utilizar la plataforma con fines fraudulentos."},
-          {t:"10. Limitación de responsabilidad",d:"Encastre no será responsable por daños, pérdidas, incumplimientos o conflictos derivados de los acuerdos entre usuarios, ni por la calidad, seguridad o legalidad de los productos y servicios ofrecidos."},
-          {t:"11. Suspensión o baja de cuentas",d:"Encastre podrá suspender o eliminar cuentas que incumplan estos términos, sin perjuicio de las acciones legales que correspondan."},
-          {t:"12. Modificaciones",d:"Encastre podrá actualizar estos términos cuando lo considere necesario. Los cambios se informarán dentro de la plataforma y el uso continuado implica la aceptación de la versión vigente."},
-          {t:"13. Ley aplicable y jurisdicción",d:"Estos términos se rigen por las leyes de la República Argentina. Ante cualquier controversia, las partes se someten a los tribunales ordinarios de la Ciudad Autónoma de Buenos Aires, salvo las normas de orden público que correspondan, en especial en materia de defensa del consumidor (Ley 24.240)."},
-          {t:"14. Contacto",d:"Ante dudas o reclamos sobre estos términos, escribinos a administracion@encastre.com.ar."},
-        ].map(t=>(<div key={t.t} style={{marginBottom:14}}>
+        {TERMINOS_CLAUSULAS.map(t=>(<div key={t.t} style={{marginBottom:14}}>
           <div style={{fontWeight:700,color:C.marron,fontSize:17,marginBottom:3}}>{t.t}</div>
           <div style={{fontSize:16,color:C.texto,lineHeight:1.7}}>{t.d}</div>
         </div>))}
@@ -4771,20 +4820,7 @@ function PantallaBienvenida({onEntrar}){
       <button style={{...S.btn("ghost"),marginBottom:16}} onClick={()=>setVista("inicio")}>← Volver</button>
       <div style={{background:C.card,borderRadius:0,padding:24,border:`1px solid ${C.borde}`}}>
         <div style={{fontFamily:"'Lato',sans-serif",fontSize:23,fontWeight:700,color:C.marron,marginBottom:16}}>🔒 Política de Privacidad</div>
-        {[
-          {t:"1. Responsable del tratamiento",d:"El responsable de los datos personales recopilados en Encastre es Veta Raíz. Para cualquier consulta sobre tus datos podés escribir a administracion@encastre.com.ar."},
-          {t:"2. Datos que recopilamos",d:"Los datos que ingresás al registrarte y usar la app: nombre o razón social, correo electrónico, ciudad, tipo de usuario, número de documento (CUIT en el caso de empresas o DNI en el caso de personas) y el contenido de tus pedidos, presupuestos, mensajes y croquis (incluidas las fotos que adjuntes). El número de documento se solicita a fines de identificación y es de uso interno: solo accede a él la administración y nunca se muestra a otros usuarios. No solicitamos ni almacenamos datos de tarjetas ni información bancaria."},
-          {t:"3. Finalidad del uso",d:"Usamos tus datos exclusivamente para el funcionamiento de la plataforma: crear y mostrar tu perfil, gestionar pedidos y presupuestos, permitir la comunicación entre usuarios y mejorar el servicio."},
-          {t:"4. Base del tratamiento",d:"Tratamos tus datos sobre la base del consentimiento que otorgás al registrarte y de la necesidad de prestar el servicio que solicitás."},
-          {t:"5. Con quién se comparte",d:"No vendemos ni cedemos tus datos a terceros con fines comerciales. Otros usuarios solo ven la información necesaria para operar (por ejemplo, nombre, ciudad, tipo de usuario y el contenido de los pedidos o presupuestos que compartís con ellos)."},
-          {t:"6. Proveedores tecnológicos",d:"La información se almacena en servidores de Supabase, proveedor de infraestructura que aplica medidas de seguridad estándar de la industria. Las contraseñas se guardan cifradas y nunca en texto plano."},
-          {t:"7. Conservación de los datos",d:"Conservamos tus datos mientras tu cuenta esté activa. Si solicitás la baja, los eliminamos, salvo aquellos que debamos conservar por obligaciones legales."},
-          {t:"8. Tus derechos",d:"Como titular de los datos tenés derecho a acceder, rectificar, actualizar y solicitar la supresión de tu información. Podés dar de baja tu cuenta en cualquier momento desde la propia app (botón al pie de la pantalla principal), o escribirnos a administracion@encastre.com.ar para ejercer cualquiera de estos derechos."},
-          {t:"9. Normativa y autoridad de control",d:"El tratamiento se realiza conforme a la Ley 25.326 de Protección de los Datos Personales de la República Argentina. La Agencia de Acceso a la Información Pública (AAIP) es el organismo de control ante quien podés presentar denuncias si considerás afectados tus derechos."},
-          {t:"10. Datos de menores",d:"Encastre está dirigida a personas mayores de edad. No recopilamos intencionalmente datos de menores sin autorización de sus responsables."},
-          {t:"11. Almacenamiento en tu dispositivo",d:"La app puede guardar información en tu dispositivo para funcionar como aplicación instalada (PWA) y mantener tu sesión iniciada."},
-          {t:"12. Cambios en esta política",d:"Podemos actualizar esta Política de Privacidad. Te avisaremos dentro de la plataforma y el uso continuado implicará la aceptación de la versión vigente."},
-        ].map(t=>(<div key={t.t} style={{marginBottom:14}}>
+        {PRIVACIDAD_CLAUSULAS.map(t=>(<div key={t.t} style={{marginBottom:14}}>
           <div style={{fontWeight:700,color:C.marron,fontSize:17,marginBottom:3}}>{t.t}</div>
           <div style={{fontSize:16,color:C.texto,lineHeight:1.7}}>{t.d}</div>
         </div>))}
