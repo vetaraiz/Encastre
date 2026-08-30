@@ -1557,7 +1557,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.6</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.7</div>
     </div>
   );
 }
@@ -4630,6 +4630,7 @@ function VistaPintureria({usuario,notif}){
 
 function PantallaBienvenida({onEntrar}){
   const [vista,setVista]=useState("inicio");
+  const [manualTab,setManualTab]=useState("practico");
 
   const compartirApp=async()=>{
     const datos={title:"Encastre — La Comunidad de la Madera",text:"Te invito a sumarte a Encastre, la comunidad de la madera 🌳",url:window.location.origin};
@@ -4669,49 +4670,59 @@ function PantallaBienvenida({onEntrar}){
             </div>
           ))}
         </div>
-        <FlowStep n={1} icon="📝" title="Te registrás" lines={[
-          "Elegís tu tipo de usuario: consumidor final, carpintería, aserradero, ferretería, pinturería o flete.",
-          "Completás nombre, email, teléfono y contraseña.",
-          "Cargás tu provincia y tu localidad.",
-        ]}/>
-        <FlowBranch label="¿Sos consumidor final o proveedor?" options={[
-          {icon:"🪑",title:"Consumidor final",color:C.verde,lines:[
-            "Encastre es gratis para vos. No pagás suscripción, nunca.",
-          ]},
-          {icon:"🔨",title:"Proveedor (carpintería, aserradero, ferretería, pinturería o flete)",color:C.medio,lines:[
-            "El primer mes de suscripción cuesta $5.000.",
-            "Los meses 2, 3 y 4 cuestan $7.000 cada uno.",
-            "Del mes 5 en adelante, $7.000 (valor ajustable más adelante, siempre avisando antes de cobrar el nuevo precio).",
-            "Antes de cada pago te mostramos el monto exacto y podés elegir «Continuar y pagar» o «Dar de baja» — te podés dar de baja cuando quieras, sin trámites.",
-          ]},
-        ]}/>
-        <FlowArrow/>
-        <FlowStep n={2} icon="🔑" title="Iniciás sesión" lines={[
-          "Entrás con tu email y tu contraseña cada vez que volvés a usar la app.",
-        ]}/>
-        <FlowArrow/>
-        <FlowStep n={3} icon="📤" title="El consumidor crea su pedido" lines={[
-          "Carga medidas, materiales y, si quiere, una foto del croquis.",
-          "El pedido queda visible para las carpinterías.",
-        ]}/>
-        <FlowArrow label="🔒 sobre cerrado"/>
-        <FlowStep n={4} icon="💰" title="Las carpinterías envían sus presupuestos" lines={[
-          "Cada una manda el suyo sin ver el de las demás — sobre cerrado.",
-          "El consumidor ve todos los presupuestos que le llegaron a él y compara.",
-        ]} color={C.medio}/>
-        <FlowArrow/>
-        <FlowStep n={5} icon="✅" title="El consumidor acepta el que prefiere" lines={[
-          "Los demás presupuestos de ese pedido se cierran automáticamente.",
-        ]}/>
-        <FlowArrow/>
-        <FlowStep n={6} icon="💬" title="Coordinan por el chat interno" lines={[
-          "Cada pedido tiene su propio chat.",
-          "Si hace falta, se suman aserradero (madera), ferretería (herrajes), pinturería (pintura) y flete (traslado) — cada uno con su propia cotización, también por sobre cerrado.",
-        ]}/>
-        <FlowArrow/>
-        <FlowStep n={7} icon="⭐" title="Al terminar, se puede calificar" lines={[
-          "El consumidor califica con estrellas y comentario a la carpintería que lo atendió.",
-        ]}/>
+        <div style={{display:"flex",gap:8,marginBottom:22,borderBottom:`2px solid ${C.borde}`}}>
+          <button style={{flex:1,background:"transparent",border:"none",borderBottom:manualTab==="practico"?`3px solid ${C.marron}`:"3px solid transparent",padding:"10px 6px",cursor:"pointer",fontFamily:"'Lato',sans-serif",fontSize:15,fontWeight:700,color:manualTab==="practico"?C.marron:C.textoSuave}} onClick={()=>setManualTab("practico")}>🛠️ Cómo funciona</button>
+          <button style={{flex:1,background:"transparent",border:"none",borderBottom:manualTab==="pagos"?`3px solid ${C.marron}`:"3px solid transparent",padding:"10px 6px",cursor:"pointer",fontFamily:"'Lato',sans-serif",fontSize:15,fontWeight:700,color:manualTab==="pagos"?C.marron:C.textoSuave}} onClick={()=>setManualTab("pagos")}>💳 Inscripción y pagos</button>
+        </div>
+        {manualTab==="pagos"?(
+          <>
+            <FlowStep n={1} icon="📝" title="Te registrás" lines={[
+              "Elegís tu tipo de usuario: consumidor final, carpintería, aserradero, ferretería, pinturería o flete.",
+              "Completás nombre, email, teléfono y contraseña.",
+              "Cargás tu provincia y tu localidad.",
+            ]}/>
+            <FlowBranch label="¿Sos consumidor final o proveedor?" options={[
+              {icon:"🪑",title:"Consumidor final",color:C.verde,lines:[
+                "Encastre es gratis para vos. No pagás suscripción, nunca.",
+              ]},
+              {icon:"🔨",title:"Proveedor (carpintería, aserradero, ferretería, pinturería o flete)",color:C.medio,lines:[
+                "El primer mes de suscripción cuesta $5.000.",
+                "Los meses 2, 3 y 4 cuestan $7.000 cada uno.",
+                "Del mes 5 en adelante, $7.000 (valor ajustable más adelante, siempre avisando antes de cobrar el nuevo precio).",
+                "Antes de cada pago te mostramos el monto exacto y podés elegir «Continuar y pagar» o «Dar de baja» — te podés dar de baja cuando quieras, sin trámites.",
+              ]},
+            ]}/>
+            <FlowArrow/>
+            <FlowStep n={2} icon="🔑" title="Iniciás sesión" lines={[
+              "Entrás con tu email y tu contraseña cada vez que volvés a usar la app.",
+            ]}/>
+          </>
+        ):(
+          <>
+            <FlowStep n={1} icon="📤" title="El consumidor crea su pedido" lines={[
+              "Carga medidas, materiales y, si quiere, una foto del croquis.",
+              "El pedido queda visible para las carpinterías.",
+            ]}/>
+            <FlowArrow label="🔒 sobre cerrado"/>
+            <FlowStep n={2} icon="💰" title="Las carpinterías envían sus presupuestos" lines={[
+              "Cada una manda el suyo sin ver el de las demás — sobre cerrado.",
+              "El consumidor ve todos los presupuestos que le llegaron a él y compara.",
+            ]} color={C.medio}/>
+            <FlowArrow/>
+            <FlowStep n={3} icon="✅" title="El consumidor acepta el que prefiere" lines={[
+              "Los demás presupuestos de ese pedido se cierran automáticamente.",
+            ]}/>
+            <FlowArrow/>
+            <FlowStep n={4} icon="💬" title="Coordinan por el chat interno" lines={[
+              "Cada pedido tiene su propio chat.",
+              "Si hace falta, se suman aserradero (madera), ferretería (herrajes), pinturería (pintura) y flete (traslado) — cada uno con su propia cotización, también por sobre cerrado.",
+            ]}/>
+            <FlowArrow/>
+            <FlowStep n={5} icon="⭐" title="Al terminar, se puede calificar" lines={[
+              "El consumidor califica con estrellas y comentario a la carpintería que lo atendió.",
+            ]}/>
+          </>
+        )}
 
         <div style={{fontFamily:"'Lato',sans-serif",fontSize:18,fontWeight:700,color:C.marron,margin:"22px 0 10px"}}>Herramientas que vas a encontrar</div>
         {[
