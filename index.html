@@ -1622,7 +1622,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.17</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.18</div>
     </div>
   );
 }
@@ -2646,8 +2646,8 @@ function VistaCarpinteria({usuario,notif}){
     setAceptandoAserr(true);
     try{
       const ahora=new Date().toISOString();
-      await db.update("cotizaciones_aserradero",{estado:"aceptado",aceptado_at:ahora},`id=eq.${ct.id}`);
-      await db.update("cotizaciones_aserradero",{estado:"cerrado"},`pedido_id=eq.${selAserr.id}&id=neq.${ct.id}`);
+      await db.update("cotizaciones_aserradero",{estado:"aceptada",aceptado_at:ahora},`id=eq.${ct.id}`);
+      await db.update("cotizaciones_aserradero",{estado:"rechazada"},`pedido_id=eq.${selAserr.id}&id=neq.${ct.id}`);
       await db.update("pedidos_aserradero",{estado:"aceptado"},`id=eq.${selAserr.id}`);
       notif("¡Cotización de aserradero aceptada!");
       setSelAserr(s=>({...s,estado:"aceptado"}));
@@ -3014,15 +3014,15 @@ function VistaCarpinteria({usuario,notif}){
                                 fecha={ct.created_at?new Date(ct.created_at).toLocaleDateString("es-AR"):null}
                                 tiempoEntrega={ct.tiempo_entrega}
                                 esEmpresa={false}
-                                aceptado={ct.estado==="aceptado"}
+                                aceptado={ct.estado==="aceptada"}
                               />
                             </div>
                             <div style={{marginTop:10}}>
                               <Chat key={ct.aserradero_id} pedidoId={selAserr.id} tipoPedido="aserradero" miUsuario={usuario} otroUsuario={{id:ct.aserradero_id}} onLeido={cargarMisPedidosAserr} titulo={"Chat con "+(ct.aserraderoNombre||"aserradero")}/>
                             </div>
-                            {ct.estado==="aceptado"?(
+                            {ct.estado==="aceptada"?(
                               <div style={{marginTop:10,padding:"10px 14px",background:C.verde+"18",border:`1px solid ${C.verde}`,color:C.verde,fontWeight:700,textAlign:"center"}}>✅ Aceptaste esta cotización</div>
-                            ):ct.estado==="cerrado"?(
+                            ):ct.estado==="rechazada"?(
                               <div style={{marginTop:10,padding:"10px 14px",background:C.input,color:C.textoSuave,textAlign:"center",fontSize:14}}>Ya elegiste otra cotización para este pedido.</div>
                             ):(
                               <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",marginTop:10}} onClick={(e)=>{e.stopPropagation();aceptarCotAserr(ct);}} disabled={aceptandoAserr}>{aceptandoAserr?"⟳ Aceptando...":"✅ Aceptar esta cotización"}</button>
