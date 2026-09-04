@@ -1416,10 +1416,10 @@ function AuthScreen({onAuth}){
   const tipos=[
     {id:"cliente",emoji:"🪑",label:"Consumidor Final",desc:"Quiero encargar muebles o construcciones en madera"},
     {id:"carpinteria",emoji:"🔨",label:"Carpintería",desc:"Recibo pedidos y presupuesto trabajos"},
-    {id:"aserradero",emoji:"🪵",label:"Aserradero",desc:"Vendo madera a carpinterías y negocios"},
+    {id:"aserradero",emoji:"🪵🪵",label:"Aserradero",desc:"Vendo madera a carpinterías y negocios"},
     {id:"flete",emoji:"🚚",label:"Flete / Transporte",desc:"Traslado muebles y materiales"},
     {id:"ferreteria",emoji:"🔩",label:"Ferretería / Herrajes",desc:"Vendo herrajes, bisagras y materiales a carpinterías"},
-    {id:"pintureria",emoji:"🎨",label:"Pinturería",desc:"Vendo pinturas, barnices, lacas y esmaltes a carpinterías"},
+    {id:"pintureria",emoji:"🪣",label:"Pinturería",desc:"Vendo pinturas, barnices, lacas y esmaltes a carpinterías"},
   ];
 
   const submit=async()=>{
@@ -1622,7 +1622,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.24</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.26</div>
     </div>
   );
 }
@@ -2900,12 +2900,11 @@ function VistaCarpinteria({usuario,notif}){
   return(
     <div>
       <div style={{display:"flex",gap:8,marginBottom:22,flexWrap:"wrap"}}>
-        {[["pedidos","📋","Pedidos de clientes"],["aserradero","🪵","Aserraderos"],["ferreteria","🔩","Ferreterías"],["pintureria","🎨","Pinturerías"]].map(([id,icon,l])=>{
+        {[["pedidos","Pedidos de clientes"],["aserradero","Aserraderos"],["ferreteria","Ferreterías"],["pintureria","Pinturerías"]].map(([id,l])=>{
           const n=badges[id]||0;
           const est=tabStyle(id);
           return(
           <button key={id} style={est} onClick={()=>setTab(id)}>
-            <span style={{fontSize:26}}>{icon}</span>
             <span style={{display:"flex",alignItems:"center",gap:6}}>{l}<Badge9 n={n}/></span>
           </button>
           );
@@ -2982,7 +2981,7 @@ function VistaCarpinteria({usuario,notif}){
       {tab==="aserradero"&&subAserr==="pedir"&&(
         <div style={S.card}>
           <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSubAserr("mis")}>← Volver a mis pedidos</button>
-          <div style={S.cardTitle}>🪵 Pedir madera al aserradero</div>
+          <div style={S.cardTitle}>🪵🪵 Pedir madera al aserradero</div>
           <div style={{fontSize:17,color:C.textoSuave,marginBottom:14,fontStyle:"italic"}}>Las medidas van en pulgadas y pies (como trabaja el aserradero). Podés pedir varias maderas en un mismo pedido.</div>
           {asF.items.map((it,i)=>{
             const setIt=(campo,val)=>setAsF(f=>{const its=[...f.items];its[i]={...its[i],[campo]:val};return{...f,items:its};});
@@ -3267,7 +3266,7 @@ function VistaCarpinteria({usuario,notif}){
           {subPint==="pedir"&&(
           <div style={S.card}>
             <button style={{...S.btn("ghost"),marginBottom:14}} onClick={()=>setSubPint("mis")}>← Volver a mis pedidos</button>
-            <div style={S.cardTitle}>🎨 Pedir pinturas a pinturería</div>
+            <div style={S.cardTitle}>🪣 Pedir pinturas a pinturería</div>
             <div style={{fontSize:14,color:C.textoSuave,marginBottom:10}}>Agregá un renglón por cada producto que necesitás (incluí color/terminación en la descripción), con su cantidad en litros.</div>
             {pintF.items.map((it,i)=>(
               <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:0,padding:10,marginBottom:8,background:C.suave}}>
@@ -3362,7 +3361,7 @@ function VistaCarpinteria({usuario,notif}){
                             <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:0,marginBottom:10,overflow:"hidden",background:C.input}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
                                 onClick={()=>{const ab=abiertaCot?null:key;setPintAbierta(ab);if(ab){marcarCotVista("cotizaciones_pintureria","visto_carpinteria",ct);setCotizacionesPint(cs=>cs.map(x=>x.id===ct.id?{...x,visto_carpinteria:true}:x));cargarMisPedidosPint();}}}>
-                                <b style={{color:C.marron,fontSize:17}}>🎨 {ct.pintNombre||"Pinturería"}{ct.visto_carpinteria===false&&<span style={{marginLeft:8,fontSize:12,fontWeight:700,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</b>
+                                <b style={{color:C.marron,fontSize:17}}>🪣 {ct.pintNombre||"Pinturería"}{ct.visto_carpinteria===false&&<span style={{marginLeft:8,fontSize:12,fontWeight:700,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</b>
                                 <div style={{display:"flex",alignItems:"center",gap:10}}>
                                   <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
                                   <span style={{color:C.textoSuave,fontSize:16}}>{abiertaCot?"▲":"▼"}</span>
@@ -4879,9 +4878,9 @@ function PantallaBienvenida({onEntrar}){
         {[
           {e:"🪑",t:"Consumidor Final",d:"Creás un pedido describiendo lo que necesitás, con medidas y hasta una foto de tu croquis. Lo reciben las carpinterías, te mandan presupuestos y vos comparás y elegís el que más te convenga."},
           {e:"🔨",t:"Carpintería",d:"Recibís los pedidos de los clientes y enviás tu presupuesto. Si necesitás materiales, pedís madera a aserraderos, herrajes a ferreterías y pinturas a pinturerías desde la misma app."},
-          {e:"🪵",t:"Aserradero",d:"Recibís pedidos de madera de las carpinterías y respondés con tu cotización."},
+          {e:"🪵🪵",t:"Aserradero",d:"Recibís pedidos de madera de las carpinterías y respondés con tu cotización."},
           {e:"🔩",t:"Ferretería",d:"Recibís pedidos de herrajes y materiales, y cotizás de forma simple y rápida."},
-          {e:"🎨",t:"Pinturería",d:"Recibís pedidos de pinturas, barnices, lacas y esmaltes de las carpinterías, y respondés con tu cotización."},
+          {e:"🪣",t:"Pinturería",d:"Recibís pedidos de pinturas, barnices, lacas y esmaltes de las carpinterías, y respondés con tu cotización."},
           {e:"🚚",t:"Flete",d:"Gestionás tu agenda de traslados y recibís solicitudes para mover los trabajos."},
         ].map(u=>(<div key={u.t} style={{borderLeft:`3px solid ${C.acento}`,paddingLeft:12,marginBottom:14}}>
           <div style={{fontWeight:700,color:C.marron,fontSize:17}}>{u.e} {u.t}</div>
@@ -5529,7 +5528,7 @@ const FLUJOS = {
   },
 
   aserradero:{
-    titulo:"🪵 Tu circuito como Aserradero",
+    titulo:"🪵🪵 Tu circuito como Aserradero",
     leyenda:[
       {e:"🔒",t:"Sobre cerrado: nadie ve tu precio ni vos el de otros aserraderos."},
       {e:"💬",t:"Chat: para hablar con la carpintería que te pidió el material."},
@@ -5687,7 +5686,7 @@ const FLUJOS = {
   },
 
   pintureria:{
-    titulo:"🎨 Tu circuito como Pinturería",
+    titulo:"🪣 Tu circuito como Pinturería",
     leyenda:[
       {e:"🔒",t:"Sobre cerrado: nadie ve tu precio ni vos el de otras pinturerías."},
       {e:"💬",t:"Chat: para hablar con la carpintería que te pidió la pintura."},
@@ -6034,7 +6033,7 @@ function AdminUsuarios(){
     setCargando(false);
   })();},[]);
 
-  const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🎨",admin:"🛡️"};
+  const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🪣",admin:"🛡️"};
   const filtrados=filtro?lista.filter(u=>u.tipo===filtro):lista;
   const suspendidoActivo=(u)=>u.suspendido_hasta&&new Date(u.suspendido_hasta)>new Date();
 
@@ -6252,9 +6251,9 @@ function AdminQuejas(){
 
 const CIRCUITOS_MOV=[
   {id:"cliente",label:"🪑 Cliente → Carpintería",tablaPed:"pedidos",tablaCot:"presupuestos",campoReqId:"cliente_id",campoProvId:"carpinteria_id"},
-  {id:"aserradero",label:"🪵 Carpintería → Aserradero",tablaPed:"pedidos_aserradero",tablaCot:"cotizaciones_aserradero",campoReqId:"carpinteria_id",campoProvId:"aserradero_id"},
+  {id:"aserradero",label:"🪵🪵 Carpintería → Aserradero",tablaPed:"pedidos_aserradero",tablaCot:"cotizaciones_aserradero",campoReqId:"carpinteria_id",campoProvId:"aserradero_id"},
   {id:"ferreteria",label:"🔩 Carpintería → Ferretería",tablaPed:"pedidos_ferreteria",tablaCot:"cotizaciones_ferreteria",campoReqId:"carpinteria_id",campoProvId:"ferreteria_id"},
-  {id:"pintureria",label:"🎨 Carpintería → Pinturería",tablaPed:"pedidos_pintureria",tablaCot:"cotizaciones_pintureria",campoReqId:"carpinteria_id",campoProvId:"pintureria_id"},
+  {id:"pintureria",label:"🪣 Carpintería → Pinturería",tablaPed:"pedidos_pintureria",tablaCot:"cotizaciones_pintureria",campoReqId:"carpinteria_id",campoProvId:"pintureria_id"},
   {id:"flete",label:"🚚 Flete",tablaPed:"pedidos_flete",tablaCot:"cotizaciones_flete",campoReqId:"solicitante_id",campoProvId:"flete_id"},
 ];
 
@@ -7150,7 +7149,7 @@ function App(){
   if(!avisoDiasCerrado&&usuario.tipo!=="cliente"&&suscInfo.diasRestantes!=null&&(suscInfo.diasRestantes<=7||!usuario.vio_pantalla_prueba)){
     return <AvisoDiasRestantes dias={suscInfo.diasRestantes} estado={suscInfo.estado} onDarDeBaja={darDeBaja} onContinuar={cerrarAvisoDias}/>;
   }
-  const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🎨"};
+  const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🪣"};
 
   return(
     <div style={S.app}>
