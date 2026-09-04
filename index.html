@@ -1622,7 +1622,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.27</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.28</div>
     </div>
   );
 }
@@ -2413,6 +2413,29 @@ function VistaCarpinteria({usuario,notif}){
       notif("Pedido archivado");
     }catch(e){ notif("No se pudo archivar"); }
   };
+  const [seleccionados,setSeleccionados]=useState(new Set());
+  const toggleSeleccion=(id)=>{
+    setSeleccionados(prev=>{
+      const nuevo=new Set(prev);
+      if(nuevo.has(id))nuevo.delete(id); else nuevo.add(id);
+      return nuevo;
+    });
+  };
+  const [archivandoSel,setArchivandoSel]=useState(false);
+  const archivarSeleccionados=async()=>{
+    if(seleccionados.size===0)return;
+    if(!window.confirm(`¿Archivar ${seleccionados.size} pedido${seleccionados.size>1?"s":""}? Los vas a poder restaurar desde la Papelera.`))return;
+    setArchivandoSel(true);
+    try{
+      for(const id of seleccionados){
+        try{ await db.insertMin("elementos_archivados",{usuario_id:usuario.id,tipo_elemento:"pedido_cliente",elemento_id:id}); }catch{}
+      }
+      setArchivadosPed(prev=>new Set([...prev,...seleccionados]));
+      setSeleccionados(new Set());
+      notif("Pedidos archivados");
+    }catch(e){ notif("No se pudieron archivar todos"); }
+    setArchivandoSel(false);
+  };
   const [tab,setTab]=useState("pedidos");
   const [pedidos,setPedidos]=useState([]);
   const [sel,setSel]=useState(null);
@@ -2954,7 +2977,16 @@ function VistaCarpinteria({usuario,notif}){
             });
             if(q)lista=lista.filter(p=>(p.descripcion||"").toLowerCase().includes(q)||(p._clienteNombre||"").toLowerCase().includes(q));
             if(pedidos.length>0&&lista.length===0) return <div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría{q?` para "${buscarPedido}"`:""}</div>;
-            return lista.map(p=>{
+            return(
+              <div>
+                {seleccionados.size>0&&(
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,padding:"10px 14px",background:C.suave,border:`1px solid ${C.acento}`}}>
+                    <span style={{fontSize:15,color:C.marron,fontWeight:700}}>{seleccionados.size} seleccionado{seleccionados.size>1?"s":""}</span>
+                    <button style={{...S.btn("dark"),fontSize:14,padding:"7px 14px"}} onClick={archivarSeleccionados} disabled={archivandoSel}>{archivandoSel?"⟳ Archivando...":"🗑️ Archivar seleccionados"}</button>
+                    <button style={{...S.btn("ghost"),fontSize:14,padding:"7px 14px"}} onClick={()=>setSeleccionados(new Set())}>Cancelar</button>
+                  </div>
+                )}
+                {lista.map((p,i)=>{
             const mat=MATS.find(m=>m.id===p.material);
             const vencido=p.fecha_limite&&new Date(p.fecha_limite)<new Date();
             let et;
@@ -2963,10 +2995,16 @@ function VistaCarpinteria({usuario,notif}){
             else if(vencido){ et={t:"Vencido",bg:"#B23A2E",fg:"#fff"}; }
             else { et={t:"Para cotizar",bg:C.marron,fg:C.crema}; }
             const cerradoParaMi = p.estado==="aceptado" && p._miEstado!=="aceptado";
+            const marcado=seleccionados.has(p.id);
             return(
-              <div key={p.id} style={{...S.card,cursor:cerradoParaMi?"default":"pointer",transition:"all .15s",opacity:cerradoParaMi?0.7:1,borderColor:p._nuevo?"#009966":"#8B451399",borderWidth:p._nuevo?2:1}} onClick={()=>{ if(!cerradoParaMi) abrirPedidoCliente(p); }}
+              <div key={p.id} style={{...S.card,display:"flex",gap:10,cursor:cerradoParaMi?"default":"pointer",transition:"all .15s",opacity:cerradoParaMi?0.7:1,borderColor:marcado?C.acento:(p._nuevo?"#009966":"#8B451399"),borderWidth:(marcado||p._nuevo)?2:1}}
                 onMouseEnter={e=>{if(!cerradoParaMi){e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}}
-                onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
+                onMouseLeave={e=>{e.currentTarget.style.borderColor=marcado?C.acento:(p._nuevo?"#009966":C.borde);e.currentTarget.style.transform="none";}}>
+                <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,flexShrink:0}}>
+                  <div style={{width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",background:C.suave,border:`1px solid ${C.borde}`,fontSize:13,fontWeight:700,color:C.marron}}>{i+1}</div>
+                  <input type="checkbox" checked={marcado} onChange={()=>toggleSeleccion(p.id)} onClick={e=>e.stopPropagation()} style={{width:22,height:22,cursor:"pointer"}}/>
+                </div>
+                <div style={{flex:1,minWidth:0}} onClick={()=>{ if(!cerradoParaMi) abrirPedidoCliente(p); }}>
                 <div style={{display:"flex",justifyContent:"space-between",gap:10}}>
                   <div>
                     <div style={{fontFamily:"'Lato',sans-serif",fontWeight:700,color:C.marron,fontSize:21}}>{p.descripcion}<TagNuevo on={p._nuevo}/><TagMsjNuevo on={p._msjNuevo}/></div>
@@ -2976,9 +3014,12 @@ function VistaCarpinteria({usuario,notif}){
                   </div>
                   <span style={{alignSelf:"flex-start",whiteSpace:"nowrap",background:et.bg,color:et.fg,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:0,fontFamily:"'Lato',sans-serif"}}>{et.t}</span>
                 </div>
+                </div>
               </div>
             );
-          });
+          })}
+              </div>
+            );
           })()}
         </div>
       )}
