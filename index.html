@@ -1622,7 +1622,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.22</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.23</div>
     </div>
   );
 }
@@ -2541,7 +2541,7 @@ function VistaCarpinteria({usuario,notif}){
         const fe=await db.select("usuarios",`?id=eq.${ct.ferreteria_id}&limit=1`);
         let items=[];
         try{ items=Array.isArray(ct.presupuesto_items)?ct.presupuesto_items:JSON.parse(ct.presupuesto_items||"[]"); }catch{items=[];}
-        return{...ct,ferrNombre:fe[0]?.nombre||"Ferretería",ferrObj:fe[0]||{},items};
+        return{...ct,ferrNombre:fe[0]?.nombre||"Ferretería",ferrObj:fe[0]||{},ferrTrabajos:(fe[0]?.trabajos&&fe[0].trabajos.length>0)?fe[0].trabajos:[fe[0]?.foto1,fe[0]?.foto2,fe[0]?.foto3].filter(Boolean).map(f=>({foto:f,titulo:""})),items};
       }));
       setCotizacionesFerr(enr);
     }catch{}
@@ -2590,7 +2590,7 @@ function VistaCarpinteria({usuario,notif}){
         const pe=await db.select("usuarios",`?id=eq.${ct.pintureria_id}&limit=1`);
         let items=[];
         try{ items=Array.isArray(ct.presupuesto_items)?ct.presupuesto_items:JSON.parse(ct.presupuesto_items||"[]"); }catch{items=[];}
-        return{...ct,pintNombre:pe[0]?.nombre||"Pinturería",pintObj:pe[0]||{},items};
+        return{...ct,pintNombre:pe[0]?.nombre||"Pinturería",pintObj:pe[0]||{},pintTrabajos:(pe[0]?.trabajos&&pe[0].trabajos.length>0)?pe[0].trabajos:[pe[0]?.foto1,pe[0]?.foto2,pe[0]?.foto3].filter(Boolean).map(f=>({foto:f,titulo:""})),items};
       }));
       setCotizacionesPint(enr);
     }catch{}
@@ -2695,7 +2695,7 @@ function VistaCarpinteria({usuario,notif}){
         const as=await db.select("usuarios",`?id=eq.${ct.aserradero_id}&limit=1`);
         let items=[];
         try{ items=Array.isArray(ct.presupuesto_items)?ct.presupuesto_items:JSON.parse(ct.presupuesto_items||"[]"); }catch{items=[];}
-        return{...ct,aserraderoNombre:as[0]?.nombre||"Aserradero",aserraderoObj:as[0]||{},items};
+        return{...ct,aserraderoNombre:as[0]?.nombre||"Aserradero",aserraderoObj:as[0]||{},aserraderoTrabajos:(as[0]?.trabajos&&as[0].trabajos.length>0)?as[0].trabajos:[as[0]?.foto1,as[0]?.foto2,as[0]?.foto3].filter(Boolean).map(f=>({foto:f,titulo:""})),items};
       }));
       setCotizacionesAserr(enr);
     }catch{}
@@ -3083,6 +3083,7 @@ function VistaCarpinteria({usuario,notif}){
                             <div style={{marginTop:10}}>
                               <Chat key={ct.aserradero_id} pedidoId={selAserr.id} tipoPedido="aserradero" miUsuario={usuario} otroUsuario={{id:ct.aserradero_id}} onLeido={cargarMisPedidosAserr} titulo={"Chat con "+(ct.aserraderoNombre||"aserradero")}/>
                             </div>
+                            <TrabajosGallery trabajos={ct.aserraderoTrabajos}/>
                             {ct.estado==="aceptada"?(
                               <div style={{marginTop:10,padding:"10px 14px",background:C.verde+"18",border:`1px solid ${C.verde}`,color:C.verde,fontWeight:700,textAlign:"center"}}>✅ Aceptaste esta cotización</div>
                             ):ct.estado==="rechazada"?(
@@ -3231,6 +3232,7 @@ function VistaCarpinteria({usuario,notif}){
                                 <div style={{marginTop:10}}>
                                   <Chat key={ct.ferreteria_id} pedidoId={selFerr.id} tipoPedido="ferreteria" miUsuario={usuario} otroUsuario={{id:ct.ferreteria_id}} onLeido={cargarMisPedidosFerreria} titulo={"Chat con "+(ct.ferrNombre||"ferretería")}/>
                                 </div>
+                                <TrabajosGallery trabajos={ct.ferrTrabajos}/>
                                 {ct.estado==="aceptada"?(
                                   <div style={{marginTop:10,padding:"10px 14px",background:C.verde+"18",border:`1px solid ${C.verde}`,color:C.verde,fontWeight:700,textAlign:"center"}}>✅ Aceptaste esta cotización</div>
                                 ):ct.estado==="rechazada"?(
@@ -3381,6 +3383,7 @@ function VistaCarpinteria({usuario,notif}){
                                 <div style={{marginTop:10}}>
                                   <Chat key={ct.pintureria_id} pedidoId={selPint.id} tipoPedido="pintureria" miUsuario={usuario} otroUsuario={{id:ct.pintureria_id}} onLeido={cargarMisPedidosPint} titulo={"Chat con "+(ct.pintNombre||"pinturería")}/>
                                 </div>
+                                <TrabajosGallery trabajos={ct.pintTrabajos}/>
                                 {ct.estado==="aceptada"?(
                                   <div style={{marginTop:10,padding:"10px 14px",background:C.verde+"18",border:`1px solid ${C.verde}`,color:C.verde,fontWeight:700,textAlign:"center"}}>✅ Aceptaste esta cotización</div>
                                 ):ct.estado==="rechazada"?(
@@ -3901,7 +3904,7 @@ function VistaFlete({usuario,notif}){
         const fl=await db.select("usuarios",`?id=eq.${ct.flete_id}&limit=1`);
         let items=[];
         try{ items=Array.isArray(ct.presupuesto_items)?ct.presupuesto_items:JSON.parse(ct.presupuesto_items||"[]"); }catch{items=[];}
-        return{...ct,fleteNombre:fl[0]?.nombre||"Flete",fleteObj:fl[0]||{},items};
+        return{...ct,fleteNombre:fl[0]?.nombre||"Flete",fleteObj:fl[0]||{},fleteTrabajos:(fl[0]?.trabajos&&fl[0].trabajos.length>0)?fl[0].trabajos:[fl[0]?.foto1,fl[0]?.foto2,fl[0]?.foto3].filter(Boolean).map(f=>({foto:f,titulo:""})),items};
       }));
       setCotizacionesFlete(enr);
     }catch{}
@@ -4244,6 +4247,7 @@ function VistaFlete({usuario,notif}){
                           <div style={{marginTop:10}}>
                             <Chat key={ct.flete_id} pedidoId={selPedido.id} tipoPedido="flete" miUsuario={usuario} otroUsuario={{id:ct.flete_id}} onLeido={cargarMisPedidos} titulo={"Chat con "+(ct.fleteNombre||"flete")}/>
                           </div>
+                          <TrabajosGallery trabajos={ct.fleteTrabajos}/>
                           {ct.estado==="aceptada"?(
                             <div style={{marginTop:10,padding:"10px 14px",background:C.verde+"18",border:`1px solid ${C.verde}`,color:C.verde,fontWeight:700,textAlign:"center"}}>✅ Aceptaste esta cotización</div>
                           ):ct.estado==="rechazada"?(
