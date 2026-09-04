@@ -1622,7 +1622,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.23</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.24</div>
     </div>
   );
 }
@@ -2895,16 +2895,19 @@ function VistaCarpinteria({usuario,notif}){
     );
   }
 
-  const tabStyle=(id)=>({background:tab===id?C.marron:"transparent",color:tab===id?C.crema:C.textoSuave,border:tab===id?"none":`1px solid ${C.borde}`,borderRadius:0,padding:"7px 14px",cursor:"pointer",fontSize:17,fontWeight:700,fontFamily:"'Lato',sans-serif"});
+  const tabStyle=(id)=>({flex:"1 1 45%",background:tab===id?C.marron:C.card,color:tab===id?C.crema:C.marron,border:tab===id?"none":`2px solid ${C.marron}33`,borderBottom:tab===id?`4px solid ${C.acento}`:`2px solid ${C.marron}33`,borderRadius:0,padding:"16px 10px",cursor:"pointer",fontSize:18,fontWeight:800,fontFamily:"'Lato',sans-serif",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:2});
 
   return(
     <div>
-      <div style={{display:"flex",gap:7,marginBottom:18,flexWrap:"wrap"}}>
-        {[["pedidos","📋 Pedidos recibidos"],["aserradero","🪵 Aserraderos"],["ferreteria","🔩 Ferreterías"],["pintureria","🎨 Pinturerías"]].map(([id,l])=>{
+      <div style={{display:"flex",gap:8,marginBottom:22,flexWrap:"wrap"}}>
+        {[["pedidos","📋","Pedidos de clientes"],["aserradero","🪵","Aserraderos"],["ferreteria","🔩","Ferreterías"],["pintureria","🎨","Pinturerías"]].map(([id,icon,l])=>{
           const n=badges[id]||0;
           const est=tabStyle(id);
           return(
-          <button key={id} style={{...est,fontWeight:n>0?900:est.fontWeight}} onClick={()=>setTab(id)}>{l}<Badge9 n={n}/></button>
+          <button key={id} style={est} onClick={()=>setTab(id)}>
+            <span style={{fontSize:26}}>{icon}</span>
+            <span style={{display:"flex",alignItems:"center",gap:6}}>{l}<Badge9 n={n}/></span>
+          </button>
           );
         })}
       </div>
