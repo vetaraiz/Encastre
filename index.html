@@ -1622,7 +1622,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.18</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.20</div>
     </div>
   );
 }
@@ -2111,6 +2111,14 @@ function VistaCliente({usuario,notif}){
   const [tipsPresup,setTipsPresup]=useState(null); // presupuesto pendiente de confirmar tras ver los tips
   const [aceptando,setAceptando]=useState(false);
 
+  const setModoEntrega=async(modo)=>{
+    try{
+      await db.update("pedidos",{modo_entrega:modo},`id=eq.${sel.id}`);
+      setSel(s=>({...s,modo_entrega:modo}));
+      setPedidos(ps=>ps.map(p=>p.id===sel.id?{...p,modo_entrega:modo}:p));
+    }catch(e){alert("No se pudo guardar: "+(e.message||"revisá tu conexión"));}
+  };
+
   const aceptar=async(pr)=>{
     setAceptando(true);
     try{
@@ -2185,6 +2193,14 @@ function VistaCliente({usuario,notif}){
               ):(
                 <div style={{fontSize:13,color:C.textoSuave,marginTop:2,textAlign:"center"}}>La aceptación es definitiva.</div>
               )}
+              <div style={{marginTop:14}}>
+                <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>¿Cómo vas a recibir el mueble?</div>
+                <div style={{display:"flex",gap:8}}>
+                  <button style={{...S.btn(sel.modo_entrega==="flete"?"dark":"ghost"),flex:1,justifyContent:"center"}} onClick={()=>setModoEntrega("flete")}>🚚 Flete</button>
+                  <button style={{...S.btn(sel.modo_entrega==="retiro"?"dark":"ghost"),flex:1,justifyContent:"center"}} onClick={()=>setModoEntrega("retiro")}>🏠 Retiro por el local</button>
+                </div>
+                <div style={{fontSize:13,color:C.textoSuave,marginTop:6}}>Esto queda visible para la carpintería, así se coordina por el chat. Podés cambiarlo cuando quieras.</div>
+              </div>
             </div>
           );
         })()}
@@ -2516,6 +2532,20 @@ function VistaCarpinteria({usuario,notif}){
       setCotizacionesFerr(enr);
     }catch{}
   };
+  const [aceptandoFerr,setAceptandoFerr]=useState(false);
+  const aceptarCotFerr=async(ct)=>{
+    setAceptandoFerr(true);
+    try{
+      const ahora=new Date().toISOString();
+      await db.update("cotizaciones_ferreteria",{estado:"aceptada",aceptado_at:ahora},`id=eq.${ct.id}`);
+      await db.update("cotizaciones_ferreteria",{estado:"rechazada"},`pedido_id=eq.${selFerr.id}&id=neq.${ct.id}`);
+      await db.update("pedidos_ferreteria",{estado:"aceptado"},`id=eq.${selFerr.id}`);
+      notif("¡Cotización de ferretería aceptada!");
+      await abrirPedidoFerr(selFerr);
+      cargarMisPedidosFerreria();
+    }catch(e){alert("No se pudo aceptar: "+(e.message||"revisá tu conexión"));}
+    setAceptandoFerr(false);
+  };
   const cargarMisPedidosPint=useCallback(async()=>{
     try{
       const d=await db.select("pedidos_pintureria",`?carpinteria_id=eq.${usuario.id}&order=created_at.desc`);
@@ -2550,6 +2580,20 @@ function VistaCarpinteria({usuario,notif}){
       }));
       setCotizacionesPint(enr);
     }catch{}
+  };
+  const [aceptandoPint,setAceptandoPint]=useState(false);
+  const aceptarCotPint=async(ct)=>{
+    setAceptandoPint(true);
+    try{
+      const ahora=new Date().toISOString();
+      await db.update("cotizaciones_pintureria",{estado:"aceptada",aceptado_at:ahora},`id=eq.${ct.id}`);
+      await db.update("cotizaciones_pintureria",{estado:"rechazada"},`pedido_id=eq.${selPint.id}&id=neq.${ct.id}`);
+      await db.update("pedidos_pintureria",{estado:"aceptado"},`id=eq.${selPint.id}`);
+      notif("¡Cotización de pinturería aceptada!");
+      await abrirPedidoPint(selPint);
+      cargarMisPedidosPint();
+    }catch(e){alert("No se pudo aceptar: "+(e.message||"revisá tu conexión"));}
+    setAceptandoPint(false);
   };
   useEffect(()=>{cargar();cargarMisPedidosAserr();cargarMisPedidosFerreria();cargarMisPedidosPint();},[cargar,cargarMisPedidosAserr,cargarMisPedidosFerreria,cargarMisPedidosPint]);
 
@@ -2724,6 +2768,11 @@ function VistaCarpinteria({usuario,notif}){
             esEmpresa={true}
             aceptado={miPresupuesto.estado==="aceptado"}
           />
+          {miPresupuesto.estado==="aceptado"&&sel.modo_entrega&&(
+            <div style={{marginTop:10,padding:"10px 14px",background:C.suave,border:`1px solid ${C.acento}55`,fontSize:14,color:C.marron,fontWeight:600,textAlign:"center"}}>
+              {sel.modo_entrega==="retiro"?"🏠 El cliente eligió retirar el mueble por tu local":"🚚 El cliente va a coordinar flete"}
+            </div>
+          )}
         </div>
         ):(
         <div style={{marginTop:20,paddingTop:20,borderTop:`2px dashed ${C.borde}`}}>
@@ -3162,12 +3211,19 @@ function VistaCarpinteria({usuario,notif}){
                                     fecha={ct.created_at?new Date(ct.created_at).toLocaleDateString("es-AR"):null}
                                     tiempoEntrega={ct.tiempo_entrega}
                                     esEmpresa={false}
-                                    aceptado={false}
+                                    aceptado={ct.estado==="aceptada"}
                                   />
                                 </div>
                                 <div style={{marginTop:10}}>
                                   <Chat key={ct.ferreteria_id} pedidoId={selFerr.id} tipoPedido="ferreteria" miUsuario={usuario} otroUsuario={{id:ct.ferreteria_id}} onLeido={cargarMisPedidosFerreria} titulo={"Chat con "+(ct.ferrNombre||"ferretería")}/>
                                 </div>
+                                {ct.estado==="aceptada"?(
+                                  <div style={{marginTop:10,padding:"10px 14px",background:C.verde+"18",border:`1px solid ${C.verde}`,color:C.verde,fontWeight:700,textAlign:"center"}}>✅ Aceptaste esta cotización</div>
+                                ):ct.estado==="rechazada"?(
+                                  <div style={{marginTop:10,padding:"10px 14px",background:C.input,color:C.textoSuave,textAlign:"center",fontSize:14}}>Ya elegiste otra cotización para este pedido.</div>
+                                ):(
+                                  <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",marginTop:10}} onClick={(e)=>{e.stopPropagation();aceptarCotFerr(ct);}} disabled={aceptandoFerr}>{aceptandoFerr?"⟳ Aceptando...":"✅ Aceptar esta cotización"}</button>
+                                )}
                                   <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCot(ct,"ferreteria");}}>🗑️ Archivar esta cotización</button></div>
                               </div>
                               )}
@@ -3305,12 +3361,19 @@ function VistaCarpinteria({usuario,notif}){
                                     fecha={ct.created_at?new Date(ct.created_at).toLocaleDateString("es-AR"):null}
                                     tiempoEntrega={ct.tiempo_entrega}
                                     esEmpresa={false}
-                                    aceptado={false}
+                                    aceptado={ct.estado==="aceptada"}
                                   />
                                 </div>
                                 <div style={{marginTop:10}}>
                                   <Chat key={ct.pintureria_id} pedidoId={selPint.id} tipoPedido="pintureria" miUsuario={usuario} otroUsuario={{id:ct.pintureria_id}} onLeido={cargarMisPedidosPint} titulo={"Chat con "+(ct.pintNombre||"pinturería")}/>
                                 </div>
+                                {ct.estado==="aceptada"?(
+                                  <div style={{marginTop:10,padding:"10px 14px",background:C.verde+"18",border:`1px solid ${C.verde}`,color:C.verde,fontWeight:700,textAlign:"center"}}>✅ Aceptaste esta cotización</div>
+                                ):ct.estado==="rechazada"?(
+                                  <div style={{marginTop:10,padding:"10px 14px",background:C.input,color:C.textoSuave,textAlign:"center",fontSize:14}}>Ya elegiste otra cotización para este pedido.</div>
+                                ):(
+                                  <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",marginTop:10}} onClick={(e)=>{e.stopPropagation();aceptarCotPint(ct);}} disabled={aceptandoPint}>{aceptandoPint?"⟳ Aceptando...":"✅ Aceptar esta cotización"}</button>
+                                )}
                                   <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCot(ct,"pintureria");}}>🗑️ Archivar esta cotización</button></div>
                               </div>
                               )}
@@ -3829,6 +3892,20 @@ function VistaFlete({usuario,notif}){
       setCotizacionesFlete(enr);
     }catch{}
   };
+  const [aceptandoFlete,setAceptandoFlete]=useState(false);
+  const aceptarCotFlete=async(ct)=>{
+    setAceptandoFlete(true);
+    try{
+      const ahora=new Date().toISOString();
+      await db.update("cotizaciones_flete",{estado:"aceptada",aceptado_at:ahora},`id=eq.${ct.id}`);
+      await db.update("cotizaciones_flete",{estado:"rechazada"},`pedido_id=eq.${selPedido.id}&id=neq.${ct.id}`);
+      await db.update("pedidos_flete",{estado:"aceptado"},`id=eq.${selPedido.id}`);
+      notif("¡Cotización de flete aceptada!");
+      await abrirMiPedido(selPedido);
+      cargarMisPedidos();
+    }catch(e){alert("No se pudo aceptar: "+(e.message||"revisá tu conexión"));}
+    setAceptandoFlete(false);
+  };
 
   const [enviandoPed,setEnviandoPed]=useState(false);
   const enviarPedido=async()=>{
@@ -4147,12 +4224,19 @@ function VistaFlete({usuario,notif}){
                               fecha={ct.created_at?new Date(ct.created_at).toLocaleDateString("es-AR"):null}
                               tiempoEntrega={ct.tiempo_entrega}
                               esEmpresa={false}
-                              aceptado={false}
+                              aceptado={ct.estado==="aceptada"}
                             />
                           </div>
                           <div style={{marginTop:10}}>
                             <Chat key={ct.flete_id} pedidoId={selPedido.id} tipoPedido="flete" miUsuario={usuario} otroUsuario={{id:ct.flete_id}} onLeido={cargarMisPedidos} titulo={"Chat con "+(ct.fleteNombre||"flete")}/>
                           </div>
+                          {ct.estado==="aceptada"?(
+                            <div style={{marginTop:10,padding:"10px 14px",background:C.verde+"18",border:`1px solid ${C.verde}`,color:C.verde,fontWeight:700,textAlign:"center"}}>✅ Aceptaste esta cotización</div>
+                          ):ct.estado==="rechazada"?(
+                            <div style={{marginTop:10,padding:"10px 14px",background:C.input,color:C.textoSuave,textAlign:"center",fontSize:14}}>Ya elegiste otra cotización para este pedido.</div>
+                          ):(
+                            <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",marginTop:10}} onClick={(e)=>{e.stopPropagation();aceptarCotFlete(ct);}} disabled={aceptandoFlete}>{aceptandoFlete?"⟳ Aceptando...":"✅ Aceptar esta cotización"}</button>
+                          )}
                           <div style={{textAlign:"right",marginTop:10,paddingTop:10,borderTop:`1px dashed ${C.borde}`}}><button style={{...S.btn("ghost"),fontSize:14,padding:"6px 12px",color:C.textoSuave}} onClick={(e)=>{e.stopPropagation();archivarCotFlete(ct);}}>🗑️ Archivar esta cotización</button></div>
                         </div>
                         )}
