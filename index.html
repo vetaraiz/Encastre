@@ -1622,7 +1622,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.26</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.27</div>
     </div>
   );
 }
@@ -2895,20 +2895,25 @@ function VistaCarpinteria({usuario,notif}){
     );
   }
 
-  const tabStyle=(id)=>({flex:"1 1 45%",background:tab===id?C.marron:C.card,color:tab===id?C.crema:C.marron,border:tab===id?"none":`2px solid ${C.marron}33`,borderBottom:tab===id?`4px solid ${C.acento}`:`2px solid ${C.marron}33`,borderRadius:0,padding:"16px 10px",cursor:"pointer",fontSize:18,fontWeight:800,fontFamily:"'Lato',sans-serif",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:2});
+  const tabBase=(id)=>({background:tab===id?C.marron:C.card,color:tab===id?C.crema:C.marron,border:tab===id?"none":`2px solid ${C.marron}33`,borderBottom:tab===id?`4px solid ${C.acento}`:`2px solid ${C.marron}33`,borderRadius:0,cursor:"pointer",fontFamily:"'Lato',sans-serif",fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:6});
 
   return(
     <div>
-      <div style={{display:"flex",gap:8,marginBottom:22,flexWrap:"wrap"}}>
-        {[["pedidos","Pedidos de clientes"],["aserradero","Aserraderos"],["ferreteria","Ferreterías"],["pintureria","Pinturerías"]].map(([id,l])=>{
-          const n=badges[id]||0;
-          const est=tabStyle(id);
-          return(
-          <button key={id} style={est} onClick={()=>setTab(id)}>
-            <span style={{display:"flex",alignItems:"center",gap:6}}>{l}<Badge9 n={n}/></span>
-          </button>
-          );
-        })}
+      <div style={{display:"flex",gap:8,marginBottom:22,alignItems:"stretch"}}>
+        <button style={{...tabBase("pedidos"),flex:"0 0 32%",flexDirection:"column",fontSize:17,padding:10,textAlign:"center"}} onClick={()=>setTab("pedidos")}>
+          <span>Pedidos de clientes</span>
+          <Badge9 n={badges.pedidos||0}/>
+        </button>
+        <div style={{flex:1,display:"flex",flexDirection:"column",gap:8}}>
+          {[["aserradero","Aserraderos"],["ferreteria","Ferreterías"],["pintureria","Pinturerías"]].map(([id,l])=>{
+            const n=badges[id]||0;
+            return(
+            <button key={id} style={{...tabBase(id),flex:1,fontSize:16,padding:"8px 10px"}} onClick={()=>setTab(id)}>
+              <span>{l}</span><Badge9 n={n}/>
+            </button>
+            );
+          })}
+        </div>
       </div>
 
       {tab==="pedidos"&&(
