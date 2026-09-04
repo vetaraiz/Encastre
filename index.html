@@ -1622,7 +1622,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.21</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.22</div>
     </div>
   );
 }
@@ -1743,6 +1743,27 @@ function Chat({pedidoId,tipoPedido,miUsuario,otroUsuario,titulo,onLeido}){
 }
 
 // ─── CALIFICACIÓN ─────────────────────────────────────────────────────────────
+function TrabajosGallery({trabajos}){
+  const [sel,setSel]=useState(0);
+  if(!trabajos||trabajos.length===0)return null;
+  const idx=Math.min(sel,trabajos.length-1);
+  const t=trabajos[idx];
+  return(
+    <div style={{marginTop:12}}>
+      <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>🛠️ Trabajos realizados</div>
+      {trabajos.length>1&&(
+        <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:8,paddingBottom:2}}>
+          {trabajos.map((tr,i)=>(
+            <button key={i} onClick={()=>setSel(i)} style={{flexShrink:0,padding:"5px 10px",fontSize:13,fontWeight:700,background:i===idx?C.marron:C.suave,color:i===idx?C.crema:C.marron,border:"none",borderRadius:0,cursor:"pointer",whiteSpace:"nowrap"}}>{tr.titulo||`Trabajo ${i+1}`}</button>
+          ))}
+        </div>
+      )}
+      <img src={t.foto} alt={t.titulo||"trabajo"} style={{width:"100%",maxHeight:220,objectFit:"cover",border:`1px solid ${C.borde}`}}/>
+      {t.titulo&&<div style={{fontSize:14,color:C.texto,marginTop:6,fontWeight:600}}>{t.titulo}</div>}
+    </div>
+  );
+}
+
 function Calificar({deUsuario,paraUsuario,pedidoId,califs=[]}){
   const [open,setOpen]=useState(false);
   const [stars,setStars]=useState(0);
@@ -2086,7 +2107,7 @@ function VistaCliente({usuario,notif}){
       const c=await db.select("usuarios",`?id=eq.${pr.carpinteria_id}&limit=1`);
       let items=[];
       try{ items=await db.select("presupuesto_items",`?presupuesto_id=eq.${pr.id}&order=orden.asc`); }catch{}
-      return{...pr,empresa:c[0]||{},carpNombre:c[0]?.nombre||"Carpintería",carpFotos:[c[0]?.foto1,c[0]?.foto2,c[0]?.foto3].filter(Boolean),items};
+      return{...pr,empresa:c[0]||{},carpNombre:c[0]?.nombre||"Carpintería",carpTrabajos:(c[0]?.trabajos&&c[0].trabajos.length>0)?c[0].trabajos:[c[0]?.foto1,c[0]?.foto2,c[0]?.foto3].filter(Boolean).map(f=>({foto:f,titulo:""})),items};
     }));
   };
 
@@ -2205,14 +2226,7 @@ function VistaCliente({usuario,notif}){
           );
         })()}
         <Calificar deUsuario={usuario} paraUsuario={{id:pr.carpinteria_id}} pedidoId={sel.id}/>
-        {pr.carpFotos&&pr.carpFotos.length>0&&(
-          <div style={{marginTop:12}}>
-            <div style={{fontSize:15,color:C.textoSuave,marginBottom:6}}>🛠️ Trabajos realizados</div>
-            <div style={{display:"flex",gap:8}}>
-              {pr.carpFotos.map((f,j)=>(<img key={j} src={f} alt={"trabajo "+(j+1)} style={{width:"31%",height:100,objectFit:"cover",borderRadius:0,border:`1px solid ${C.borde}`}}/>))}
-            </div>
-          </div>
-        )}
+        <TrabajosGallery trabajos={pr.carpTrabajos}/>
         <div style={{marginTop:12}}>
           <Chat key={pr.carpinteria_id} pedidoId={sel.id} tipoPedido="cliente" miUsuario={usuario} otroUsuario={{id:pr.carpinteria_id}} titulo={"Chat con "+pr.carpNombre}/>
         </div>
@@ -6541,8 +6555,10 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
   const [guardandoPub,setGuardandoPub]=useState(false);
   const [okPub,setOkPub]=useState("");
   const [errPub,setErrPub]=useState("");
-  const [fotos,setFotos]=useState([usuario.foto1||"",usuario.foto2||"",usuario.foto3||""]);
+  const [trabajos,setTrabajos]=useState(usuario.trabajos&&usuario.trabajos.length>0?usuario.trabajos:[usuario.foto1,usuario.foto2,usuario.foto3].filter(Boolean).map(f=>({foto:f,titulo:""})));
   const [procFoto,setProcFoto]=useState(false);
+  const [tituloPendiente,setTituloPendiente]=useState("");
+  const [fotoPendiente,setFotoPendiente]=useState(null);
 
   const parchearSesion=(campos)=>{
     try{
@@ -6595,25 +6611,31 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
     setGuardandoPub(false);
   };
 
-  const guardarFotos=async(nuevas)=>{
-    setFotos(nuevas);
-    const campos={foto1:nuevas[0]||null,foto2:nuevas[1]||null,foto3:nuevas[2]||null};
+  const guardarTrabajos=async(nuevos)=>{
+    setTrabajos(nuevos);
     try{
-      await db.update("usuarios",campos,`id=eq.${usuario.id}`);
-      parchearSesion(campos);
-    }catch(e){ setErrPub("No se pudieron guardar las fotos: "+(e.message||"")); }
+      await db.update("usuarios",{trabajos:nuevos},`id=eq.${usuario.id}`);
+      parchearSesion({trabajos:nuevos});
+    }catch(e){ setErrPub("No se pudieron guardar los trabajos: "+(e.message||"")); }
   };
-  const subirFoto=async(i,file)=>{
+  const elegirFotoTrabajo=async(file)=>{
     if(!file)return;
     setProcFoto(true);
     try{
       const data=await comprimirFoto(file);
-      const nuevas=[...fotos]; nuevas[i]=data;
-      await guardarFotos(nuevas);
+      setFotoPendiente(data);
+      setTituloPendiente("");
     }catch(e){ setErrPub("No se pudo procesar la foto. Probá con una imagen JPG o PNG."); }
     setProcFoto(false);
   };
-  const quitarFoto=(i)=>{ const nuevas=[...fotos]; nuevas[i]=""; guardarFotos(nuevas); };
+  const confirmarTrabajo=()=>{
+    if(!fotoPendiente)return;
+    guardarTrabajos([...trabajos,{foto:fotoPendiente,titulo:tituloPendiente.trim()}]);
+    setFotoPendiente(null);
+    setTituloPendiente("");
+  };
+  const cancelarTrabajoPendiente=()=>{ setFotoPendiente(null); setTituloPendiente(""); };
+  const quitarTrabajo=(i)=>{ guardarTrabajos(trabajos.filter((_,j)=>j!==i)); };
 
   const solapaBtn=(id,txt)=>({
     flex:1, background:solapa===id?C.acento:"transparent", color:solapa===id?C.marron:C.textoSuave,
@@ -6766,25 +6788,34 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
 
           <div style={S.card}>
             <div style={S.cardTitle}>🛠️ Trabajos realizados</div>
-            <div style={{fontSize:14,color:C.textoSuave,marginBottom:12}}>Mostrá hasta 3 fotos de tus trabajos. Forman parte de tu presentación profesional.</div>
+            <div style={{fontSize:14,color:C.textoSuave,marginBottom:12}}>Mostrá los trabajos que quieras, cada uno con su foto y un título opcional. Es opcional, pero forma parte de tu presentación profesional.</div>
             {procFoto&&<div style={{fontSize:15,color:C.textoSuave,marginBottom:8}}>⟳ Procesando imagen...</div>}
+            {fotoPendiente&&(
+              <div style={{border:`2px solid ${C.acento}`,padding:12,marginBottom:14,background:C.suave}}>
+                <img src={fotoPendiente} alt="nuevo trabajo" style={{width:"100%",maxHeight:160,objectFit:"cover",border:`1px solid ${C.borde}`,marginBottom:8}}/>
+                <label style={S.label}>Título (opcional)</label>
+                <input style={S.input} value={tituloPendiente} onChange={e=>setTituloPendiente(e.target.value)} placeholder="Ej: Placard a medida"/>
+                <div style={{display:"flex",gap:8,marginTop:10}}>
+                  <button style={{...S.btn("dark"),flex:1,justifyContent:"center"}} onClick={confirmarTrabajo}>✅ Agregar</button>
+                  <button style={{...S.btn("ghost"),flex:1,justifyContent:"center"}} onClick={cancelarTrabajoPendiente}>Cancelar</button>
+                </div>
+              </div>
+            )}
             <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-              {[0,1,2].map(i=>(
+              {trabajos.map((tr,i)=>(
                 <div key={i} style={{width:"30%",minWidth:100,flexGrow:1}}>
-                  {fotos[i]?(
-                    <div>
-                      <img src={fotos[i]} alt={"trabajo "+(i+1)} style={{width:"100%",height:110,objectFit:"cover",borderRadius:0,border:`1px solid ${C.borde}`}}/>
-                      <button onClick={()=>quitarFoto(i)} style={{...S.btn("ghost"),width:"100%",justifyContent:"center",fontSize:14,marginTop:4,padding:"6px",minHeight:"auto"}}>🗑️ Quitar</button>
-                    </div>
-                  ):(
-                    <label style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:110,border:`2px dashed ${C.borde}`,borderRadius:0,cursor:"pointer",color:C.textoSuave,fontSize:14}}>
-                      <span style={{fontSize:26}}>＋</span>
-                      <span>Foto {i+1}</span>
-                      <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{subirFoto(i,e.target.files[0]);e.target.value="";}}/>
-                    </label>
-                  )}
+                  <img src={tr.foto} alt={tr.titulo||`trabajo ${i+1}`} style={{width:"100%",height:110,objectFit:"cover",borderRadius:0,border:`1px solid ${C.borde}`}}/>
+                  {tr.titulo&&<div style={{fontSize:13,color:C.marron,fontWeight:600,marginTop:4,textAlign:"center"}}>{tr.titulo}</div>}
+                  <button onClick={()=>quitarTrabajo(i)} style={{...S.btn("ghost"),width:"100%",justifyContent:"center",fontSize:14,marginTop:4,padding:"6px",minHeight:"auto"}}>🗑️ Quitar</button>
                 </div>
               ))}
+              <div style={{width:"30%",minWidth:100,flexGrow:1}}>
+                <label style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:110,border:`2px dashed ${C.borde}`,borderRadius:0,cursor:"pointer",color:C.textoSuave,fontSize:14}}>
+                  <span style={{fontSize:26}}>＋</span>
+                  <span>Agregar trabajo</span>
+                  <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{elegirFotoTrabajo(e.target.files[0]);e.target.value="";}}/>
+                </label>
+              </div>
             </div>
           </div>
         </div>
