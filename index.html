@@ -987,8 +987,8 @@ const TERS = [
 const COLORES_MEL = ["Blanco","Negro","Roble","Nogal","Wengué","Gris perla","Arena","Otro"];
 const MADERAS_A = ["Roble","Cedro","Pino","Quebracho","Algarrobo","Lapacho"];
 
-const EC = {pendiente:C.acento,presupuestado:C.azul,aceptado:C.verde,cerrado:"#8A7A6A",en_produccion:"#7A4A8B",finalizado:C.textoSuave,disponible:C.verde,en_viaje:C.acento,ocupado:C.rojo,cancelado:C.textoSuave};
-const EL = {pendiente:"Pendiente",presupuestado:"Presupuestado",aceptado:"Aceptado",cerrado:"No seleccionado",en_produccion:"En producción",finalizado:"Finalizado",disponible:"Disponible",en_viaje:"En viaje",ocupado:"Ocupado",cancelado:"Cancelado"};
+const EC = {pendiente:C.acento,presupuestado:C.azul,aceptado:C.verde,cerrado:"#8A7A6A",rechazado:"#8A7A6A",enviada:C.acento,aceptada:C.verde,rechazada:"#8A7A6A",en_produccion:"#7A4A8B",finalizado:C.textoSuave,disponible:C.verde,en_viaje:C.acento,ocupado:C.rojo,cancelado:C.textoSuave};
+const EL = {pendiente:"Pendiente",presupuestado:"Presupuestado",aceptado:"Aceptado",cerrado:"No seleccionado",rechazado:"No seleccionado",enviada:"Enviada",aceptada:"Aceptada",rechazada:"No seleccionada",en_produccion:"En producción",finalizado:"Finalizado",disponible:"Disponible",en_viaje:"En viaje",ocupado:"Ocupado",cancelado:"Cancelado"};
 
 const cmToMm = c=>(c*10).toFixed(0);
 const cmToIn = c=>(c/2.54).toFixed(2);
@@ -1622,7 +1622,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.20</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.21</div>
     </div>
   );
 }
@@ -2126,7 +2126,7 @@ function VistaCliente({usuario,notif}){
       // 1) Aceptar el elegido
       await db.update("presupuestos",{estado:"aceptado",aceptado_at:ahora},`id=eq.${pr.id}`);
       // 2) Cerrar los demás presupuestos del mismo pedido
-      await db.update("presupuestos",{estado:"cerrado"},`pedido_id=eq.${sel.id}&id=neq.${pr.id}`);
+      await db.update("presupuestos",{estado:"rechazado"},`pedido_id=eq.${sel.id}&id=neq.${pr.id}`);
       // 3) Marcar el pedido como aceptado
       await db.update("pedidos",{estado:"aceptado"},`id=eq.${sel.id}`);
       notif("¡Presupuesto aceptado!");
