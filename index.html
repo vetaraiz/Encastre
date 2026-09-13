@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Encastre</title>
-  <meta name="version" content="1789300000"/>
+  <meta name="version" content="1789310000"/>
 
   <!-- PWA -->
   <meta name="application-name" content="Encastre"/>
@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Encastre"/>
   <meta name="mobile-web-app-capable" content="yes"/>
-  <meta name="theme-color" content="#495A3A"/>
+  <meta name="theme-color" content="#5A4A3A"/>
   <meta name="description" content="Encastre — La Comunidad de la Madera"/>
   <link rel="manifest" href="/manifest.json"/>
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/>
@@ -28,7 +28,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Stardos+Stencil:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    body { background:#E5ECDF; font-size:17px; font-family:'Lato',sans-serif; color:#2D3436; }
+    body { background:#F2EAD9; font-size:17px; font-family:'Lato',sans-serif; color:#2D3436; }
     ::-webkit-scrollbar { width:6px; }
 
     /* TAMAÑOS COHERENTES */
@@ -50,7 +50,7 @@
       font-family: 'Stardos Stencil', serif !important;
       font-size: 22px !important;
       font-weight: 700 !important;
-      color: #E5ECDF !important;
+      color: #F2EAD9 !important;
       text-transform: uppercase !important;
       letter-spacing: 1px !important;
     }
@@ -60,7 +60,7 @@
       text-transform: uppercase !important;
       letter-spacing: 2px !important;
     }
-    ::-webkit-scrollbar-track { background:#E5ECDF; }
+    ::-webkit-scrollbar-track { background:#F2EAD9; }
     ::-webkit-scrollbar-thumb { background:#C4892A66; border-radius:3px; }
     @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
     @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
@@ -961,12 +961,12 @@ async function pedirIA(prompt) {
 
 // ─── PALETA ───────────────────────────────────────────────────────────────────
 const C = {
-  crema:"#E5ECDF", marron:"#495A3A", medio:"#5C7F3D", acento:"#C4892A",
-  suave:"#D2E5C2", texto:"#2D3436", textoSuave:"#586B48",
-  borde:"#C4892A33", card:"#F4F7F1", input:"#E9F0E3",
+  crema:"#F2EAD9", marron:"#5A4A3A", medio:"#8A5A32", acento:"#C4892A",
+  suave:"#E8D9BF", texto:"#2D3436", textoSuave:"#6B5A48",
+  borde:"#C4892A33", card:"#FAF7EE", input:"#F5EFDE",
   verde:"#4A7C3F", rojo:"#8B2020", azul:"#2A5C8B",
   exito:"#4A7C3F", error:"#8B2020",
-  fondo:"#E5ECDF",
+  fondo:"#F2EAD9",
 };
 
 const MATS = [
@@ -1177,11 +1177,11 @@ function calcularPresup(items, opts){
 // ─── ESTILOS ──────────────────────────────────────────────────────────────────
 const S = {
   app:{ minHeight:"100vh", background:C.crema, fontFamily:"'Lato',sans-serif", color:C.texto },
-  topbar:{ background:C.marron, padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height:"auto", minHeight:58, padding:"6px 12px", position:"sticky", top:0, zIndex:100, boxShadow:"0 2px 12px #495A3A44" },
+  topbar:{ background:C.marron, padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height:"auto", minHeight:58, padding:"6px 12px", position:"sticky", top:0, zIndex:100, boxShadow:"0 2px 12px #5A4A3A44" },
   logo:{ fontFamily:"'Lato',sans-serif", fontSize:20, fontWeight:700, color:C.crema, letterSpacing:1 },
   logoSub:{ fontSize:17, color:C.acento, letterSpacing:3, textTransform:"uppercase", display:"block", lineHeight:1, className:"logo-sub-mobile" },
   main:{ maxWidth:1100, margin:"0 auto", padding:"18px 16px" },
-  card:{ background:C.card, border:`1px solid ${C.borde}`, borderRadius:0, padding:22, marginBottom:16, boxShadow:"0 2px 8px #495A3A11" },
+  card:{ background:C.card, border:`1px solid ${C.borde}`, borderRadius:0, padding:22, marginBottom:16, boxShadow:"0 2px 8px #5A4A3A11" },
   cardTitle:{ fontFamily:"'Lato',sans-serif", fontSize:21, fontWeight:700, color:C.marron, marginBottom:14 },
   btn:(v="gold")=>({
     background:v==="gold"?C.acento:v==="dark"?C.marron:v==="red"?C.rojo:"transparent",
@@ -1200,7 +1200,7 @@ const S = {
   tag:(on)=>({ background:on?C.marron:C.input, color:on?C.crema:C.textoSuave, border:`1px solid ${on?C.marron:C.borde}`, borderRadius:0, padding:"11px 18px", cursor:"pointer", fontSize:17, fontWeight:700, transition:"all .15s", fontFamily:"'Lato',sans-serif" }),
   badge:(e)=>({ background:EC[e]+"22", color:EC[e], border:`1px solid ${EC[e]}55`, borderRadius:0, padding:"3px 10px", fontSize:17, fontWeight:700, letterSpacing:.8, textTransform:"uppercase", display:"inline-block" }),
   aiPanel:{ background:"linear-gradient(135deg,#1E0A3C,#0A1E3C)", border:"1px solid #6B3AAA44", borderRadius:0, padding:18, marginBottom:14, boxShadow:"0 0 20px #6B3AAA22" },
-  notif:{ position:"fixed", top:68, right:16, background:C.marron, border:`2px solid ${C.acento}`, borderRadius:0, padding:"12px 18px", fontSize:17, color:C.crema, zIndex:999, boxShadow:"0 4px 20px #495A3A44", maxWidth:280, fontFamily:"'Lato',sans-serif" },
+  notif:{ position:"fixed", top:68, right:16, background:C.marron, border:`2px solid ${C.acento}`, borderRadius:0, padding:"12px 18px", fontSize:17, color:C.crema, zIndex:999, boxShadow:"0 4px 20px #5A4A3A44", maxWidth:280, fontFamily:"'Lato',sans-serif" },
   divider:{ height:1, background:`linear-gradient(90deg,transparent,${C.borde},transparent)`, margin:"16px 0" },
 };
 
@@ -1650,7 +1650,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-13.30</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-13.31</div>
     </div>
   );
 }
@@ -7333,7 +7333,7 @@ function App(){
               {menuAbierto&&(
                 <>
                   <div onClick={()=>setMenuAbierto(false)} style={{position:"fixed",inset:0,zIndex:200}}/>
-                  <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:C.card,border:`1px solid ${C.borde}`,borderRadius:0,boxShadow:"0 6px 24px #495A3A44",zIndex:201,minWidth:190,overflow:"hidden"}}>
+                  <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:C.card,border:`1px solid ${C.borde}`,borderRadius:0,boxShadow:"0 6px 24px #5A4A3A44",zIndex:201,minWidth:190,overflow:"hidden"}}>
                     <div style={{padding:"12px 18px",borderBottom:`1px solid ${C.borde}`,fontSize:13,color:C.textoSuave,textTransform:"uppercase",letterSpacing:.5}}>{usuario.tipo}</div>
                     <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("privado");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setEnManual(false);setMenuAbierto(false);}}><span style={{fontWeight:700}}>•</span> Mi cuenta</button>
                     <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnManual(true);setEnMiCuenta(false);setEnContacto(false);setEnPapelera(false);setMenuAbierto(false);}}><span style={{fontWeight:700}}>•</span> Manual</button>
