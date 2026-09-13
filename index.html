@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Encastre</title>
-  <meta name="version" content="1789200000"/>
+  <meta name="version" content="1789300000"/>
 
   <!-- PWA -->
   <meta name="application-name" content="Encastre"/>
@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Encastre"/>
   <meta name="mobile-web-app-capable" content="yes"/>
-  <meta name="theme-color" content="#5A4A3A"/>
+  <meta name="theme-color" content="#495A3A"/>
   <meta name="description" content="Encastre — La Comunidad de la Madera"/>
   <link rel="manifest" href="/manifest.json"/>
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/>
@@ -28,7 +28,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Stardos+Stencil:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    body { background:#F2EAD9; font-size:17px; font-family:'Lato',sans-serif; color:#2D3436; }
+    body { background:#E5ECDF; font-size:17px; font-family:'Lato',sans-serif; color:#2D3436; }
     ::-webkit-scrollbar { width:6px; }
 
     /* TAMAÑOS COHERENTES */
@@ -50,7 +50,7 @@
       font-family: 'Stardos Stencil', serif !important;
       font-size: 22px !important;
       font-weight: 700 !important;
-      color: #F2EAD9 !important;
+      color: #E5ECDF !important;
       text-transform: uppercase !important;
       letter-spacing: 1px !important;
     }
@@ -60,7 +60,7 @@
       text-transform: uppercase !important;
       letter-spacing: 2px !important;
     }
-    ::-webkit-scrollbar-track { background:#F2EAD9; }
+    ::-webkit-scrollbar-track { background:#E5ECDF; }
     ::-webkit-scrollbar-thumb { background:#C4892A66; border-radius:3px; }
     @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
     @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
@@ -961,12 +961,12 @@ async function pedirIA(prompt) {
 
 // ─── PALETA ───────────────────────────────────────────────────────────────────
 const C = {
-  crema:"#F2EAD9", marron:"#5A4A3A", medio:"#8A5A32", acento:"#C4892A",
-  suave:"#E8D9BF", texto:"#2D3436", textoSuave:"#6B5A48",
-  borde:"#C4892A33", card:"#FAF7EE", input:"#F5EFDE",
+  crema:"#E5ECDF", marron:"#495A3A", medio:"#5C7F3D", acento:"#C4892A",
+  suave:"#D2E5C2", texto:"#2D3436", textoSuave:"#586B48",
+  borde:"#C4892A33", card:"#F4F7F1", input:"#E9F0E3",
   verde:"#4A7C3F", rojo:"#8B2020", azul:"#2A5C8B",
   exito:"#4A7C3F", error:"#8B2020",
-  fondo:"#F2EAD9",
+  fondo:"#E5ECDF",
 };
 
 const MATS = [
@@ -1102,6 +1102,34 @@ function Badge9({n}){
   return <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:18,height:18,padding:"0 5px",marginLeft:7,borderRadius:"50%",background:"#009966",color:"#fff",fontSize:12,fontWeight:700,fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>{n}</span>;
 }
 
+// Fila de "solapas" conectadas y redondeadas arriba (formato unificado de tabs en toda la app)
+function TabsConectadas({opciones,activo,onChange,cuenta}){
+  return(
+    <div style={{display:"flex",flexWrap:"wrap",marginBottom:14}}>
+      {opciones.map(([id,label])=>{
+        const on=activo===id;
+        return(
+          <button key={id} onClick={()=>onChange(id)} style={{
+            background:on?C.marron:C.card,
+            color:on?C.crema:C.marron,
+            border:`2px solid ${C.marron}55`,
+            borderBottom:on?`2px solid ${C.marron}`:`2px solid ${C.marron}55`,
+            borderRadius:"12px 12px 0 0",
+            marginRight:-2,
+            position:"relative",
+            zIndex:on?2:1,
+            cursor:"pointer",
+            fontFamily:"'Lato',sans-serif",
+            fontWeight:800,
+            fontSize:15,
+            padding:"10px 16px",
+          }}>{label}{cuenta&&cuenta[id]!=null?` ${cuenta[id]}`:""}</button>
+        );
+      })}
+    </div>
+  );
+}
+
 // Marca un pedido como visto POR ESTE usuario (no global: cada proveedor tiene su propia marca)
 async function marcarPedidoVisto(tipoPedido,pedidoId,usuarioId){
   if(!pedidoId||!usuarioId)return;
@@ -1149,11 +1177,11 @@ function calcularPresup(items, opts){
 // ─── ESTILOS ──────────────────────────────────────────────────────────────────
 const S = {
   app:{ minHeight:"100vh", background:C.crema, fontFamily:"'Lato',sans-serif", color:C.texto },
-  topbar:{ background:C.marron, padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height:"auto", minHeight:58, padding:"6px 12px", position:"sticky", top:0, zIndex:100, boxShadow:"0 2px 12px #5A4A3A44" },
+  topbar:{ background:C.marron, padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height:"auto", minHeight:58, padding:"6px 12px", position:"sticky", top:0, zIndex:100, boxShadow:"0 2px 12px #495A3A44" },
   logo:{ fontFamily:"'Lato',sans-serif", fontSize:20, fontWeight:700, color:C.crema, letterSpacing:1 },
   logoSub:{ fontSize:17, color:C.acento, letterSpacing:3, textTransform:"uppercase", display:"block", lineHeight:1, className:"logo-sub-mobile" },
   main:{ maxWidth:1100, margin:"0 auto", padding:"18px 16px" },
-  card:{ background:C.card, border:`1px solid ${C.borde}`, borderRadius:0, padding:22, marginBottom:16, boxShadow:"0 2px 8px #5A4A3A11" },
+  card:{ background:C.card, border:`1px solid ${C.borde}`, borderRadius:0, padding:22, marginBottom:16, boxShadow:"0 2px 8px #495A3A11" },
   cardTitle:{ fontFamily:"'Lato',sans-serif", fontSize:21, fontWeight:700, color:C.marron, marginBottom:14 },
   btn:(v="gold")=>({
     background:v==="gold"?C.acento:v==="dark"?C.marron:v==="red"?C.rojo:"transparent",
@@ -1172,7 +1200,7 @@ const S = {
   tag:(on)=>({ background:on?C.marron:C.input, color:on?C.crema:C.textoSuave, border:`1px solid ${on?C.marron:C.borde}`, borderRadius:0, padding:"11px 18px", cursor:"pointer", fontSize:17, fontWeight:700, transition:"all .15s", fontFamily:"'Lato',sans-serif" }),
   badge:(e)=>({ background:EC[e]+"22", color:EC[e], border:`1px solid ${EC[e]}55`, borderRadius:0, padding:"3px 10px", fontSize:17, fontWeight:700, letterSpacing:.8, textTransform:"uppercase", display:"inline-block" }),
   aiPanel:{ background:"linear-gradient(135deg,#1E0A3C,#0A1E3C)", border:"1px solid #6B3AAA44", borderRadius:0, padding:18, marginBottom:14, boxShadow:"0 0 20px #6B3AAA22" },
-  notif:{ position:"fixed", top:68, right:16, background:C.marron, border:`2px solid ${C.acento}`, borderRadius:0, padding:"12px 18px", fontSize:17, color:C.crema, zIndex:999, boxShadow:"0 4px 20px #5A4A3A44", maxWidth:280, fontFamily:"'Lato',sans-serif" },
+  notif:{ position:"fixed", top:68, right:16, background:C.marron, border:`2px solid ${C.acento}`, borderRadius:0, padding:"12px 18px", fontSize:17, color:C.crema, zIndex:999, boxShadow:"0 4px 20px #495A3A44", maxWidth:280, fontFamily:"'Lato',sans-serif" },
   divider:{ height:1, background:`linear-gradient(90deg,transparent,${C.borde},transparent)`, margin:"16px 0" },
 };
 
@@ -1622,7 +1650,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-13.29</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-13.30</div>
     </div>
   );
 }
@@ -2089,6 +2117,7 @@ function VistaCliente({usuario,notif}){
   const [selPresup,setSelPresup]=useState(null);
   const [filtro,setFiltro]=useState("todos");
   const [archivados,setArchivados]=useState(new Set());
+  const [vistaComp,setVistaComp]=useState("lista"); // lista | grilla — cómo ver los presupuestos recibidos
 
   const cargarArchivados=useCallback(async()=>{
     try{
@@ -2295,7 +2324,14 @@ function VistaCliente({usuario,notif}){
             <div style={{textAlign:"center",color:C.textoSuave,padding:20,fontSize:15}}>Archivaste todos los presupuestos de este pedido.</div>
           ):(
           <div style={{marginTop:6}}>
-            <div style={{fontWeight:700,color:C.marron,marginBottom:8}}>💰 Presupuestos recibidos ({presupsVisibles.length})</div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div style={{fontWeight:700,color:C.marron}}>💰 Presupuestos recibidos ({presupsVisibles.length})</div>
+              <div style={{display:"flex",border:`1px solid ${C.marron}55`,overflow:"hidden"}}>
+                <button style={{background:vistaComp==="lista"?C.marron:C.card,color:vistaComp==="lista"?C.crema:C.marron,border:"none",padding:"6px 12px",cursor:"pointer",fontSize:15,fontFamily:"'Lato',sans-serif",fontWeight:700}} onClick={()=>setVistaComp("lista")}>☰ Lista</button>
+                <button style={{background:vistaComp==="grilla"?C.marron:C.card,color:vistaComp==="grilla"?C.crema:C.marron,border:"none",padding:"6px 12px",cursor:"pointer",fontSize:15,fontFamily:"'Lato',sans-serif",fontWeight:700}} onClick={()=>setVistaComp("grilla")}>▦ Cuadrícula</button>
+              </div>
+            </div>
+            {vistaComp==="lista"?(
             <div style={{overflowX:"auto",border:`1px solid ${C.borde}`}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:15}}>
                 <thead>
@@ -2320,6 +2356,23 @@ function VistaCliente({usuario,notif}){
                 </tbody>
               </table>
             </div>
+            ):(
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
+              {[...presupsVisibles].sort((a,b)=>Number(a.monto)-Number(b.monto)).map((pr,i)=>(
+                <div key={i} style={{border:`1px solid ${i===0?C.verde:C.borde}`,background:i===0?"#00996611":C.card,padding:14,cursor:"pointer"}} onClick={()=>abrirCot(pr)}>
+                  <div style={{fontWeight:700,color:C.marron,marginBottom:6}}>🔨 {pr.carpNombre}</div>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+                    {pr.visto_cliente===false&&<span style={{fontSize:11,fontWeight:800,color:"#fff",background:"#009966",padding:"1px 6px"}}>NUEVO</span>}
+                    {pr.estado&&pr.estado!=="enviado"&&<Badge e={pr.estado}/>}
+                  </div>
+                  <div style={{fontWeight:800,fontSize:19,color:i===0?C.verde:C.marron}}>$ {Number(pr.monto).toLocaleString("es-AR")}{i===0&&" ✓"}</div>
+                  <div style={{textAlign:"right",marginTop:8}}>
+                    <button style={{...S.btn("ghost"),fontSize:13,padding:"4px 10px"}} onClick={(e)=>{e.stopPropagation();abrirCot(pr);}}>ver ▶</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            )}
           </div>
           );
         })()}
@@ -2350,11 +2403,7 @@ function VistaCliente({usuario,notif}){
           vencido:pedidos.filter(p=>venc(p)).length,
         };
         return(
-          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
-            {[["todos","Todos"],["abierto","Abiertos"],["aceptado","Aceptados"],["vencido","Vencidos"]].map(([id,l])=>(
-              <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} {cuenta[id]}</button>
-            ))}
-          </div>
+          <TabsConectadas opciones={[["todos","Todos"],["abierto","Abiertos"],["aceptado","Aceptados"],["vencido","Vencidos"]]} activo={filtro} cuenta={cuenta} onChange={setFiltro}/>
         );
       })()}
       {pedidos.filter(p=>{
@@ -2532,12 +2581,13 @@ function VistaCarpinteria({usuario,notif}){
     try{
       const d=await db.select("pedidos_aserradero",`?carpinteria_id=eq.${usuario.id}&order=created_at.desc`);
       let conteo={};
+      let conteoNueva={};
       let conMsj=new Set();
       if(d.length){
         try{
           const ids=d.map(p=>p.id).join(",");
-          const cots=await db.select("cotizaciones_aserradero",`?pedido_id=in.(${ids})&select=pedido_id`);
-          cots.forEach(c=>{conteo[c.pedido_id]=(conteo[c.pedido_id]||0)+1;});
+          const cots=await db.select("cotizaciones_aserradero",`?pedido_id=in.(${ids})&select=pedido_id,visto_carpinteria`);
+          cots.forEach(c=>{conteo[c.pedido_id]=(conteo[c.pedido_id]||0)+1;if(c.visto_carpinteria===false)conteoNueva[c.pedido_id]=(conteoNueva[c.pedido_id]||0)+1;});
         }catch{}
         try{
           const ids=d.map(p=>p.id).join(",");
@@ -2545,19 +2595,20 @@ function VistaCarpinteria({usuario,notif}){
           msjs.forEach(m=>conMsj.add(m.pedido_id));
         }catch{}
       }
-      setMisPedidosAserr(d.map(p=>({...p,_cantCot:conteo[p.id]||0,_msjNuevo:conMsj.has(p.id)})));
+      setMisPedidosAserr(d.map(p=>({...p,_cantCot:conteo[p.id]||0,_cantCotNueva:conteoNueva[p.id]||0,_msjNuevo:conMsj.has(p.id)})));
     }catch{}
   },[usuario.id]);
   const cargarMisPedidosFerreria=useCallback(async()=>{
     try{
       const d=await db.select("pedidos_ferreteria",`?carpinteria_id=eq.${usuario.id}&order=created_at.desc`);
       let conteo={};
+      let conteoNueva={};
       let conMsj=new Set();
       if(d.length){
         try{
           const ids=d.map(p=>p.id).join(",");
-          const cots=await db.select("cotizaciones_ferreteria",`?pedido_id=in.(${ids})&select=pedido_id`);
-          cots.forEach(c=>{conteo[c.pedido_id]=(conteo[c.pedido_id]||0)+1;});
+          const cots=await db.select("cotizaciones_ferreteria",`?pedido_id=in.(${ids})&select=pedido_id,visto_carpinteria`);
+          cots.forEach(c=>{conteo[c.pedido_id]=(conteo[c.pedido_id]||0)+1;if(c.visto_carpinteria===false)conteoNueva[c.pedido_id]=(conteoNueva[c.pedido_id]||0)+1;});
         }catch{}
         try{
           const ids=d.map(p=>p.id).join(",");
@@ -2565,7 +2616,7 @@ function VistaCarpinteria({usuario,notif}){
           msjs.forEach(m=>conMsj.add(m.pedido_id));
         }catch{}
       }
-      setMisPedidosFerreria(d.map(p=>({...p,_cantCot:conteo[p.id]||0,_msjNuevo:conMsj.has(p.id)})));
+      setMisPedidosFerreria(d.map(p=>({...p,_cantCot:conteo[p.id]||0,_cantCotNueva:conteoNueva[p.id]||0,_msjNuevo:conMsj.has(p.id)})));
     }catch{}
   },[usuario.id]);
   const [ferrAbierta,setFerrAbierta]=useState(null);
@@ -2601,12 +2652,13 @@ function VistaCarpinteria({usuario,notif}){
     try{
       const d=await db.select("pedidos_pintureria",`?carpinteria_id=eq.${usuario.id}&order=created_at.desc`);
       let conteo={};
+      let conteoNueva={};
       let conMsj=new Set();
       if(d.length){
         try{
           const ids=d.map(p=>p.id).join(",");
-          const cots=await db.select("cotizaciones_pintureria",`?pedido_id=in.(${ids})&select=pedido_id`);
-          cots.forEach(c=>{conteo[c.pedido_id]=(conteo[c.pedido_id]||0)+1;});
+          const cots=await db.select("cotizaciones_pintureria",`?pedido_id=in.(${ids})&select=pedido_id,visto_carpinteria`);
+          cots.forEach(c=>{conteo[c.pedido_id]=(conteo[c.pedido_id]||0)+1;if(c.visto_carpinteria===false)conteoNueva[c.pedido_id]=(conteoNueva[c.pedido_id]||0)+1;});
         }catch{}
         try{
           const ids=d.map(p=>p.id).join(",");
@@ -2614,7 +2666,7 @@ function VistaCarpinteria({usuario,notif}){
           msjs.forEach(m=>conMsj.add(m.pedido_id));
         }catch{}
       }
-      setMisPedidosPint(d.map(p=>({...p,_cantCot:conteo[p.id]||0,_msjNuevo:conMsj.has(p.id)})));
+      setMisPedidosPint(d.map(p=>({...p,_cantCot:conteo[p.id]||0,_cantCotNueva:conteoNueva[p.id]||0,_msjNuevo:conMsj.has(p.id)})));
     }catch{}
   },[usuario.id]);
   const [pintAbierta,setPintAbierta]=useState(null);
@@ -2932,20 +2984,20 @@ function VistaCarpinteria({usuario,notif}){
     );
   }
 
-  const tabBase=(id)=>({background:tab===id?C.marron:C.card,color:tab===id?C.crema:C.marron,border:tab===id?"none":`2px solid ${C.marron}33`,borderBottom:tab===id?`4px solid ${C.acento}`:`2px solid ${C.marron}33`,borderRadius:0,cursor:"pointer",fontFamily:"'Lato',sans-serif",fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:6});
+  const tabBase=(id)=>({background:tab===id?C.marron:C.card,color:tab===id?C.crema:C.marron,border:`2px solid ${C.marron}55`,borderBottom:tab===id?`2px solid ${C.marron}`:`2px solid ${C.marron}55`,borderRadius:"12px 12px 0 0",marginRight:-2,position:"relative",zIndex:tab===id?2:1,cursor:"pointer",fontFamily:"'Lato',sans-serif",fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:6});
 
   return(
     <div>
-      <div style={{display:"flex",gap:8,marginBottom:22,alignItems:"stretch"}}>
-        <button style={{...tabBase("pedidos"),flex:"0 0 32%",flexDirection:"column",fontSize:17,padding:10,textAlign:"center"}} onClick={()=>setTab("pedidos")}>
+      <div style={{display:"flex",marginBottom:22,alignItems:"stretch"}}>
+        <button style={{...tabBase("pedidos"),flex:"0 0 32%",flexDirection:"column",fontSize:21,padding:"14px 8px",textAlign:"center"}} onClick={()=>setTab("pedidos")}>
           <span>Pedidos de clientes</span>
           <Badge9 n={badges.pedidos||0}/>
         </button>
-        <div style={{flex:1,display:"flex",flexDirection:"column",gap:8}}>
+        <div style={{flex:1,display:"flex"}}>
           {[["aserradero","Aserraderos"],["ferreteria","Ferreterías"],["pintureria","Pinturerías"]].map(([id,l])=>{
             const n=badges[id]||0;
             return(
-            <button key={id} style={{...tabBase(id),flex:1,fontSize:16,padding:"8px 10px"}} onClick={()=>setTab(id)}>
+            <button key={id} style={{...tabBase(id),flex:1,fontSize:19,padding:"14px 8px"}} onClick={()=>setTab(id)}>
               <span>{l}</span><Badge9 n={n}/>
             </button>
             );
@@ -2971,11 +3023,7 @@ function VistaCarpinteria({usuario,notif}){
               todos:pedidos.length,
             };
             return(
-              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
-                {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["cerrados","Cerrados"],["vencido","Vencidos"],["todos","Todos"]].map(([id,l])=>(
-                  <button key={id} style={{...S.btn(filtroCarp===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltroCarp(id)}>{l} {cuenta[id]}</button>
-                ))}
-              </div>
+              <TabsConectadas opciones={[["cotizar","Para cotizar"],["cotizados","Cotizados"],["cerrados","Cerrados"],["vencido","Vencidos"],["todos","Todos"]]} activo={filtroCarp} cuenta={cuenta} onChange={setFiltroCarp}/>
             );
           })()}
           <FiltroUbicacion pedidos={pedidos} provincia={filtroUbicProv} ciudad={filtroUbicCiu} onProvincia={setFiltroUbicProv} onCiudad={setFiltroUbicCiu}/>
@@ -3111,7 +3159,7 @@ function VistaCarpinteria({usuario,notif}){
                     {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <span style={{whiteSpace:"nowrap",background:p._cantCot>0?C.verde:C.suave,color:p._cantCot>0?"#fff":C.textoSuave,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:0,fontFamily:"'Lato',sans-serif"}}>
+                    <span style={{whiteSpace:"nowrap",background:p._cantCotNueva>0?"#009966":C.suave,color:p._cantCotNueva>0?"#fff":C.textoSuave,fontSize:11,fontWeight:700,padding:"3px 8px",borderRadius:0,fontFamily:"'Lato',sans-serif"}}>
                       {p._cantCot>0?`${p._cantCot} cotización${p._cantCot>1?"es":""}`:"Sin cotizaciones"}
                     </span>
                     <span style={{color:C.textoSuave,fontSize:18}}>{abierto?"▲":"▼"}</span>
@@ -3129,7 +3177,7 @@ function VistaCarpinteria({usuario,notif}){
                         return(
                         <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:0,marginBottom:10,overflow:"hidden",background:C.input}}>
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
-                            onClick={()=>{const ab=abiertaCot?null:key;setCotAserrAbierta(ab);if(ab){marcarCotVista("cotizaciones_aserradero","visto_carpinteria",ct);setCotizacionesAserr(cs=>cs.map(x=>x.id===ct.id?{...x,visto_carpinteria:true}:x));cargarMisPedidosAserr();}}}>
+                            onClick={()=>{const ab=abiertaCot?null:key;setCotAserrAbierta(ab);if(ab){if(ct.visto_carpinteria===false&&selAserr)setMisPedidosAserr(ps=>ps.map(p=>p.id===selAserr.id?{...p,_cantCotNueva:Math.max(0,(p._cantCotNueva||0)-1)}:p));marcarCotVista("cotizaciones_aserradero","visto_carpinteria",ct);setCotizacionesAserr(cs=>cs.map(x=>x.id===ct.id?{...x,visto_carpinteria:true}:x));cargarMisPedidosAserr();}}}>
                             <b style={{color:C.marron,fontSize:17}}>🏭 {ct.aserraderoNombre||"Aserradero"}{ct.visto_carpinteria===false&&<span style={{marginLeft:8,fontSize:12,fontWeight:700,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</b>
                             <div style={{display:"flex",alignItems:"center",gap:10}}>
                               <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
@@ -3265,7 +3313,7 @@ function VistaCarpinteria({usuario,notif}){
                         {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
                       </div>
                       <div style={{display:"flex",alignItems:"center",gap:8}}>
-                        <span style={{whiteSpace:"nowrap",background:p._cantCot>0?C.verde:C.suave,color:p._cantCot>0?"#fff":C.textoSuave,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:0,fontFamily:"'Lato',sans-serif"}}>
+                        <span style={{whiteSpace:"nowrap",background:p._cantCotNueva>0?"#009966":C.suave,color:p._cantCotNueva>0?"#fff":C.textoSuave,fontSize:11,fontWeight:700,padding:"3px 8px",borderRadius:0,fontFamily:"'Lato',sans-serif"}}>
                           {p._cantCot>0?`${p._cantCot} cotización${p._cantCot>1?"es":""}`:"Sin cotizaciones"}
                         </span>
                         <span style={{color:C.textoSuave,fontSize:18}}>{abierto?"▲":"▼"}</span>
@@ -3283,7 +3331,7 @@ function VistaCarpinteria({usuario,notif}){
                             return(
                             <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:0,marginBottom:10,overflow:"hidden",background:C.input}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
-                                onClick={()=>{const ab=abiertaCot?null:key;setFerrAbierta(ab);if(ab){marcarCotVista("cotizaciones_ferreteria","visto_carpinteria",ct);setCotizacionesFerr(cs=>cs.map(x=>x.id===ct.id?{...x,visto_carpinteria:true}:x));cargarMisPedidosFerreria();}}}>
+                                onClick={()=>{const ab=abiertaCot?null:key;setFerrAbierta(ab);if(ab){if(ct.visto_carpinteria===false&&selFerr)setMisPedidosFerreria(ps=>ps.map(p=>p.id===selFerr.id?{...p,_cantCotNueva:Math.max(0,(p._cantCotNueva||0)-1)}:p));marcarCotVista("cotizaciones_ferreteria","visto_carpinteria",ct);setCotizacionesFerr(cs=>cs.map(x=>x.id===ct.id?{...x,visto_carpinteria:true}:x));cargarMisPedidosFerreria();}}}>
                                 <b style={{color:C.marron,fontSize:17}}>🔩 {ct.ferrNombre||"Ferretería"}{ct.visto_carpinteria===false&&<span style={{marginLeft:8,fontSize:12,fontWeight:700,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</b>
                                 <div style={{display:"flex",alignItems:"center",gap:10}}>
                                   <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
@@ -3421,7 +3469,7 @@ function VistaCarpinteria({usuario,notif}){
                         {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
                       </div>
                       <div style={{display:"flex",alignItems:"center",gap:8}}>
-                        <span style={{whiteSpace:"nowrap",background:p._cantCot>0?C.verde:C.suave,color:p._cantCot>0?"#fff":C.textoSuave,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:0,fontFamily:"'Lato',sans-serif"}}>
+                        <span style={{whiteSpace:"nowrap",background:p._cantCotNueva>0?"#009966":C.suave,color:p._cantCotNueva>0?"#fff":C.textoSuave,fontSize:11,fontWeight:700,padding:"3px 8px",borderRadius:0,fontFamily:"'Lato',sans-serif"}}>
                           {p._cantCot>0?`${p._cantCot} cotización${p._cantCot>1?"es":""}`:"Sin cotizaciones"}
                         </span>
                         <span style={{color:C.textoSuave,fontSize:18}}>{abierto?"▲":"▼"}</span>
@@ -3439,7 +3487,7 @@ function VistaCarpinteria({usuario,notif}){
                             return(
                             <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:0,marginBottom:10,overflow:"hidden",background:C.input}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
-                                onClick={()=>{const ab=abiertaCot?null:key;setPintAbierta(ab);if(ab){marcarCotVista("cotizaciones_pintureria","visto_carpinteria",ct);setCotizacionesPint(cs=>cs.map(x=>x.id===ct.id?{...x,visto_carpinteria:true}:x));cargarMisPedidosPint();}}}>
+                                onClick={()=>{const ab=abiertaCot?null:key;setPintAbierta(ab);if(ab){if(ct.visto_carpinteria===false&&selPint)setMisPedidosPint(ps=>ps.map(p=>p.id===selPint.id?{...p,_cantCotNueva:Math.max(0,(p._cantCotNueva||0)-1)}:p));marcarCotVista("cotizaciones_pintureria","visto_carpinteria",ct);setCotizacionesPint(cs=>cs.map(x=>x.id===ct.id?{...x,visto_carpinteria:true}:x));cargarMisPedidosPint();}}}>
                                 <b style={{color:C.marron,fontSize:17}}>🪣 {ct.pintNombre||"Pinturería"}{ct.visto_carpinteria===false&&<span style={{marginLeft:8,fontSize:12,fontWeight:700,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</b>
                                 <div style={{display:"flex",alignItems:"center",gap:10}}>
                                   <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
@@ -3773,11 +3821,7 @@ function VistaAserradero({usuario,notif}){
   return(
     <div>
       <div style={S.secTitle}>Pedidos de carpinterías</div>
-      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
-        {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]].map(([id,l])=>(
-          <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} {cuenta[id]}</button>
-        ))}
-      </div>
+      <TabsConectadas opciones={[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]]} activo={filtro} cuenta={cuenta} onChange={setFiltro}/>
       <FiltroUbicacion pedidos={pedidos} provincia={filtroUbicProv} ciudad={filtroUbicCiu} onProvincia={setFiltroUbicProv} onCiudad={setFiltroUbicCiu}/>
       {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
       {pedidos.length>0&&lista.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría</div>}
@@ -3966,12 +4010,13 @@ function VistaFlete({usuario,notif}){
     try{
       const d=await db.select("pedidos_flete",`?solicitante_id=eq.${usuario.id}&order=created_at.desc`);
       let conteo={};
+      let conteoNueva={};
       let conMsj=new Set();
       if(d.length){
         try{
           const ids=d.map(p=>p.id).join(",");
-          const cots=await db.select("cotizaciones_flete",`?pedido_id=in.(${ids})&select=pedido_id`);
-          cots.forEach(c=>{conteo[c.pedido_id]=(conteo[c.pedido_id]||0)+1;});
+          const cots=await db.select("cotizaciones_flete",`?pedido_id=in.(${ids})&select=pedido_id,visto_solicitante`);
+          cots.forEach(c=>{conteo[c.pedido_id]=(conteo[c.pedido_id]||0)+1;if(c.visto_solicitante===false)conteoNueva[c.pedido_id]=(conteoNueva[c.pedido_id]||0)+1;});
         }catch{}
         try{
           const ids=d.map(p=>p.id).join(",");
@@ -3979,7 +4024,7 @@ function VistaFlete({usuario,notif}){
           msjs.forEach(m=>conMsj.add(m.pedido_id));
         }catch{}
       }
-      setMisPedidos(d.map(p=>({...p,_cantCot:conteo[p.id]||0,_msjNuevo:conMsj.has(p.id)})));
+      setMisPedidos(d.map(p=>({...p,_cantCot:conteo[p.id]||0,_cantCotNueva:conteoNueva[p.id]||0,_msjNuevo:conMsj.has(p.id)})));
     }catch{}
   },[usuario.id,esFlete]);
   useEffect(()=>{cargarMisPedidos();},[cargarMisPedidos]);
@@ -4029,8 +4074,6 @@ function VistaFlete({usuario,notif}){
     }catch(e){alert("Error: "+e.message);}
     setEnviandoPed(false);
   };
-
-  const tabStyle=(id)=>({background:filtro===id?C.marron:"transparent",color:filtro===id?C.crema:C.textoSuave,border:filtro===id?"none":`1px solid ${C.borde}`,borderRadius:0,padding:"7px 14px",cursor:"pointer",fontSize:17,fontWeight:700,fontFamily:"'Lato',sans-serif"});
 
   // ================= VISTA FLETERO =================
   if(esFlete){
@@ -4210,11 +4253,7 @@ function VistaFlete({usuario,notif}){
     return(
       <div>
         <div style={S.secTitle}>🚚 Pedidos de flete</div>
-        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
-          {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]].map(([id,l])=>(
-            <button key={id} style={tabStyle(id)} onClick={()=>setFiltro(id)}>{l} {cuenta[id]}</button>
-          ))}
-        </div>
+        <TabsConectadas opciones={[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]]} activo={filtro} cuenta={cuenta} onChange={setFiltro}/>
         <div style={{fontSize:13,color:C.textoSuave,marginBottom:8}}>📍 Filtro por ubicación de origen de la carga</div>
         <FiltroUbicacion pedidos={pedidos} provincia={filtroUbicProv} ciudad={filtroUbicCiu} onProvincia={setFiltroUbicProv} onCiudad={setFiltroUbicCiu}/>
         {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
@@ -4303,7 +4342,7 @@ function VistaFlete({usuario,notif}){
                   {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{whiteSpace:"nowrap",background:p._cantCot>0?C.verde:C.suave,color:p._cantCot>0?"#fff":C.textoSuave,fontSize:13,fontWeight:700,padding:"5px 10px",borderRadius:0,fontFamily:"'Lato',sans-serif"}}>
+                  <span style={{whiteSpace:"nowrap",background:p._cantCotNueva>0?"#009966":C.suave,color:p._cantCotNueva>0?"#fff":C.textoSuave,fontSize:11,fontWeight:700,padding:"3px 8px",borderRadius:0,fontFamily:"'Lato',sans-serif"}}>
                     {p._cantCot>0?`${p._cantCot} cotización${p._cantCot>1?"es":""}`:"Sin cotizaciones"}
                   </span>
                   <span style={{color:C.textoSuave,fontSize:18}}>{abierto?"▲":"▼"}</span>
@@ -4321,7 +4360,7 @@ function VistaFlete({usuario,notif}){
                       return(
                       <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:0,marginBottom:10,overflow:"hidden",background:C.input}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
-                          onClick={()=>{const ab=abiertaCot?null:key;setFleteAbierto(ab);if(ab){marcarCotVista("cotizaciones_flete","visto_solicitante",ct);setCotizacionesFlete(cs=>cs.map(x=>x.id===ct.id?{...x,visto_solicitante:true}:x));cargarMisPedidos();}}}>
+                          onClick={()=>{const ab=abiertaCot?null:key;setFleteAbierto(ab);if(ab){if(ct.visto_solicitante===false&&selPedido)setMisPedidos(ps=>ps.map(p=>p.id===selPedido.id?{...p,_cantCotNueva:Math.max(0,(p._cantCotNueva||0)-1)}:p));marcarCotVista("cotizaciones_flete","visto_solicitante",ct);setCotizacionesFlete(cs=>cs.map(x=>x.id===ct.id?{...x,visto_solicitante:true}:x));cargarMisPedidos();}}}>
                           <b style={{color:C.marron,fontSize:17}}>🚚 {ct.fleteNombre||"Flete"}{ct.visto_solicitante===false&&<span style={{marginLeft:8,fontSize:12,fontWeight:700,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</b>
                           <div style={{display:"flex",alignItems:"center",gap:10}}>
                             <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
@@ -4638,11 +4677,7 @@ function VistaFerreteria({usuario,notif}){
   return(
     <div>
       <div style={S.secTitle}>Pedidos de herrajes de carpinterías</div>
-      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
-        {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]].map(([id,l])=>(
-          <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} {cuenta[id]}</button>
-        ))}
-      </div>
+      <TabsConectadas opciones={[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]]} activo={filtro} cuenta={cuenta} onChange={setFiltro}/>
       <FiltroUbicacion pedidos={pedidos} provincia={filtroUbicProv} ciudad={filtroUbicCiu} onProvincia={setFiltroUbicProv} onCiudad={setFiltroUbicCiu}/>
       {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
       {pedidos.length>0&&lista.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría</div>}
@@ -4933,11 +4968,7 @@ function VistaPintureria({usuario,notif}){
   return(
     <div>
       <div style={S.secTitle}>Pedidos de pinturas de carpinterías</div>
-      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
-        {[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]].map(([id,l])=>(
-          <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} {cuenta[id]}</button>
-        ))}
-      </div>
+      <TabsConectadas opciones={[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]]} activo={filtro} cuenta={cuenta} onChange={setFiltro}/>
       <FiltroUbicacion pedidos={pedidos} provincia={filtroUbicProv} ciudad={filtroUbicCiu} onProvincia={setFiltroUbicProv} onCiudad={setFiltroUbicCiu}/>
       {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
       {pedidos.length>0&&lista.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría</div>}
@@ -7302,7 +7333,7 @@ function App(){
               {menuAbierto&&(
                 <>
                   <div onClick={()=>setMenuAbierto(false)} style={{position:"fixed",inset:0,zIndex:200}}/>
-                  <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:C.card,border:`1px solid ${C.borde}`,borderRadius:0,boxShadow:"0 6px 24px #5A4A3A44",zIndex:201,minWidth:190,overflow:"hidden"}}>
+                  <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:C.card,border:`1px solid ${C.borde}`,borderRadius:0,boxShadow:"0 6px 24px #495A3A44",zIndex:201,minWidth:190,overflow:"hidden"}}>
                     <div style={{padding:"12px 18px",borderBottom:`1px solid ${C.borde}`,fontSize:13,color:C.textoSuave,textTransform:"uppercase",letterSpacing:.5}}>{usuario.tipo}</div>
                     <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("privado");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setEnManual(false);setMenuAbierto(false);}}><span style={{fontWeight:700}}>•</span> Mi cuenta</button>
                     <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnManual(true);setEnMiCuenta(false);setEnContacto(false);setEnPapelera(false);setMenuAbierto(false);}}><span style={{fontWeight:700}}>•</span> Manual</button>
