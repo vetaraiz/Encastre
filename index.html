@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Encastre</title>
-  <meta name="version" content="1780421832"/>
+  <meta name="version" content="1789200000"/>
 
   <!-- PWA -->
   <meta name="application-name" content="Encastre"/>
@@ -1622,7 +1622,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-08-29.28</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-13.29</div>
     </div>
   );
 }
@@ -1809,6 +1809,9 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
   const itemVacio=()=>({descripcion:"",alto:"",ancho:"",profundidad:"",material:"",especie:"",terminacion:"",color:"",usaCroquis:false,notasCroquis:"",croquisImg:"",tieneCajones:"No",cantidadCajones:"",medidasCajones:""});
   const [items,setItems]=useState([itemVacio()]);
   const [fechaLimite,setFechaLimite]=useState("");
+  const [provincia,setProvincia]=useState(usuario.provincia||"");
+  const [ciudad,setCiudad]=useState(usuario.ciudad||"");
+  const [barrio,setBarrio]=useState(usuario.barrio||"");
   const [procImgIdx,setProcImgIdx]=useState(null);
   const [intento,setIntento]=useState(false);
   const setIt=(i,k,v)=>setItems(prev=>{const arr=[...prev];arr[i]={...arr[i],[k]:v};return arr;});
@@ -1882,7 +1885,7 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
       const primero=itemsLimpios[0];
       const resumen=itemsLimpios.map(it=>it.descripcion).join(" + ");
       // Guardamos items (lista) + columnas del primer mueble por compatibilidad con lo ya existente
-      await db.insert("pedidos",{cliente_id:usuario.id,items:itemsLimpios,descripcion:resumen,alto:primero.alto,ancho:primero.ancho,profundidad:primero.profundidad,material:primero.material,especie:primero.especie,terminacion:primero.terminacion,color:primero.color,notas_croquis:primero.notasCroquis,tiene_cajones:primero.tieneCajones,cantidad_cajones:primero.cantidadCajones,medidas_cajones:primero.medidasCajones,croquis_imagen:primero.croquisImg,fecha_limite:fechaLimite?new Date(fechaLimite+"T23:59:59").toISOString():null});
+      await db.insert("pedidos",{cliente_id:usuario.id,items:itemsLimpios,descripcion:resumen,alto:primero.alto,ancho:primero.ancho,profundidad:primero.profundidad,material:primero.material,especie:primero.especie,terminacion:primero.terminacion,color:primero.color,notas_croquis:primero.notasCroquis,tiene_cajones:primero.tieneCajones,cantidad_cajones:primero.cantidadCajones,medidas_cajones:primero.medidasCajones,croquis_imagen:primero.croquisImg,provincia:provincia||null,ciudad:ciudad||null,barrio:barrio||null,fecha_limite:fechaLimite?new Date(fechaLimite+"T23:59:59").toISOString():null});
       // El aviso por mail a las carpinterías lo envía el servidor (webhook -> Edge Function avisar-pedido)
       notif(items.length>1?`¡Pedido enviado a todas las carpinterías! (${items.length} muebles)`:"¡Pedido enviado a todas las carpinterías!");
       onGuardar();
@@ -2009,6 +2012,15 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
       ))}
 
       <button onClick={agregarMueble} style={{...S.btn("ghost"),width:"100%",justifyContent:"center",marginBottom:16}}>＋ Agregar otro mueble</button>
+
+      <Divider/>
+      <div style={S.secTitle}>📍 Ubicación del pedido</div>
+      <div style={{fontSize:15,color:C.textoSuave,marginBottom:8}}>Se precarga con tu ubicación de perfil; cambiala si el mueble es para otro lugar.</div>
+      <SelectorUbicacion provincia={provincia} ciudad={ciudad} onProvincia={setProvincia} onCiudad={setCiudad}/>
+      <div style={{marginBottom:14}}>
+        <label style={S.label}>Barrio</label>
+        <input style={S.input} value={barrio} onChange={e=>setBarrio(e.target.value)}/>
+      </div>
 
       <Divider/>
       <div style={S.secTitle}>⏰ Fecha límite para recibir presupuestos <span style={{fontWeight:400,fontSize:15,color:C.textoSuave}}>(opcional)</span></div>
@@ -2444,7 +2456,7 @@ function VistaCarpinteria({usuario,notif}){
   const [clienteSel,setClienteSel]=useState({});
   const [enviando,setEnviando]=useState(false);
   const [yaEnvio,setYaEnvio]=useState(false);
-  const [asF,setAsF]=useState({items:[{material:"",pies:"",pulgadas:"",espesor:"",cantidad:""}],descripcion:"",fechaLimite:""});
+  const [asF,setAsF]=useState({items:[{material:"",pies:"",pulgadas:"",espesor:"",cantidad:""}],descripcion:"",fechaLimite:"",provincia:usuario.provincia||"",ciudad:usuario.ciudad||"",barrio:usuario.barrio||""});
   const [misPedidosAserr,setMisPedidosAserr]=useState([]);
   const [subAserr,setSubAserr]=useState("mis");
   const [subFerr,setSubFerr]=useState("mis");
@@ -2462,13 +2474,15 @@ function VistaCarpinteria({usuario,notif}){
   const [cotizacionesAserr,setCotizacionesAserr]=useState([]);
   const [cotAserrAbierta,setCotAserrAbierta]=useState(null);
   const [aceptandoAserr,setAceptandoAserr]=useState(false);
-  const [ferrF,setFerrF]=useState({items:[{descripcion:"",cantidad:"1"}],notas:"",fechaLimite:""});
+  const [ferrF,setFerrF]=useState({items:[{descripcion:"",cantidad:"1"}],notas:"",fechaLimite:"",provincia:usuario.provincia||"",ciudad:usuario.ciudad||"",barrio:usuario.barrio||""});
   const [misPedidosFerreria,setMisPedidosFerreria]=useState([]);
   const [selFerr,setSelFerr]=useState(null);
   const [cotizacionesFerr,setCotizacionesFerr]=useState([]);
-  const [pintF,setPintF]=useState({items:[{descripcion:"",litros:"1"}],notas:"",fechaLimite:""});
+  const [pintF,setPintF]=useState({items:[{descripcion:"",litros:"1"}],notas:"",fechaLimite:"",provincia:usuario.provincia||"",ciudad:usuario.ciudad||"",barrio:usuario.barrio||""});
   const [buscarPedido,setBuscarPedido]=useState("");
   const [filtroCarp,setFiltroCarp]=useState("cotizar");
+  const [filtroUbicProv,setFiltroUbicProv]=useState("");
+  const [filtroUbicCiu,setFiltroUbicCiu]=useState("");
   const [misPedidosPint,setMisPedidosPint]=useState([]);
   const [selPint,setSelPint]=useState(null);
   const [cotizacionesPint,setCotizacionesPint]=useState([]);
@@ -2748,10 +2762,10 @@ function VistaCarpinteria({usuario,notif}){
       const resumen=itemsLimpios.map(it=>`${it.material} ${it.pies}'×${it.pulgadas}"${it.espesor?` esp.${it.espesor}"`:""} (${it.cantidad}u)`).join(", ");
       const primero=itemsLimpios[0];
       // Guardamos items (lista) + columnas del primer ítem por compatibilidad con lo ya existente
-      await db.insert("pedidos_aserradero",{carpinteria_id:usuario.id,items:itemsLimpios,material:primero.material,pies:primero.pies,pulgadas:primero.pulgadas,espesor:primero.espesor,cantidad:itemsLimpios.reduce((a,it)=>a+it.cantidad,0),descripcion:asF.descripcion||resumen,fecha_limite:fechaLimiteISO(asF.fechaLimite)});
+      await db.insert("pedidos_aserradero",{carpinteria_id:usuario.id,items:itemsLimpios,material:primero.material,pies:primero.pies,pulgadas:primero.pulgadas,espesor:primero.espesor,cantidad:itemsLimpios.reduce((a,it)=>a+it.cantidad,0),descripcion:asF.descripcion||resumen,provincia:asF.provincia||null,ciudad:asF.ciudad||null,barrio:asF.barrio||null,fecha_limite:fechaLimiteISO(asF.fechaLimite)});
       notif("¡Pedido enviado a los aserraderos!");
       (async()=>{try{const ps=await db.select("usuarios","?tipo=eq.aserradero&recibir_avisos=eq.true&select=email,nombre");const msg="<p>Tenés un <strong>nuevo pedido para cotizar</strong> en Encastre.</p>";for(const c of (ps||[])){if(c.email)db.avisarPorMail(c.email,c.nombre,"Nuevo pedido para cotizar - Encastre",msg);}}catch(e){}})();
-      setAsF({items:[{material:"",pies:"",pulgadas:"",espesor:"",cantidad:""}],descripcion:"",fechaLimite:""});
+      setAsF({items:[{material:"",pies:"",pulgadas:"",espesor:"",cantidad:""}],descripcion:"",fechaLimite:"",provincia:usuario.provincia||"",ciudad:usuario.ciudad||"",barrio:usuario.barrio||""});
       setIntAs(false);
       cargarMisPedidosAserr();
       setSubAserr("mis");
@@ -2964,11 +2978,14 @@ function VistaCarpinteria({usuario,notif}){
               </div>
             );
           })()}
+          <FiltroUbicacion pedidos={pedidos} provincia={filtroUbicProv} ciudad={filtroUbicCiu} onProvincia={setFiltroUbicProv} onCiudad={setFiltroUbicCiu}/>
           {(()=>{
             const q=buscarPedido.trim().toLowerCase();
             const venc=p=>p.fecha_limite&&new Date(p.fecha_limite)<new Date();
             let lista=pedidos.filter(p=>{
               if(archivadosPed.has(p.id))return false;
+              if(filtroUbicProv&&p.provincia!==filtroUbicProv)return false;
+              if(filtroUbicCiu&&p.ciudad!==filtroUbicCiu)return false;
               if(filtroCarp==="cotizar")return p.estado!=="aceptado"&&!venc(p)&&!p._miEstado;
               if(filtroCarp==="cotizados")return p._miEstado&&p.estado!=="aceptado";
               if(filtroCarp==="cerrados")return p.estado==="aceptado";
@@ -3009,6 +3026,7 @@ function VistaCarpinteria({usuario,notif}){
                   <div>
                     <div style={{fontFamily:"'Lato',sans-serif",fontWeight:700,color:C.marron,fontSize:21}}>{p.descripcion}<TagNuevo on={p._nuevo}/><TagMsjNuevo on={p._msjNuevo}/></div>
                     {p._clienteNombre&&<div style={{fontSize:16,color:C.marron,marginTop:2}}>👤 {p._clienteNombre}</div>}
+                    {(p.ciudad||p.provincia)&&<div style={{fontSize:15,color:C.textoSuave,marginTop:2}}>📍 {[p.barrio,p.ciudad,p.provincia].filter(Boolean).join(", ")}</div>}
                     <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{p.alto}×{p.ancho}×{p.profundidad}cm · {mat?.label} · {new Date(p.created_at).toLocaleDateString("es-AR")}{p.items&&p.items.length>1?` · +${p.items.length-1} mueble${p.items.length>2?"s":""} más`:""}</div>
                     {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
                   </div>
@@ -3051,6 +3069,11 @@ function VistaCarpinteria({usuario,notif}){
           })}
           <button onClick={()=>setAsF(f=>({...f,items:[...f.items,{material:"",pies:"",pulgadas:"",espesor:"",cantidad:""}]}))} style={{...S.btn("ghost"),width:"100%",justifyContent:"center",marginBottom:14}}>＋ Agregar otra madera</button>
           <div style={{marginTop:0}}><label style={S.label}>Observaciones <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label><textarea value={asF.descripcion} onChange={e=>setAsF(f=>({...f,descripcion:e.target.value}))} placeholder="Calidad, secado, escuadría..." style={{...S.input,minHeight:56,resize:"vertical"}}/></div>
+          <Divider/>
+          <div style={S.secTitle}>📍 Ubicación del pedido</div>
+          <div style={{fontSize:15,color:C.textoSuave,marginBottom:8}}>Se precarga con tu ubicación de cuenta; cambiala si hace falta.</div>
+          <SelectorUbicacion provincia={asF.provincia} ciudad={asF.ciudad} onProvincia={v=>setAsF(f=>({...f,provincia:v}))} onCiudad={v=>setAsF(f=>({...f,ciudad:v}))}/>
+          <div style={{marginBottom:14}}><label style={S.label}>Barrio</label><input style={S.input} value={asF.barrio} onChange={e=>setAsF(f=>({...f,barrio:e.target.value}))}/></div>
           <BannerFalta activo={intAs} lista={[[asF.items.every(it=>!it.material.trim()||!it.pies||!it.pulgadas||!it.cantidad),"al menos una madera completa (tipo, largo, ancho y cantidad)"]]}/>
           <div style={{marginTop:12}}>
             <label style={S.label}>Fecha límite para recibir cotizaciones <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
@@ -3184,6 +3207,11 @@ function VistaCarpinteria({usuario,notif}){
               <label style={S.label}>Notas adicionales <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
               <input value={ferrF.notas} onChange={e=>setFerrF(f=>({...f,notas:e.target.value}))} placeholder="Marca preferida, color, etc." style={S.input}/>
             </div>
+            <Divider/>
+            <div style={S.secTitle}>📍 Ubicación del pedido</div>
+            <div style={{fontSize:15,color:C.textoSuave,marginBottom:8}}>Se precarga con tu ubicación de cuenta; cambiala si hace falta.</div>
+            <SelectorUbicacion provincia={ferrF.provincia} ciudad={ferrF.ciudad} onProvincia={v=>setFerrF(f=>({...f,provincia:v}))} onCiudad={v=>setFerrF(f=>({...f,ciudad:v}))}/>
+            <div style={{marginBottom:14}}><label style={S.label}>Barrio</label><input style={S.input} value={ferrF.barrio} onChange={e=>setFerrF(f=>({...f,barrio:e.target.value}))}/></div>
             <div style={{marginTop:12}}>
               <label style={S.label}>Fecha límite para recibir cotizaciones <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
               <input type="date" min={minFechaLimite()} value={ferrF.fechaLimite||""} onChange={e=>setFerrF(f=>({...f,fechaLimite:e.target.value}))} style={{...S.input,maxWidth:220}}/>
@@ -3198,10 +3226,10 @@ function VistaCarpinteria({usuario,notif}){
               try{
                 const itemsLimpios=itemsValidos.map(it=>({descripcion:it.descripcion.trim(),cantidad:nmb(it.cantidad)}));
                 const resumen=itemsLimpios.map(it=>it.descripcion).join(", ");
-                await db.insert("pedidos_ferreteria",{carpinteria_id:usuario.id,items:itemsLimpios,descripcion:resumen,cantidad:itemsLimpios.reduce((a,it)=>a+it.cantidad,0),notas:ferrF.notas,fecha_limite:fechaLimiteISO(ferrF.fechaLimite)});
+                await db.insert("pedidos_ferreteria",{carpinteria_id:usuario.id,items:itemsLimpios,descripcion:resumen,cantidad:itemsLimpios.reduce((a,it)=>a+it.cantidad,0),notas:ferrF.notas,provincia:ferrF.provincia||null,ciudad:ferrF.ciudad||null,barrio:ferrF.barrio||null,fecha_limite:fechaLimiteISO(ferrF.fechaLimite)});
                 notif("¡Pedido enviado a las ferreterías!");
                 (async()=>{try{const ps=await db.select("usuarios","?tipo=eq.ferreteria&recibir_avisos=eq.true&select=email,nombre");const msg="<p>Tenés un <strong>nuevo pedido para cotizar</strong> en Encastre.</p>";for(const c of (ps||[])){if(c.email)db.avisarPorMail(c.email,c.nombre,"Nuevo pedido para cotizar - Encastre",msg);}}catch(e){}})();
-                setFerrF({items:[{descripcion:"",cantidad:"1"}],notas:"",fechaLimite:""});
+                setFerrF({items:[{descripcion:"",cantidad:"1"}],notas:"",fechaLimite:"",provincia:usuario.provincia||"",ciudad:usuario.ciudad||"",barrio:usuario.barrio||""});
                 setIntFe(false);
                 cargarMisPedidosFerreria();
                 setSubFerr("mis");
@@ -3335,6 +3363,11 @@ function VistaCarpinteria({usuario,notif}){
               <label style={S.label}>Otros materiales / notas <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
               <input value={pintF.notas} onChange={e=>setPintF(f=>({...f,notas:e.target.value}))} placeholder="Pinceles, brochas, lijas, cintas..." style={S.input}/>
             </div>
+            <Divider/>
+            <div style={S.secTitle}>📍 Ubicación del pedido</div>
+            <div style={{fontSize:15,color:C.textoSuave,marginBottom:8}}>Se precarga con tu ubicación de cuenta; cambiala si hace falta.</div>
+            <SelectorUbicacion provincia={pintF.provincia} ciudad={pintF.ciudad} onProvincia={v=>setPintF(f=>({...f,provincia:v}))} onCiudad={v=>setPintF(f=>({...f,ciudad:v}))}/>
+            <div style={{marginBottom:14}}><label style={S.label}>Barrio</label><input style={S.input} value={pintF.barrio} onChange={e=>setPintF(f=>({...f,barrio:e.target.value}))}/></div>
             <div style={{marginTop:12}}>
               <label style={S.label}>Fecha límite para recibir cotizaciones <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label>
               <input type="date" min={minFechaLimite()} value={pintF.fechaLimite||""} onChange={e=>setPintF(f=>({...f,fechaLimite:e.target.value}))} style={{...S.input,maxWidth:220}}/>
@@ -3349,10 +3382,10 @@ function VistaCarpinteria({usuario,notif}){
               try{
                 const itemsLimpios=itemsValidos.map(it=>({descripcion:it.descripcion.trim(),litros:nmb(it.litros)}));
                 const resumen=itemsLimpios.map(it=>it.descripcion).join(", ");
-                await db.insert("pedidos_pintureria",{carpinteria_id:usuario.id,items:itemsLimpios,descripcion:resumen,litros:itemsLimpios.reduce((a,it)=>a+it.litros,0),notas:pintF.notas,fecha_limite:fechaLimiteISO(pintF.fechaLimite)});
+                await db.insert("pedidos_pintureria",{carpinteria_id:usuario.id,items:itemsLimpios,descripcion:resumen,litros:itemsLimpios.reduce((a,it)=>a+it.litros,0),notas:pintF.notas,provincia:pintF.provincia||null,ciudad:pintF.ciudad||null,barrio:pintF.barrio||null,fecha_limite:fechaLimiteISO(pintF.fechaLimite)});
                 notif("¡Pedido enviado a las pinturerías!");
                 (async()=>{try{const ps=await db.select("usuarios","?tipo=eq.pintureria&recibir_avisos=eq.true&select=email,nombre");const msg="<p>Tenés un <strong>nuevo pedido para cotizar</strong> en Encastre.</p>";for(const c of (ps||[])){if(c.email)db.avisarPorMail(c.email,c.nombre,"Nuevo pedido para cotizar - Encastre",msg);}}catch(e){}})();
-                setPintF({items:[{descripcion:"",litros:"1"}],notas:"",fechaLimite:""});
+                setPintF({items:[{descripcion:"",litros:"1"}],notas:"",fechaLimite:"",provincia:usuario.provincia||"",ciudad:usuario.ciudad||"",barrio:usuario.barrio||""});
                 setIntPi(false);
                 cargarMisPedidosPint();
                 setSubPint("mis");
@@ -3472,6 +3505,8 @@ function VistaAserradero({usuario,notif}){
   const [enviando,setEnviando]=useState(false);
   const [yaEnvio,setYaEnvio]=useState(false);
   const [filtro,setFiltro]=useState("cotizar");
+  const [filtroUbicProv,setFiltroUbicProv]=useState("");
+  const [filtroUbicCiu,setFiltroUbicCiu]=useState("");
   // Al abrir un pedido para cotizar, precargar los ítems con lo que pidió la carpintería (si no cotizó aún)
   useEffect(()=>{
     if(!sel||miCot||yaEnvio)return;
@@ -3727,6 +3762,8 @@ function VistaAserradero({usuario,notif}){
     todos:pedidos.length,
   };
   const lista=pedidos.filter(p=>{
+    if(filtroUbicProv&&p.provincia!==filtroUbicProv)return false;
+    if(filtroUbicCiu&&p.ciudad!==filtroUbicCiu)return false;
     if(filtro==="cotizar")return !p._miEstado&&!estaVencido(p);
     if(filtro==="cotizados")return !!p._miEstado;
     if(filtro==="vencido")return estaVencido(p)&&!p._miEstado;
@@ -3741,6 +3778,7 @@ function VistaAserradero({usuario,notif}){
           <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} {cuenta[id]}</button>
         ))}
       </div>
+      <FiltroUbicacion pedidos={pedidos} provincia={filtroUbicProv} ciudad={filtroUbicCiu} onProvincia={setFiltroUbicProv} onCiudad={setFiltroUbicCiu}/>
       {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
       {pedidos.length>0&&lista.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría</div>}
       {lista.map(p=>{
@@ -3752,6 +3790,7 @@ function VistaAserradero({usuario,notif}){
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div>
               <div style={{fontFamily:"'Lato',sans-serif",fontWeight:700,color:C.marron,fontSize:17}}>{p.material}<TagNuevo on={p._nuevo}/><TagMsjNuevo on={p._msjNuevo}/></div>
+              {(p.ciudad||p.provincia)&&<div style={{fontSize:15,color:C.textoSuave,marginTop:2}}>📍 {[p.barrio,p.ciudad,p.provincia].filter(Boolean).join(", ")}</div>}
               <div style={{fontSize:17,color:C.textoSuave,marginTop:3,fontFamily:"monospace"}}>{p.pies}' × {p.pulgadas}" · {p.cantidad} piezas · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
               {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
             </div>
@@ -3826,6 +3865,8 @@ function VistaFlete({usuario,notif}){
   const [enviando,setEnviando]=useState(false);
   const [yaEnvio,setYaEnvio]=useState(false);
   const [filtro,setFiltro]=useState("cotizar");
+  const [filtroUbicProv,setFiltroUbicProv]=useState("");
+  const [filtroUbicCiu,setFiltroUbicCiu]=useState("");
 
   const cargar=useCallback(async()=>{
     if(!esFlete)return;
@@ -3913,7 +3954,7 @@ function VistaFlete({usuario,notif}){
 
   // ---- Lado solicitante: pide flete y ve cotizaciones ----
   const [subFl,setSubFl]=useState("mis");
-  const [pedF,setPedF]=useState({origen:"",destino:"",descripcion:"",fecha:"",notas:"",fechaLimite:""});
+  const [pedF,setPedF]=useState({origen:"",destino:"",descripcion:"",fecha:"",notas:"",fechaLimite:"",provincia:usuario.provincia||"",ciudad:usuario.ciudad||"",barrio:usuario.barrio||""});
   const [misPedidos,setMisPedidos]=useState([]);
   const [selPedido,setSelPedido]=useState(null);
   const [cotizacionesFlete,setCotizacionesFlete]=useState([]);
@@ -3978,10 +4019,10 @@ function VistaFlete({usuario,notif}){
     if(!(pedF.origen&&pedF.destino)){setIntFl(true);return;}
     setEnviandoPed(true);
     try{
-      await db.insert("pedidos_flete",{solicitante_id:usuario.id,origen:pedF.origen,destino:pedF.destino,descripcion_carga:pedF.descripcion,fecha_deseada:pedF.fecha||null,notas:pedF.notas,fecha_limite:fechaLimiteISO(pedF.fechaLimite)});
+      await db.insert("pedidos_flete",{solicitante_id:usuario.id,origen:pedF.origen,destino:pedF.destino,descripcion_carga:pedF.descripcion,fecha_deseada:pedF.fecha||null,notas:pedF.notas,provincia:pedF.provincia||null,ciudad:pedF.ciudad||null,barrio:pedF.barrio||null,fecha_limite:fechaLimiteISO(pedF.fechaLimite)});
       notif("¡Solicitud enviada a los fletes!");
       (async()=>{try{const ps=await db.select("usuarios","?tipo=eq.flete&recibir_avisos=eq.true&select=email,nombre");const msg="<p>Tenés una <strong>nueva solicitud de flete para cotizar</strong> en Encastre.</p>";for(const c of (ps||[])){if(c.email)db.avisarPorMail(c.email,c.nombre,"Nueva solicitud de flete - Encastre",msg);}}catch(e){}})();
-      setPedF({origen:"",destino:"",descripcion:"",fecha:"",notas:"",fechaLimite:""});
+      setPedF({origen:"",destino:"",descripcion:"",fecha:"",notas:"",fechaLimite:"",provincia:usuario.provincia||"",ciudad:usuario.ciudad||"",barrio:usuario.barrio||""});
       setIntFl(false);
       cargarMisPedidos();
       setSubFl("mis");
@@ -4158,6 +4199,8 @@ function VistaFlete({usuario,notif}){
       todos:pedidos.length,
     };
     const lista=pedidos.filter(p=>{
+      if(filtroUbicProv&&p.provincia!==filtroUbicProv)return false;
+      if(filtroUbicCiu&&p.ciudad!==filtroUbicCiu)return false;
       if(filtro==="cotizar")return !p._miEstado&&!estaVencido(p);
       if(filtro==="cotizados")return !!p._miEstado;
       if(filtro==="vencido")return estaVencido(p)&&!p._miEstado;
@@ -4172,6 +4215,8 @@ function VistaFlete({usuario,notif}){
             <button key={id} style={tabStyle(id)} onClick={()=>setFiltro(id)}>{l} {cuenta[id]}</button>
           ))}
         </div>
+        <div style={{fontSize:13,color:C.textoSuave,marginBottom:8}}>📍 Filtro por ubicación de origen de la carga</div>
+        <FiltroUbicacion pedidos={pedidos} provincia={filtroUbicProv} ciudad={filtroUbicCiu} onProvincia={setFiltroUbicProv} onCiudad={setFiltroUbicCiu}/>
         {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
         {pedidos.length>0&&lista.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría</div>}
         {lista.map(p=>{
@@ -4184,6 +4229,7 @@ function VistaFlete({usuario,notif}){
               <div>
                 <div style={{fontFamily:"'Lato',sans-serif",fontWeight:700,color:C.marron,fontSize:17}}>👤 {p._solNombre||"Solicitante"}<TagNuevo on={p._nuevo}/><TagMsjNuevo on={p._msjNuevo}/></div>
                 <div style={{fontSize:16,color:C.marron,marginTop:2}}>{p.origen} → {p.destino}</div>
+                {(p.ciudad||p.provincia)&&<div style={{fontSize:15,color:C.textoSuave,marginTop:2}}>📍 Origen: {[p.barrio,p.ciudad,p.provincia].filter(Boolean).join(", ")}</div>}
                 <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{p.fecha_deseada?new Date(p.fecha_deseada+"T12:00").toLocaleDateString("es-AR"):"Sin fecha definida"} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
               {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
               </div>
@@ -4209,6 +4255,11 @@ function VistaFlete({usuario,notif}){
             <div style={S.col()}><label style={S.label}>Destino</label><input value={pedF.destino} onChange={e=>setPedF(f=>({...f,destino:e.target.value}))} placeholder="Dirección de destino" style={{...S.input,...marcaErr(intFl,!pedF.destino)}}/></div>
           </div>
           <BannerFalta activo={intFl} lista={[[!pedF.origen,"el origen"],[!pedF.destino,"el destino"]]}/>
+          <Divider/>
+          <div style={S.secTitle}>📍 Ubicación de origen</div>
+          <div style={{fontSize:15,color:C.textoSuave,marginBottom:8}}>Para que los fletes cercanos encuentren tu pedido. Se precarga con tu ubicación de cuenta; cambiala si hace falta.</div>
+          <SelectorUbicacion provincia={pedF.provincia} ciudad={pedF.ciudad} onProvincia={v=>setPedF(f=>({...f,provincia:v}))} onCiudad={v=>setPedF(f=>({...f,ciudad:v}))}/>
+          <div style={{marginBottom:14}}><label style={S.label}>Barrio</label><input style={S.input} value={pedF.barrio} onChange={e=>setPedF(f=>({...f,barrio:e.target.value}))}/></div>
           <div style={{...S.row,marginTop:10}}>
             <div style={S.col()}><label style={S.label}>Descripción de la carga <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label><input value={pedF.descripcion} onChange={e=>setPedF(f=>({...f,descripcion:e.target.value}))} placeholder="Ej: Mesa de roble 220×100, 80kg" style={S.input}/></div>
             <div style={{flex:.5}}><label style={S.label}>Fecha deseada <span style={{fontWeight:400,color:C.textoSuave}}>(opcional)</span></label><input type="date" value={pedF.fecha} onChange={e=>setPedF(f=>({...f,fecha:e.target.value}))} style={S.input}/></div>
@@ -4333,6 +4384,8 @@ function VistaFerreteria({usuario,notif}){
   const [enviando,setEnviando]=useState(false);
   const [yaEnvio,setYaEnvio]=useState(false);
   const [filtro,setFiltro]=useState("cotizar");
+  const [filtroUbicProv,setFiltroUbicProv]=useState("");
+  const [filtroUbicCiu,setFiltroUbicCiu]=useState("");
   // Precargar la cotización con los herrajes que pidió la carpintería (si no cotizó aún)
   useEffect(()=>{
     if(!sel||miCot||yaEnvio)return;
@@ -4574,6 +4627,8 @@ function VistaFerreteria({usuario,notif}){
     todos:pedidos.length,
   };
   const lista=pedidos.filter(p=>{
+    if(filtroUbicProv&&p.provincia!==filtroUbicProv)return false;
+    if(filtroUbicCiu&&p.ciudad!==filtroUbicCiu)return false;
     if(filtro==="cotizar")return !p._miEstado&&!estaVencido(p);
     if(filtro==="cotizados")return !!p._miEstado;
     if(filtro==="vencido")return estaVencido(p)&&!p._miEstado;
@@ -4588,6 +4643,7 @@ function VistaFerreteria({usuario,notif}){
           <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} {cuenta[id]}</button>
         ))}
       </div>
+      <FiltroUbicacion pedidos={pedidos} provincia={filtroUbicProv} ciudad={filtroUbicCiu} onProvincia={setFiltroUbicProv} onCiudad={setFiltroUbicCiu}/>
       {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
       {pedidos.length>0&&lista.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría</div>}
       {lista.map(p=>{
@@ -4599,6 +4655,7 @@ function VistaFerreteria({usuario,notif}){
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div>
               <div style={{fontFamily:"'Lato',sans-serif",fontWeight:700,color:C.marron,fontSize:21}}>{p.descripcion}<TagNuevo on={p._nuevo}/><TagMsjNuevo on={p._msjNuevo}/></div>
+              {(p.ciudad||p.provincia)&&<div style={{fontSize:15,color:C.textoSuave,marginTop:2}}>📍 {[p.barrio,p.ciudad,p.provincia].filter(Boolean).join(", ")}</div>}
               <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{Array.isArray(p.items)&&p.items.length>0?`${p.items.length} ítem${p.items.length>1?"s":""}`:`Cantidad: ${p.cantidad}`} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
               {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
             </div>
@@ -4622,6 +4679,8 @@ function VistaPintureria({usuario,notif}){
   const [enviando,setEnviando]=useState(false);
   const [yaEnvio,setYaEnvio]=useState(false);
   const [filtro,setFiltro]=useState("cotizar");
+  const [filtroUbicProv,setFiltroUbicProv]=useState("");
+  const [filtroUbicCiu,setFiltroUbicCiu]=useState("");
   // Precargar la cotización con las pinturas que pidió la carpintería (si no cotizó aún)
   useEffect(()=>{
     if(!sel||miCot||yaEnvio)return;
@@ -4863,6 +4922,8 @@ function VistaPintureria({usuario,notif}){
     todos:pedidos.length,
   };
   const lista=pedidos.filter(p=>{
+    if(filtroUbicProv&&p.provincia!==filtroUbicProv)return false;
+    if(filtroUbicCiu&&p.ciudad!==filtroUbicCiu)return false;
     if(filtro==="cotizar")return !p._miEstado&&!estaVencido(p);
     if(filtro==="cotizados")return !!p._miEstado;
     if(filtro==="vencido")return estaVencido(p)&&!p._miEstado;
@@ -4877,6 +4938,7 @@ function VistaPintureria({usuario,notif}){
           <button key={id} style={{...S.btn(filtro===id?"dark":"ghost"),fontSize:15,padding:"6px 12px"}} onClick={()=>setFiltro(id)}>{l} {cuenta[id]}</button>
         ))}
       </div>
+      <FiltroUbicacion pedidos={pedidos} provincia={filtroUbicProv} ciudad={filtroUbicCiu} onProvincia={setFiltroUbicProv} onCiudad={setFiltroUbicCiu}/>
       {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
       {pedidos.length>0&&lista.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría</div>}
       {lista.map(p=>{
@@ -4888,6 +4950,7 @@ function VistaPintureria({usuario,notif}){
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div>
               <div style={{fontFamily:"'Lato',sans-serif",fontWeight:700,color:C.marron,fontSize:21}}>{p.descripcion}<TagNuevo on={p._nuevo}/><TagMsjNuevo on={p._msjNuevo}/></div>
+              {(p.ciudad||p.provincia)&&<div style={{fontSize:15,color:C.textoSuave,marginTop:2}}>📍 {[p.barrio,p.ciudad,p.provincia].filter(Boolean).join(", ")}</div>}
               <div style={{fontSize:17,color:C.textoSuave,marginTop:3}}>{Array.isArray(p.items)&&p.items.length>0?`${p.items.length} ítem${p.items.length>1?"s":""}`:[p.color&&`Color: ${p.color}`,p.litros&&`${p.litros} L`].filter(Boolean).join(" · ")} · {new Date(p.created_at).toLocaleDateString("es-AR")}</div>
               {p.fecha_limite&&<div style={{marginTop:4}}><AvisoVence fechaLimite={p.fecha_limite}/></div>}
             </div>
@@ -7078,6 +7141,27 @@ function SelectorUbicacion({provincia,ciudad,onProvincia,onCiudad}){
         </select>
       </div>
     </>
+  );
+}
+
+// Filtro por ubicación para listas de pedidos recibidos: las opciones salen de lo que ya cargaron los pedidos (sin llamar a Georef de nuevo)
+function FiltroUbicacion({pedidos,provincia,ciudad,onProvincia,onCiudad}){
+  const provincias=[...new Set((pedidos||[]).map(p=>p.provincia).filter(Boolean))].sort();
+  const ciudades=[...new Set((pedidos||[]).filter(p=>!provincia||p.provincia===provincia).map(p=>p.ciudad).filter(Boolean))].sort();
+  if(provincias.length===0) return null;
+  return(
+    <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
+      <select style={{...S.input,width:"auto",minWidth:170}} value={provincia} onChange={e=>{onProvincia(e.target.value);onCiudad("");}}>
+        <option value="">📍 Todas las provincias</option>
+        {provincias.map(p=><option key={p} value={p}>{p}</option>)}
+      </select>
+      {provincia&&(
+        <select style={{...S.input,width:"auto",minWidth:170}} value={ciudad} onChange={e=>onCiudad(e.target.value)}>
+          <option value="">Todas las localidades</option>
+          {ciudades.map(c=><option key={c} value={c}>{c}</option>)}
+        </select>
+      )}
+    </div>
   );
 }
 
