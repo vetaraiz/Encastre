@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Encastre</title>
-  <meta name="version" content="1789330000"/>
+  <meta name="version" content="1789380000"/>
 
   <!-- PWA -->
   <meta name="application-name" content="Encastre"/>
@@ -1585,6 +1585,9 @@ const { useState, useEffect, useRef, useCallback } = React;
 const SUPABASE_URL = "https://ocxwslozstvitlxihaim.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jeHdzbG96c3R2aXRseGloYWltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDg5NTcsImV4cCI6MjA5NTMyNDk1N30.Jr-FWpH_2qcUIGK126eBuSScZ6EDcARzdpd4CkXrg5w";
 const VAPID_PUBLIC = "BFVBdnRep1UDfTImbVyZhEf_AaYAd14HsruwDy3NO4cmUAJjadZke-4M9upuzYHk_2ak2M1-sui1y-wavex0lKQ";
+// Lanzamiento: primeros 30 días solo para profesionales, gratis. El 26/10 abre consumidor final y empieza a cobrarse a aserradero/ferretería/pinturería/flete.
+const FECHA_LANZAMIENTO = new Date("2026-09-26T00:00:00-03:00");
+const FECHA_FIN_PROMO = new Date("2026-10-26T00:00:00-03:00");
 
 const db = {
   // Sesión del usuario logueado. Si es null, se usa la clave anónima (como antes).
@@ -2182,6 +2185,7 @@ function AuthScreen({onAuth}){
   };
   const validarDNI=(raw)=>{ const d=soloDigitos(raw); return d.length>=7&&d.length<=8; };
 
+  const enPromoLanzamiento = new Date() < FECHA_FIN_PROMO;
   const tipos=[
     {id:"cliente",emoji:"🪑",label:"Consumidor Final",desc:"Quiero encargar muebles o construcciones en madera"},
     {id:"carpinteria",emoji:"🔨",label:"Carpintería",desc:"Recibo pedidos y presupuesto trabajos"},
@@ -2189,7 +2193,7 @@ function AuthScreen({onAuth}){
     {id:"flete",emoji:"🚚",label:"Flete / Transporte",desc:"Traslado muebles y materiales"},
     {id:"ferreteria",emoji:"🔩",label:"Ferretería / Herrajes",desc:"Vendo herrajes, bisagras y materiales a carpinterías"},
     {id:"pintureria",emoji:"🪣",label:"Pinturería",desc:"Vendo pinturas, barnices, lacas y esmaltes a carpinterías"},
-  ];
+  ].filter(t=>t.id!=="cliente"||!enPromoLanzamiento);
 
   const submit=async()=>{
     setErr("");setOk("");setCargando(true);
@@ -2311,6 +2315,7 @@ function AuthScreen({onAuth}){
         {modo==="registro"&&(
           <>
             <label style={S.label}>Soy...</label>
+            {enPromoLanzamiento&&<div style={{fontSize:14,color:C.textoSuave,marginBottom:8,fontStyle:"italic"}}>Estamos en el mes de lanzamiento: por ahora Encastre está abierto solo para carpinterías y proveedores. El consumidor final se habilita el 26/10.</div>}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
               {tipos.map(t=>(
                 <button key={t.id} style={{...S.tag(tipo===t.id),padding:"10px 8px",textAlign:"center",lineHeight:1.4,height:"auto"}} onClick={()=>setTipo(t.id)}>
@@ -2391,7 +2396,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-13.33</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-22.38</div>
     </div>
   );
 }
@@ -2547,8 +2552,17 @@ function Calificar({deUsuario,paraUsuario,pedidoId,califs=[]}){
     }catch{}
   };
 
+  const promedio = califs.length ? (califs.reduce((s,c)=>s+(c.estrellas||0),0)/califs.length) : null;
+
   return(
     <div style={{marginTop:12}}>
+      {promedio!=null&&(
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+          <Stars v={Math.round(promedio)}/>
+          <span style={{fontSize:17,fontWeight:800,color:C.texto}}>{promedio.toFixed(1)}</span>
+          <span style={{fontSize:15,color:C.textoSuave}}>({califs.length} {califs.length===1?"calificación":"calificaciones"})</span>
+        </div>
+      )}
       {califs.map((c,i)=>(
         <div key={i} style={{fontSize:17,color:C.textoSuave,marginBottom:4}}>
           <Stars v={c.estrellas}/> — {c.comentario}
@@ -2889,7 +2903,9 @@ function VistaCliente({usuario,notif}){
       const c=await db.select("usuarios",`?id=eq.${pr.carpinteria_id}&limit=1`);
       let items=[];
       try{ items=await db.select("presupuesto_items",`?presupuesto_id=eq.${pr.id}&order=orden.asc`); }catch{}
-      return{...pr,empresa:c[0]||{},carpNombre:c[0]?.nombre||"Carpintería",carpTrabajos:(c[0]?.trabajos&&c[0].trabajos.length>0)?c[0].trabajos:[c[0]?.foto1,c[0]?.foto2,c[0]?.foto3].filter(Boolean).map(f=>({foto:f,titulo:""})),items};
+      let califs=[];
+      try{ califs=await db.select("calificaciones",`?para_usuario_id=eq.${pr.carpinteria_id}`); }catch{}
+      return{...pr,empresa:c[0]||{},carpNombre:c[0]?.nombre||"Carpintería",carpTrabajos:(c[0]?.trabajos&&c[0].trabajos.length>0)?c[0].trabajos:[c[0]?.foto1,c[0]?.foto2,c[0]?.foto3].filter(Boolean).map(f=>({foto:f,titulo:""})),carpCalifs:califs,items};
     }));
   };
 
@@ -3007,7 +3023,7 @@ function VistaCliente({usuario,notif}){
             </div>
           );
         })()}
-        <Calificar deUsuario={usuario} paraUsuario={{id:pr.carpinteria_id}} pedidoId={sel.id}/>
+        <Calificar deUsuario={usuario} paraUsuario={{id:pr.carpinteria_id}} pedidoId={sel.id} califs={pr.carpCalifs}/>
         <TrabajosGallery trabajos={pr.carpTrabajos}/>
         <div style={{marginTop:12}}>
           <Chat key={pr.carpinteria_id} pedidoId={sel.id} tipoPedido="cliente" miUsuario={usuario} otroUsuario={{id:pr.carpinteria_id}} titulo={"Chat con "+pr.carpNombre}/>
@@ -3180,7 +3196,7 @@ function VistaCliente({usuario,notif}){
 }
 
 // ─── VISTA CARPINTERÍA ────────────────────────────────────────────────────────
-function VistaCarpinteria({usuario,notif}){
+function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
   const badges=useBadges(usuario);
   const [archivadosCot,setArchivadosCot]=useState(new Set());
   const [archivadosPed,setArchivadosPed]=useState(new Set());
@@ -3749,6 +3765,13 @@ function VistaCarpinteria({usuario,notif}){
       {tab==="pedidos"&&(
         <div>
           <div style={S.secTitle}>Pedidos de presupuesto de clientes</div>
+          {bloqueadoClientes&&(
+            <div style={{marginBottom:14,padding:"14px 16px",background:"#FDECEA",border:`1px solid ${C.error}`,color:C.error}}>
+              <div style={{fontWeight:700,fontSize:17,marginBottom:6}}>🔒 Necesitás una suscripción activa para ver y cotizar pedidos de clientes</div>
+              <div style={{fontSize:15,marginBottom:10}}>Los pedidos siguen apareciendo en la lista, pero no se pueden abrir hasta activar la suscripción. El resto de Encastre lo podés seguir usando con normalidad.</div>
+              <button style={{...S.btn("dark"),fontSize:15}} onClick={onIrASuscripcion}>💳 Activar suscripción</button>
+            </div>
+          )}
           <div style={{position:"relative",marginBottom:14}}>
             <input value={buscarPedido} onChange={e=>setBuscarPedido(e.target.value)} placeholder="🔍 Buscar por cliente o por encargo..." style={{...S.input,paddingRight:buscarPedido?40:15}}/>
             {buscarPedido&&<button type="button" onClick={()=>setBuscarPedido("")} aria-label="Borrar búsqueda" style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",minHeight:"auto",background:"none",border:"none",cursor:"pointer",fontSize:18,padding:6,color:C.textoSuave}}>✕</button>}
@@ -3796,21 +3819,22 @@ function VistaCarpinteria({usuario,notif}){
             const mat=MATS.find(m=>m.id===p.material);
             const vencido=p.fecha_limite&&new Date(p.fecha_limite)<new Date();
             let et;
-            if(p.estado==="aceptado"){ et=p._miEstado==="aceptado"?{t:"Aceptado ✓",bg:C.verde,fg:"#fff"}:{t:"Cerrado · adjudicado a otro",bg:"#8A7A6A",fg:"#fff"}; }
+            if(bloqueadoClientes){ et={t:"🔒 Bloqueado",bg:C.error,fg:"#fff"}; }
+            else if(p.estado==="aceptado"){ et=p._miEstado==="aceptado"?{t:"Aceptado ✓",bg:C.verde,fg:"#fff"}:{t:"Cerrado · adjudicado a otro",bg:"#8A7A6A",fg:"#fff"}; }
             else if(p._miEstado){ et={t:"Cotizado por mí",bg:C.acento,fg:C.marron}; }
             else if(vencido){ et={t:"Vencido",bg:"#B23A2E",fg:"#fff"}; }
             else { et={t:"Para cotizar",bg:C.marron,fg:C.crema}; }
             const cerradoParaMi = p.estado==="aceptado" && p._miEstado!=="aceptado";
             const marcado=seleccionados.has(p.id);
             return(
-              <div key={p.id} style={{...S.card,display:"flex",gap:10,cursor:cerradoParaMi?"default":"pointer",transition:"all .15s",opacity:cerradoParaMi?0.7:1,borderColor:marcado?C.acento:(p._nuevo?"#009966":"#8B451399"),borderWidth:(marcado||p._nuevo)?2:1}}
-                onMouseEnter={e=>{if(!cerradoParaMi){e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}}
+              <div key={p.id} style={{...S.card,display:"flex",gap:10,cursor:bloqueadoClientes?"not-allowed":(cerradoParaMi?"default":"pointer"),transition:"all .15s",opacity:bloqueadoClientes?0.75:(cerradoParaMi?0.7:1),borderColor:marcado?C.acento:(p._nuevo?"#009966":"#8B451399"),borderWidth:(marcado||p._nuevo)?2:1}}
+                onMouseEnter={e=>{if(!cerradoParaMi&&!bloqueadoClientes){e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}}
                 onMouseLeave={e=>{e.currentTarget.style.borderColor=marcado?C.acento:(p._nuevo?"#009966":C.borde);e.currentTarget.style.transform="none";}}>
                 <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,flexShrink:0}}>
                   <div style={{width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",background:C.suave,border:`1px solid ${C.borde}`,fontSize:13,fontWeight:700,color:C.marron}}>{i+1}</div>
                   <input type="checkbox" checked={marcado} onChange={()=>toggleSeleccion(p.id)} onClick={e=>e.stopPropagation()} style={{width:22,height:22,cursor:"pointer"}}/>
                 </div>
-                <div style={{flex:1,minWidth:0}} onClick={()=>{ if(!cerradoParaMi) abrirPedidoCliente(p); }}>
+                <div style={{flex:1,minWidth:0}} onClick={()=>{ if(bloqueadoClientes){ notif&&notif("🔒 Activá tu suscripción para ver este pedido"); return; } if(!cerradoParaMi) abrirPedidoCliente(p); }}>
                 <div style={{display:"flex",justifyContent:"space-between",gap:10}}>
                   <div>
                     <div style={{fontFamily:"'Lato',sans-serif",fontWeight:700,color:C.marron,fontSize:21}}>{p.descripcion}<TagNuevo on={p._nuevo}/><TagMsjNuevo on={p._msjNuevo}/></div>
@@ -5793,12 +5817,18 @@ function PantallaBienvenida({onEntrar}){
             <FlowBranch label="¿Sos consumidor final o proveedor?" options={[
               {icon:"🪑",title:"Consumidor final",color:C.verde,lines:[
                 "Encastre es gratis para vos. No pagás suscripción, nunca.",
+                "El registro de consumidor final se habilita a partir del 26/10 (primero abrimos solo para los proveedores).",
               ]},
-              {icon:"🔨",title:"Proveedor (carpintería, aserradero, ferretería, pinturería o flete)",color:C.medio,lines:[
-                "El primer mes de suscripción cuesta $5.000.",
-                "Los meses 2, 3 y 4 cuestan $7.000 cada uno.",
-                "Del mes 5 en adelante, $7.000 (valor ajustable más adelante, siempre avisando antes de cobrar el nuevo precio).",
+              {icon:"🔨",title:"Carpintería",color:C.medio,lines:[
+                "Usás Encastre gratis, sin límite de tiempo, para pedir a aserradero/ferretería/pinturería y todo lo demás.",
+                "Si querés ver y cotizar pedidos de consumidor final, pagás $10.000 por mes — cuando quieras, no hay plazo.",
                 "Antes de cada pago te mostramos el monto exacto y podés elegir «Continuar y pagar» o «Dar de baja» — te podés dar de baja cuando quieras, sin trámites.",
+              ]},
+              {icon:"🪵🪣🔩",title:"Aserradero, ferretería y pinturería",color:C.medio,lines:[
+                "Mes de lanzamiento gratis (hasta el 26/10). Después, $10.000 por mes.",
+              ]},
+              {icon:"🚚",title:"Flete",color:C.medio,lines:[
+                "Mes de lanzamiento gratis (hasta el 26/10). Después, $7.000 por mes.",
               ]},
             ]}/>
             <FlowArrow/>
@@ -6221,22 +6251,22 @@ const FLUJOS = {
           "Completaste nombre, email, teléfono y contraseña.",
           "Cargaste tu provincia y tu localidad.",
         ]},
-        {type:"arrow"},
-        {type:"step",n:2,icon:"💳",title:"Pagaste tu primer mes",lines:[
-          "El primer mes de suscripción cuesta $5.000.",
-          "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».",
-          "Sin pagar, la cuenta queda bloqueada — no se puede usar como proveedor sin suscripción activa.",
+        {type:"arrow",label:"30 días gratis"},
+        {type:"step",n:2,icon:"🎁",title:"Primer mes gratis",lines:[
+          "Tenés 30 días de prueba sin costo para usar Encastre como carpintería.",
+          "Durante esos 30 días usás todo sin restricciones: pedidos de clientes, pedidos a aserradero/ferretería/pinturería, chat, etc.",
         ]},
         {type:"arrow"},
         {type:"step",n:3,icon:"🔑",title:"Iniciás sesión",lines:[
           "Entrás con tu email y tu contraseña, cada vez que volvés a usar la app.",
         ]},
         {type:"arrow"},
-        {type:"step",n:4,icon:"🔁",title:"Así sigue tu suscripción",lines:[
-          "Meses 2, 3 y 4: pagás $7.000 cada uno.",
-          "Del mes 5 en adelante: $7.000, valor que se puede ajustar más adelante — siempre te avisamos antes de cobrarte el nuevo precio.",
-          "Antes de cada pago te mostramos el monto exacto y podés elegir «Continuar y pagar» o «Dar de baja mi cuenta».",
-          "Te podés dar de baja cuando quieras, sin trámites: menú (⋮) → «Suscripción».",
+        {type:"step",n:4,icon:"💳",title:"Después de los 30 días",lines:[
+          "La suscripción mensual cuesta $10.000 fijos.",
+          "Si no pagás, seguís usando Encastre con normalidad — pedir a aserradero, ferretería, pinturería, chat, etc. Lo único que se bloquea es «Pedidos de clientes»: los pedidos nuevos siguen apareciendo en tu lista, pero no podés abrirlos ni cotizarlos hasta pagar.",
+          "Apenas pagás, se desbloquea automáticamente.",
+          "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja mi cuenta».",
+          "Te podés dar de baja cuando quieras, sin trámites: menú (⋮) → «Mi cuenta» → «Dar de baja».",
         ]},
       ]
     },
@@ -6416,27 +6446,26 @@ const FLUJOS = {
       {e:"⋮",t:"Los tres puntitos arriba a la derecha: ahí está el menú."},
     ],
     pagos:{
-      titulo:"Inscripción y pagos",
+      titulo:"Inscripción",
       pasos:[
         {type:"step",n:1,icon:"📝",title:"Te registraste",lines:[
           "Elegiste «Aserradero» como tipo de usuario.",
           "Completaste nombre, email, teléfono y contraseña.",
           "Cargaste tu provincia y tu localidad.",
         ]},
-        {type:"arrow"},
-        {type:"step",n:2,icon:"💳",title:"Pagaste tu primer mes",lines:[
-          "El primer mes cuesta $5.000. Antes de cobrarte, la app te muestra el monto y elegís «Continuar y pagar» o «Dar de baja».",
-          "Sin suscripción activa, la cuenta queda bloqueada para operar como proveedor.",
+        {type:"arrow",label:"mes de lanzamiento gratis"},
+        {type:"step",n:2,icon:"🎁",title:"Primer mes gratis",lines:[
+          "Durante el mes de lanzamiento (hasta el 26/10) usás Encastre sin costo.",
         ]},
         {type:"arrow"},
         {type:"step",n:3,icon:"🔑",title:"Iniciás sesión",lines:[
           "Entrás con tu email y tu contraseña cada vez que volvés a usar la app.",
         ]},
         {type:"arrow"},
-        {type:"step",n:4,icon:"🔁",title:"Así sigue tu suscripción",lines:[
-          "Meses 2 a 4: $7.000 cada uno. Del mes 5 en adelante: $7.000, ajustable con aviso previo.",
-          "Antes de cada pago te mostramos el monto exacto y podés elegir «Continuar y pagar» o «Dar de baja».",
-          "Te podés dar de baja cuando quieras, sin trámites: menú (⋮) → «Suscripción».",
+        {type:"step",n:4,icon:"💳",title:"Después del 26/10",lines:[
+          "La suscripción mensual cuesta $10.000 fijos.",
+          "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».",
+          "Sin suscripción activa después de esa fecha, la cuenta queda bloqueada hasta que pagues.",
         ]},
       ]
     },
@@ -6495,27 +6524,26 @@ const FLUJOS = {
       {e:"⋮",t:"Los tres puntitos arriba a la derecha: ahí está el menú."},
     ],
     pagos:{
-      titulo:"Inscripción y pagos",
+      titulo:"Inscripción",
       pasos:[
         {type:"step",n:1,icon:"📝",title:"Te registraste",lines:[
           "Elegiste «Ferretería» como tipo de usuario.",
           "Completaste nombre, email, teléfono y contraseña.",
           "Cargaste tu provincia y tu localidad.",
         ]},
-        {type:"arrow"},
-        {type:"step",n:2,icon:"💳",title:"Pagaste tu primer mes",lines:[
-          "El primer mes cuesta $5.000. Antes de cobrarte, la app te muestra el monto y elegís «Continuar y pagar» o «Dar de baja».",
-          "Sin suscripción activa, la cuenta queda bloqueada para operar como proveedor.",
+        {type:"arrow",label:"mes de lanzamiento gratis"},
+        {type:"step",n:2,icon:"🎁",title:"Primer mes gratis",lines:[
+          "Durante el mes de lanzamiento (hasta el 26/10) usás Encastre sin costo.",
         ]},
         {type:"arrow"},
         {type:"step",n:3,icon:"🔑",title:"Iniciás sesión",lines:[
           "Entrás con tu email y tu contraseña cada vez que volvés a usar la app.",
         ]},
         {type:"arrow"},
-        {type:"step",n:4,icon:"🔁",title:"Así sigue tu suscripción",lines:[
-          "Meses 2 a 4: $7.000 cada uno. Del mes 5 en adelante: $7.000, ajustable con aviso previo.",
-          "Antes de cada pago te mostramos el monto exacto y podés elegir «Continuar y pagar» o «Dar de baja».",
-          "Te podés dar de baja cuando quieras, sin trámites: menú (⋮) → «Suscripción».",
+        {type:"step",n:4,icon:"💳",title:"Después del 26/10",lines:[
+          "La suscripción mensual cuesta $10.000 fijos.",
+          "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».",
+          "Sin suscripción activa después de esa fecha, la cuenta queda bloqueada hasta que pagues.",
         ]},
       ]
     },
@@ -6574,27 +6602,26 @@ const FLUJOS = {
       {e:"⋮",t:"Los tres puntitos arriba a la derecha: ahí está el menú."},
     ],
     pagos:{
-      titulo:"Inscripción y pagos",
+      titulo:"Inscripción",
       pasos:[
         {type:"step",n:1,icon:"📝",title:"Te registraste",lines:[
           "Elegiste «Pinturería» como tipo de usuario.",
           "Completaste nombre, email, teléfono y contraseña.",
           "Cargaste tu provincia y tu localidad.",
         ]},
-        {type:"arrow"},
-        {type:"step",n:2,icon:"💳",title:"Pagaste tu primer mes",lines:[
-          "El primer mes cuesta $5.000. Antes de cobrarte, la app te muestra el monto y elegís «Continuar y pagar» o «Dar de baja».",
-          "Sin suscripción activa, la cuenta queda bloqueada para operar como proveedor.",
+        {type:"arrow",label:"mes de lanzamiento gratis"},
+        {type:"step",n:2,icon:"🎁",title:"Primer mes gratis",lines:[
+          "Durante el mes de lanzamiento (hasta el 26/10) usás Encastre sin costo.",
         ]},
         {type:"arrow"},
         {type:"step",n:3,icon:"🔑",title:"Iniciás sesión",lines:[
           "Entrás con tu email y tu contraseña cada vez que volvés a usar la app.",
         ]},
         {type:"arrow"},
-        {type:"step",n:4,icon:"🔁",title:"Así sigue tu suscripción",lines:[
-          "Meses 2 a 4: $7.000 cada uno. Del mes 5 en adelante: $7.000, ajustable con aviso previo.",
-          "Antes de cada pago te mostramos el monto exacto y podés elegir «Continuar y pagar» o «Dar de baja».",
-          "Te podés dar de baja cuando quieras, sin trámites: menú (⋮) → «Suscripción».",
+        {type:"step",n:4,icon:"💳",title:"Después del 26/10",lines:[
+          "La suscripción mensual cuesta $10.000 fijos.",
+          "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».",
+          "Sin suscripción activa después de esa fecha, la cuenta queda bloqueada hasta que pagues.",
         ]},
       ]
     },
@@ -6653,27 +6680,26 @@ const FLUJOS = {
       {e:"⋮",t:"Los tres puntitos arriba a la derecha: ahí está el menú."},
     ],
     pagos:{
-      titulo:"Inscripción y pagos",
+      titulo:"Inscripción",
       pasos:[
         {type:"step",n:1,icon:"📝",title:"Te registraste",lines:[
           "Elegiste «Flete» como tipo de usuario.",
           "Completaste nombre, email, teléfono y contraseña.",
           "Cargaste tu provincia y tu localidad.",
         ]},
-        {type:"arrow"},
-        {type:"step",n:2,icon:"💳",title:"Pagaste tu primer mes",lines:[
-          "El primer mes cuesta $5.000. Antes de cobrarte, la app te muestra el monto y elegís «Continuar y pagar» o «Dar de baja».",
-          "Sin suscripción activa, la cuenta queda bloqueada para operar como proveedor.",
+        {type:"arrow",label:"mes de lanzamiento gratis"},
+        {type:"step",n:2,icon:"🎁",title:"Primer mes gratis",lines:[
+          "Durante el mes de lanzamiento (hasta el 26/10) usás Encastre sin costo.",
         ]},
         {type:"arrow"},
         {type:"step",n:3,icon:"🔑",title:"Iniciás sesión",lines:[
           "Entrás con tu email y tu contraseña cada vez que volvés a usar la app.",
         ]},
         {type:"arrow"},
-        {type:"step",n:4,icon:"🔁",title:"Así sigue tu suscripción",lines:[
-          "Meses 2 a 4: $7.000 cada uno. Del mes 5 en adelante: $7.000, ajustable con aviso previo.",
-          "Antes de cada pago te mostramos el monto exacto y podés elegir «Continuar y pagar» o «Dar de baja».",
-          "Te podés dar de baja cuando quieras, sin trámites: menú (⋮) → «Suscripción».",
+        {type:"step",n:4,icon:"💳",title:"Después del 26/10",lines:[
+          "La suscripción mensual cuesta $7.000 fijos.",
+          "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».",
+          "Sin suscripción activa después de esa fecha, la cuenta queda bloqueada hasta que pagues.",
         ]},
       ]
     },
@@ -7723,7 +7749,7 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
               <div style={{fontSize:15,color:C.textoSuave,marginBottom:16}}>
                 {vencidaSusc?"Venció el ":"Vence el "}{new Date(susc.fecha_vencimiento).toLocaleDateString("es-AR")}
               </div>
-              {vencidaSusc&&<div style={{fontSize:14,color:C.error,marginBottom:14}}>Tu acceso al panel está bloqueado hasta que renueves.</div>}
+              {vencidaSusc&&<div style={{fontSize:14,color:C.error,marginBottom:14}}>{usuario.tipo==="carpinteria"?"Sin una suscripción activa no podés ver ni cotizar pedidos de clientes nuevos. El resto de Encastre lo podés seguir usando con normalidad.":"Sin una suscripción activa no podés usar Encastre como proveedor."}</div>}
               {msg(errSusc,"err")}
               {!confirmarPago?(
                 <button style={{...S.btn("gold"),width:"100%",justifyContent:"center"}} onClick={verPrecio} disabled={cargandoPreview}>{cargandoPreview?"⟳ Calculando...":"💳 Pagar suscripción mensual"}</button>
@@ -7739,20 +7765,8 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
 }
 
 function ConfirmarPago({precio,numeroMes,cargando,onContinuar,onDarDeBaja,onVolver}){
-  const PM1=5000, PM24=7000, PVIG=7000;
-  let etiqueta, siguiente;
-  if(numeroMes===1){
-    etiqueta="Primer mes";
-    siguiente=`Del mes 2 al mes 4 vas a pagar $${PM24.toLocaleString("es-AR")} por mes.`;
-  } else if(numeroMes>=2&&numeroMes<=4){
-    etiqueta=`Mes ${numeroMes} de 4`;
-    siguiente=numeroMes<4
-      ? `Los meses ${numeroMes+1===4?4:`${numeroMes+1} y 4`} también son $${PM24.toLocaleString("es-AR")}.`
-      : `A partir del mes 5 tu suscripción queda en $${PVIG.toLocaleString("es-AR")} por mes.`;
-  } else {
-    etiqueta="Suscripción vigente";
-    siguiente="Si el precio cambia más adelante, te vamos a avisar antes de cobrarte — siempre vas a poder elegir continuar o dar de baja.";
-  }
+  const etiqueta = numeroMes===1?"Primer mes":numeroMes?`Mes ${numeroMes}`:null;
+  const siguiente = "Es un valor fijo mensual. Si cambia más adelante, te vamos a avisar antes de cobrarte — siempre vas a poder elegir continuar o dar de baja.";
   return(
     <div style={{maxWidth:340,width:"100%"}}>
       <div style={{fontSize:17,color:C.texto,marginBottom:4}}>Este mes pagás</div>
@@ -7813,7 +7827,7 @@ function PantallaSuscripcionVencida({onCerrar,estado,onDarDeBaja}){
   );
 }
 
-function AvisoDiasRestantes({dias,estado,onContinuar,onDarDeBaja}){
+function AvisoDiasRestantes({dias,estado,tipo,onContinuar,onDarDeBaja}){
   const [pagando,setPagando]=useState(false);
   const [cargandoPreview,setCargandoPreview]=useState(false);
   const [confirmar,setConfirmar]=useState(null);
@@ -7844,9 +7858,15 @@ function AvisoDiasRestantes({dias,estado,onContinuar,onDarDeBaja}){
         {dias!=null&&dias>=0?`Te quedan ${dias} día${dias===1?"":"s"} de ${prueba?"período de prueba":"suscripción"}`:"Estado de tu suscripción"}
       </div>
       <div style={{fontSize:16,color:C.textoSuave,marginBottom:24,maxWidth:420}}>
-        {prueba
-          ? "Cuando termine tu período de prueba vas a necesitar una suscripción activa para seguir usando Encastre como proveedor."
-          : "Renová a tiempo para no perder acceso al panel."}
+        {tipo==="carpinteria"
+          ? (dias!=null&&dias>=0
+              ? (prueba
+                  ? "Cuando termine tu período de prueba vas a necesitar una suscripción activa para ver y cotizar pedidos de clientes. El resto de Encastre lo vas a poder seguir usando igual."
+                  : "Renová a tiempo para no perder el acceso a pedidos de clientes.")
+              : "Sin una suscripción activa no podés ver ni cotizar pedidos de clientes nuevos. El resto de Encastre lo podés seguir usando con normalidad.")
+          : (dias!=null&&dias>=0
+              ? "Terminado el mes de lanzamiento vas a necesitar una suscripción activa para seguir usando Encastre como proveedor."
+              : "Sin una suscripción activa no podés usar Encastre como proveedor.")}
       </div>
       {err&&<div style={{fontSize:15,color:C.error,marginBottom:14}}>{err}</div>}
       {!confirmar?(
@@ -7953,16 +7973,24 @@ function App(){
 
   useEffect(()=>{
     const usu=sesion?.usuario;
-    if(!usu||usu.tipo==="admin"||usu.tipo==="cliente"){ setSuscInfo({cargando:false,vencida:false}); return; }
+    const GRUPO_PAGA_LUEGO=["aserradero","ferreteria","pintureria","flete"];
+    const esProveedorPago = usu&&(usu.tipo==="carpinteria"||GRUPO_PAGA_LUEGO.includes(usu.tipo));
+    if(!usu||!esProveedorPago){ setSuscInfo({cargando:false,vencida:false}); return; }
+    // Aserradero/ferretería/pinturería/flete son gratis durante el mes de lanzamiento (hasta FECHA_FIN_PROMO); recién ahí empieza a importar si tienen suscripción activa.
+    if(GRUPO_PAGA_LUEGO.includes(usu.tipo)&&new Date()<FECHA_FIN_PROMO){
+      const diasRestantes=Math.ceil((FECHA_FIN_PROMO-new Date())/86400000);
+      setSuscInfo({cargando:false,vencida:false,diasRestantes,estado:"prueba"});
+      return;
+    }
     let cancelado=false;
     (async()=>{
       try{
         const filas=await db.select("suscripciones",`?usuario_id=eq.${usu.id}&order=creado_en.desc&limit=1`);
         const fila=filas[0];
-        const vencida = fila ? new Date(fila.fecha_vencimiento) < new Date() : false;
+        const vencida = fila ? new Date(fila.fecha_vencimiento) < new Date() : true;
         const diasRestantes = fila ? Math.ceil((new Date(fila.fecha_vencimiento)-new Date())/86400000) : null;
         if(!cancelado) setSuscInfo({cargando:false,vencida,diasRestantes,estado:fila?.estado||null});
-      }catch{ if(!cancelado) setSuscInfo({cargando:false,vencida:false,diasRestantes:null,estado:null}); }
+      }catch{ if(!cancelado) setSuscInfo({cargando:false,vencida:true,diasRestantes:null,estado:null}); }
     })();
     return ()=>{cancelado=true;};
   },[sesion?.usuario?.id, sesion?.usuario?.tipo]);
@@ -8047,9 +8075,9 @@ function App(){
   };
   if(usuario.tipo==="admin") return <VistaAdmin usuario={usuario} onSalir={async()=>{await cerrar();setMostrarBienvenida(true);}}/>;
   if(suscInfo.cargando) return <div style={{...S.app,display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",fontSize:16,color:C.textoSuave}}>Cargando...</div>;
-  if(suscInfo.vencida) return <PantallaSuscripcionVencida estado={suscInfo.estado} onDarDeBaja={darDeBaja} onCerrar={async()=>{await cerrar();setMostrarBienvenida(true);}}/>;
-  if(!avisoDiasCerrado&&usuario.tipo!=="cliente"&&suscInfo.diasRestantes!=null&&(suscInfo.diasRestantes<=7||!usuario.vio_pantalla_prueba)){
-    return <AvisoDiasRestantes dias={suscInfo.diasRestantes} estado={suscInfo.estado} onDarDeBaja={darDeBaja} onContinuar={cerrarAvisoDias}/>;
+  if(suscInfo.vencida&&usuario.tipo!=="carpinteria") return <PantallaSuscripcionVencida estado={suscInfo.estado} onDarDeBaja={darDeBaja} onCerrar={async()=>{await cerrar();setMostrarBienvenida(true);}}/>;
+  if(!avisoDiasCerrado&&(usuario.tipo==="carpinteria"||["aserradero","ferreteria","pintureria","flete"].includes(usuario.tipo))&&suscInfo.diasRestantes!=null&&(suscInfo.diasRestantes<=7||!usuario.vio_pantalla_prueba)){
+    return <AvisoDiasRestantes dias={suscInfo.diasRestantes} estado={suscInfo.estado} tipo={usuario.tipo} onDarDeBaja={darDeBaja} onContinuar={cerrarAvisoDias}/>;
   }
   const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🪣"};
 
@@ -8075,14 +8103,14 @@ function App(){
                 <>
                   <div onClick={()=>setMenuAbierto(false)} style={{position:"fixed",inset:0,zIndex:200}}/>
                   <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:C.card,border:`1px solid ${C.borde}`,borderRadius:0,boxShadow:"0 6px 24px #5A4A3A44",zIndex:201,minWidth:190,overflow:"hidden"}}>
-                    <div style={{padding:"12px 18px",borderBottom:`1px solid ${C.borde}`,fontSize:13,color:C.textoSuave,textTransform:"uppercase",letterSpacing:.5}}>{usuario.tipo}</div>
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("privado");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setEnManual(false);setMenuAbierto(false);}}><span style={{fontWeight:700}}>•</span> Mi cuenta</button>
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnManual(true);setEnMiCuenta(false);setEnContacto(false);setEnPapelera(false);setMenuAbierto(false);}}><span style={{fontWeight:700}}>•</span> Manual</button>
-                    {(usuario.tipo==="cliente"||usuario.tipo==="carpinteria")&&<button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>irAPrincipal("conversor")}><span style={{fontWeight:700}}>•</span> Conversor</button>}
-                    {usuario.tipo!=="admin"&&usuario.tipo!=="cliente"&&<button style={{display:"block",width:"100%",textAlign:"left",background:suscInfo.vencida?"#C0392B22":"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:suscInfo.vencida?"#C0392B":C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setEnManual(false);setMenuAbierto(false);}}><span style={{fontWeight:700}}>•</span> Suscripción{suscInfo.vencida?" ⚠️":""}</button>}
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnContacto(true);setEnMiCuenta(false);setEnPapelera(false);setEnManual(false);setMenuAbierto(false);}}><span style={{fontWeight:700}}>•</span> Reportar o comentar</button>
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnPapelera(true);setEnMiCuenta(false);setEnContacto(false);setEnManual(false);setMenuAbierto(false);}}><span style={{fontWeight:700}}>•</span> Papelera</button>
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:700,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setMenuAbierto(false);cerrar();setMostrarBienvenida(true);}}><span style={{fontWeight:700}}>•</span> Salir</button>
+                    <div style={{padding:"12px 18px",borderBottom:`1px solid ${C.borde}`,fontSize:13,fontWeight:700,color:C.textoSuave,textTransform:"uppercase",letterSpacing:.5}}>{usuario.tipo}</div>
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("privado");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setEnManual(false);setMenuAbierto(false);}}>Mi cuenta</button>
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnManual(true);setEnMiCuenta(false);setEnContacto(false);setEnPapelera(false);setMenuAbierto(false);}}>Manual</button>
+                    {(usuario.tipo==="cliente"||usuario.tipo==="carpinteria")&&<button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>irAPrincipal("conversor")}>Conversor</button>}
+                    {usuario.tipo!=="admin"&&usuario.tipo!=="cliente"&&<button style={{display:"block",width:"100%",textAlign:"left",background:suscInfo.vencida?"#C0392B22":"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:suscInfo.vencida?"#C0392B":C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setEnManual(false);setMenuAbierto(false);}}>Suscripción{suscInfo.vencida?" ⚠️":""}</button>}
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnContacto(true);setEnMiCuenta(false);setEnPapelera(false);setEnManual(false);setMenuAbierto(false);}}>Reportar o comentar</button>
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnPapelera(true);setEnMiCuenta(false);setEnContacto(false);setEnManual(false);setMenuAbierto(false);}}>Papelera</button>
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setMenuAbierto(false);cerrar();setMostrarBienvenida(true);}}>Salir</button>
                   </div>
                 </>
               )}
@@ -8104,7 +8132,7 @@ function App(){
         ) : (
           <>
             {navTab==="principal"&&usuario.tipo==="cliente"&&<VistaCliente usuario={usuario} notif={setNotifMsg}/>}
-            {navTab==="principal"&&usuario.tipo==="carpinteria"&&<VistaCarpinteria usuario={usuario} notif={setNotifMsg}/>}
+            {navTab==="principal"&&usuario.tipo==="carpinteria"&&<VistaCarpinteria usuario={usuario} notif={setNotifMsg} bloqueadoClientes={suscInfo.vencida} onIrASuscripcion={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);}}/>}
             {navTab==="principal"&&usuario.tipo==="aserradero"&&<VistaAserradero usuario={usuario} notif={setNotifMsg}/>}
             {navTab==="principal"&&usuario.tipo==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg}/>}
             {navTab==="principal"&&usuario.tipo==="ferreteria"&&<VistaFerreteria usuario={usuario} notif={setNotifMsg}/>}
