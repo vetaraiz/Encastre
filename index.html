@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Encastre</title>
-  <meta name="version" content="1789380000"/>
+  <meta name="version" content="1789390000"/>
 
   <!-- PWA -->
   <meta name="application-name" content="Encastre"/>
@@ -2396,7 +2396,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-22.38</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-22.39</div>
     </div>
   );
 }
@@ -7739,17 +7739,19 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
           <div style={S.cardTitle}>💳 Suscripción</div>
           {cargandoSusc?(
             <div style={{fontSize:15,color:C.textoSuave}}>Cargando...</div>
-          ):!susc?(
-            <div style={{fontSize:15,color:C.textoSuave}}>No encontramos datos de suscripción. Escribí a administracion@encastre.com.ar si esto persiste.</div>
           ):(
             <div>
-              <div style={{fontSize:16,marginBottom:6}}>
-                Estado: <b style={{color:vencidaSusc?C.error:C.exito}}>{vencidaSusc?"Vencida":susc.estado==="prueba"?"Período de prueba":"Activa"}</b>
-              </div>
-              <div style={{fontSize:15,color:C.textoSuave,marginBottom:16}}>
-                {vencidaSusc?"Venció el ":"Vence el "}{new Date(susc.fecha_vencimiento).toLocaleDateString("es-AR")}
-              </div>
-              {vencidaSusc&&<div style={{fontSize:14,color:C.error,marginBottom:14}}>{usuario.tipo==="carpinteria"?"Sin una suscripción activa no podés ver ni cotizar pedidos de clientes nuevos. El resto de Encastre lo podés seguir usando con normalidad.":"Sin una suscripción activa no podés usar Encastre como proveedor."}</div>}
+              {susc&&(
+                <div>
+                  <div style={{fontSize:16,marginBottom:6}}>
+                    Estado: <b style={{color:vencidaSusc?C.error:C.exito}}>{vencidaSusc?"Vencida":susc.estado==="prueba"?"Período de prueba":"Activa"}</b>
+                  </div>
+                  <div style={{fontSize:15,color:C.textoSuave,marginBottom:16}}>
+                    {vencidaSusc?"Venció el ":"Vence el "}{new Date(susc.fecha_vencimiento).toLocaleDateString("es-AR")}
+                  </div>
+                </div>
+              )}
+              {(!susc||vencidaSusc)&&<div style={{fontSize:14,color:C.error,marginBottom:14}}>{usuario.tipo==="carpinteria"?"Sin una suscripción activa no podés ver ni cotizar pedidos de clientes nuevos. El resto de Encastre lo podés seguir usando con normalidad.":"Sin una suscripción activa no podés usar Encastre como proveedor."}</div>}
               {msg(errSusc,"err")}
               {!confirmarPago?(
                 <button style={{...S.btn("gold"),width:"100%",justifyContent:"center"}} onClick={verPrecio} disabled={cargandoPreview}>{cargandoPreview?"⟳ Calculando...":"💳 Pagar suscripción mensual"}</button>
