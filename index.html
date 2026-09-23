@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Encastre</title>
-  <meta name="version" content="1789410000"/>
+  <meta name="version" content="1790185547"/>
 
   <!-- PWA -->
   <meta name="application-name" content="Encastre"/>
@@ -2193,7 +2193,7 @@ function AuthScreen({onAuth}){
     {id:"flete",emoji:"🚚",label:"Flete / Transporte",desc:"Traslado muebles y materiales"},
     {id:"ferreteria",emoji:"🔩",label:"Ferretería / Herrajes",desc:"Vendo herrajes, bisagras y materiales a carpinterías"},
     {id:"pintureria",emoji:"🪣",label:"Pinturería",desc:"Vendo pinturas, barnices, lacas y esmaltes a carpinterías"},
-  ].filter(t=>t.id!=="cliente"||!enPromoLanzamiento);
+  ];
 
   const submit=async()=>{
     setErr("");setOk("");setCargando(true);
@@ -2315,7 +2315,7 @@ function AuthScreen({onAuth}){
         {modo==="registro"&&(
           <>
             <label style={S.label}>Soy...</label>
-            {enPromoLanzamiento&&<div style={{fontSize:14,color:C.textoSuave,marginBottom:8,fontStyle:"italic"}}>Estamos en el mes de lanzamiento: por ahora Encastre está abierto solo para carpinterías y proveedores. El consumidor final se habilita el 26/10.</div>}
+            {enPromoLanzamiento&&<div style={{fontSize:14,color:C.textoSuave,marginBottom:8,fontStyle:"italic"}}>Estamos en el mes de lanzamiento: si te registrás como consumidor final, ya podés cargar tu pedido, pero las carpinterías van a poder verlo recién a partir del 26/10.</div>}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
               {tipos.map(t=>(
                 <button key={t.id} style={{...S.tag(tipo===t.id),padding:"10px 8px",textAlign:"center",lineHeight:1.4,height:"auto"}} onClick={()=>setTipo(t.id)}>
@@ -2396,7 +2396,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-23.41</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-23.42</div>
     </div>
   );
 }
@@ -2589,6 +2589,7 @@ function Calificar({deUsuario,paraUsuario,pedidoId,califs=[]}){
 
 // ─── NUEVO PEDIDO ─────────────────────────────────────────────────────────────
 function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
+  const enPromoLanzamiento = new Date() < FECHA_FIN_PROMO;
   const itemVacio=()=>({descripcion:"",alto:"",ancho:"",profundidad:"",material:"",especie:"",terminacion:"",color:"",usaCroquis:false,notasCroquis:"",croquisImg:"",tieneCajones:"No",cantidadCajones:"",medidasCajones:""});
   const [items,setItems]=useState([itemVacio()]);
   const [fechaLimite,setFechaLimite]=useState("");
@@ -2670,7 +2671,7 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
       // Guardamos items (lista) + columnas del primer mueble por compatibilidad con lo ya existente
       await db.insert("pedidos",{cliente_id:usuario.id,items:itemsLimpios,descripcion:resumen,alto:primero.alto,ancho:primero.ancho,profundidad:primero.profundidad,material:primero.material,especie:primero.especie,terminacion:primero.terminacion,color:primero.color,notas_croquis:primero.notasCroquis,tiene_cajones:primero.tieneCajones,cantidad_cajones:primero.cantidadCajones,medidas_cajones:primero.medidasCajones,croquis_imagen:primero.croquisImg,provincia:provincia||null,ciudad:ciudad||null,barrio:barrio||null,fecha_limite:fechaLimite?new Date(fechaLimite+"T23:59:59").toISOString():null});
       // El aviso por mail a las carpinterías lo envía el servidor (webhook -> Edge Function avisar-pedido)
-      notif(items.length>1?`¡Pedido enviado a todas las carpinterías! (${items.length} muebles)`:"¡Pedido enviado a todas las carpinterías!");
+      notif(enPromoLanzamiento?"¡Pedido guardado! Las carpinterías van a poder verlo y cotizarlo a partir del 26/10.":(items.length>1?`¡Pedido enviado a todas las carpinterías! (${items.length} muebles)`:"¡Pedido enviado a todas las carpinterías!"));
       onGuardar();
     }catch(e){alert("Error al guardar pedido: "+e.message);setGuardando(false);}
   };
@@ -2679,6 +2680,7 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
     <div style={S.card} className="fade">
       <div style={S.cardTitle}>✏️ Nuevo pedido de presupuesto</div>
       <div style={{fontSize:16,color:C.textoSuave,marginBottom:14,fontStyle:"italic"}}>Podés pedir varios muebles en un mismo pedido; cada uno con sus propias medidas, material y croquis.</div>
+      {enPromoLanzamiento&&<div style={{fontSize:15,color:C.marron,background:C.crema,border:`1px solid ${C.acento}`,borderRadius:0,padding:"10px 14px",marginBottom:16}}>📅 Estamos en el mes de lanzamiento: podés cargar tu pedido ahora, pero las carpinterías recién van a poder verlo y enviarte presupuestos a partir del 26/10.</div>}
 
       {items.map((it,i)=>(
         <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:0,padding:14,marginBottom:14,background:C.suave}}>
@@ -3295,7 +3297,9 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
 
   const cargar=useCallback(async()=>{
     try{
-      const d=await db.select("pedidos","?order=created_at.desc");
+      let d=await db.select("pedidos","?order=created_at.desc");
+      // Mes de lanzamiento: los pedidos de consumidores finales se guardan pero se publican recién el 26/10
+      if(new Date() < FECHA_FIN_PROMO) d=d.filter(p=>new Date(p.created_at) >= FECHA_FIN_PROMO);
       const ids=[...new Set(d.map(p=>p.cliente_id).filter(Boolean))];
       let mapa={};
       if(ids.length){
@@ -5817,7 +5821,7 @@ function PantallaBienvenida({onEntrar}){
             <FlowBranch label="¿Sos consumidor final o proveedor?" options={[
               {icon:"🪑",title:"Consumidor final",color:C.verde,lines:[
                 "Encastre es gratis para vos. No pagás suscripción, nunca.",
-                "El registro de consumidor final se habilita a partir del 26/10 (primero abrimos solo para los proveedores).",
+                "Ya te podés registrar y cargar tu pedido. Durante el mes de lanzamiento las carpinterías lo van a poder ver y cotizar recién a partir del 26/10.",
               ]},
               {icon:"🔨",title:"Carpintería",color:C.medio,lines:[
                 "Usás Encastre gratis, sin límite de tiempo, para pedir a aserradero/ferretería/pinturería y todo lo demás.",
