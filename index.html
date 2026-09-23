@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Encastre</title>
-  <meta name="version" content="1789390000"/>
+  <meta name="version" content="1789410000"/>
 
   <!-- PWA -->
   <meta name="application-name" content="Encastre"/>
@@ -2396,7 +2396,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-22.39</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-23.41</div>
     </div>
   );
 }
@@ -8090,7 +8090,7 @@ function App(){
       {/* TOPBAR */}
       <div style={{...S.topbar,flexDirection:"column",alignItems:"stretch",gap:8,padding:"8px 12px"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",flexWrap:"wrap",rowGap:6}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={()=>irAPrincipal("principal")}>
             <img src={LOGO_B64} alt="Encastre" style={{width:34,height:34,objectFit:"contain",borderRadius:0,flexShrink:0}}/>
             <div className="encastre-logo-name" style={{fontSize:17}}>ENC<span style={{position:"relative",display:"inline-block"}}>A<span style={{position:"absolute",left:"50%",top:"60%",transform:"translate(-50%,-50%)",width:"0.24em",height:"0.24em",borderRadius:"50%",background:C.acento,display:"inline-block"}}/></span>STRE</div>
           </div>
@@ -8148,8 +8148,30 @@ function App(){
   );
 }
 
+// Página legal pública, accesible sin login (para Google Play, motores de búsqueda, etc.): https://encastre.com.ar/?legal=privacidad o ?legal=terminos
+function PaginaLegalPublica({tipo}){
+  const clausulas = tipo==="terminos" ? TERMINOS_CLAUSULAS : PRIVACIDAD_CLAUSULAS;
+  const titulo = tipo==="terminos" ? "📋 Términos y Condiciones" : "🔒 Política de Privacidad";
+  return(
+    <div style={{maxWidth:720,margin:"0 auto",padding:"32px 20px",fontFamily:"'Lato',sans-serif",background:C.fondo,minHeight:"100vh"}}>
+      <div style={{fontSize:23,fontWeight:700,color:C.marron,marginBottom:16}}>{titulo}</div>
+      {clausulas.map((c,i)=>(
+        <div key={i} style={{marginBottom:18}}>
+          <div style={{fontWeight:700,color:C.marron,marginBottom:4,fontSize:16}}>{c.t}</div>
+          <div style={{fontSize:15,color:C.textoSuave,lineHeight:1.5}}>{c.d}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(React.createElement(App));
+const _legalParam = new URLSearchParams(window.location.search).get('legal');
+if(_legalParam==="privacidad"||_legalParam==="terminos"){
+  root.render(React.createElement(PaginaLegalPublica,{tipo:_legalParam}));
+} else {
+  root.render(React.createElement(App));
+}
   </script>
 </body>
 </html>
