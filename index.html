@@ -2417,7 +2417,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-25.45</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-25.46</div>
     </div>
   );
 }
@@ -3515,14 +3515,7 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
       // NO se cambia el estado global del pedido: cada carpintería ve su propio estado.
       // (El pedido solo pasa a "aceptado" cuando el cliente elige, desde su vista.)
       notif("¡Presupuesto enviado correctamente!");
-      // Aviso por mail al cliente que hizo el pedido (mejor esfuerzo, sin revelar monto ni romper sobre cerrado)
-      (async()=>{try{
-        const cli=await db.select("usuarios",`?id=eq.${sel.cliente_id}&recibir_avisos=eq.true&select=email,nombre`);
-        if(cli&&cli[0]&&cli[0].email){
-          const msg="<p>Recibiste un <strong>nuevo presupuesto</strong> de una carpintería en Encastre.</p>";
-          db.avisarPorMail(cli[0].email,cli[0].nombre,"Recibiste un presupuesto - Encastre",msg);
-        }
-      }catch(e){}})();
+      // Aviso por mail: ahora va en el resumen semanal (ver Edge Function resumen-semanal), no inmediato.
       setPresF({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
       setYaEnvio(true);
       setMiPresupuesto({...datos,id:presId,items:itemsValidos.map(it=>({...it,precio:nmb(it.precio),cantidad:nmb(it.cantidad),importe:nmb(it.precio)*nmb(it.cantidad)})),created_at:new Date().toISOString()});
@@ -3598,7 +3591,6 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
       // Guardamos items (lista) + columnas del primer ítem por compatibilidad con lo ya existente
       await db.insert("pedidos_aserradero",{carpinteria_id:usuario.id,items:itemsLimpios,material:primero.material,pies:primero.pies,pulgadas:primero.pulgadas,espesor:primero.espesor,cantidad:itemsLimpios.reduce((a,it)=>a+it.cantidad,0),descripcion:asF.descripcion||resumen,provincia:asF.provincia||null,ciudad:asF.ciudad||null,barrio:asF.barrio||null,fecha_limite:fechaLimiteISO(asF.fechaLimite)});
       notif("¡Pedido enviado a los aserraderos!");
-      (async()=>{try{const ps=await db.select("usuarios","?tipo=eq.aserradero&recibir_avisos=eq.true&select=email,nombre");const msg="<p>Tenés un <strong>nuevo pedido para cotizar</strong> en Encastre.</p>";for(const c of (ps||[])){if(c.email)db.avisarPorMail(c.email,c.nombre,"Nuevo pedido para cotizar - Encastre",msg);}}catch(e){}})();
       setAsF({items:[{material:"",pies:"",pulgadas:"",espesor:"",cantidad:""}],descripcion:"",fechaLimite:"",provincia:usuario.provincia||"",ciudad:usuario.ciudad||"",barrio:usuario.barrio||""});
       setIntAs(false);
       cargarMisPedidosAserr();
@@ -4066,7 +4058,6 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
                 const resumen=itemsLimpios.map(it=>it.descripcion).join(", ");
                 await db.insert("pedidos_ferreteria",{carpinteria_id:usuario.id,items:itemsLimpios,descripcion:resumen,cantidad:itemsLimpios.reduce((a,it)=>a+it.cantidad,0),notas:ferrF.notas,provincia:ferrF.provincia||null,ciudad:ferrF.ciudad||null,barrio:ferrF.barrio||null,fecha_limite:fechaLimiteISO(ferrF.fechaLimite)});
                 notif("¡Pedido enviado a las ferreterías!");
-                (async()=>{try{const ps=await db.select("usuarios","?tipo=eq.ferreteria&recibir_avisos=eq.true&select=email,nombre");const msg="<p>Tenés un <strong>nuevo pedido para cotizar</strong> en Encastre.</p>";for(const c of (ps||[])){if(c.email)db.avisarPorMail(c.email,c.nombre,"Nuevo pedido para cotizar - Encastre",msg);}}catch(e){}})();
                 setFerrF({items:[{descripcion:"",cantidad:"1"}],notas:"",fechaLimite:"",provincia:usuario.provincia||"",ciudad:usuario.ciudad||"",barrio:usuario.barrio||""});
                 setIntFe(false);
                 cargarMisPedidosFerreria();
@@ -4222,7 +4213,6 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
                 const resumen=itemsLimpios.map(it=>it.descripcion).join(", ");
                 await db.insert("pedidos_pintureria",{carpinteria_id:usuario.id,items:itemsLimpios,descripcion:resumen,litros:itemsLimpios.reduce((a,it)=>a+it.litros,0),notas:pintF.notas,provincia:pintF.provincia||null,ciudad:pintF.ciudad||null,barrio:pintF.barrio||null,fecha_limite:fechaLimiteISO(pintF.fechaLimite)});
                 notif("¡Pedido enviado a las pinturerías!");
-                (async()=>{try{const ps=await db.select("usuarios","?tipo=eq.pintureria&recibir_avisos=eq.true&select=email,nombre");const msg="<p>Tenés un <strong>nuevo pedido para cotizar</strong> en Encastre.</p>";for(const c of (ps||[])){if(c.email)db.avisarPorMail(c.email,c.nombre,"Nuevo pedido para cotizar - Encastre",msg);}}catch(e){}})();
                 setPintF({items:[{descripcion:"",litros:"1"}],notas:"",fechaLimite:"",provincia:usuario.provincia||"",ciudad:usuario.ciudad||"",barrio:usuario.barrio||""});
                 setIntPi(false);
                 cargarMisPedidosPint();
@@ -4431,7 +4421,6 @@ function VistaAserradero({usuario,notif,bloqueado,onIrASuscripcion}){
       const creado=await db.insert("cotizaciones_aserradero",datos);
       // NO se toca el estado global del pedido: sobre cerrado — cada aserradero ve solo su propio estado.
       notif("¡Cotización enviada!");
-      (async()=>{try{const c=await db.select("usuarios",`?id=eq.${sel.carpinteria_id}&recibir_avisos=eq.true&select=email,nombre`);if(c&&c[0]&&c[0].email){const msg="<p>Recibiste una <strong>nueva cotización</strong> de un aserradero en Encastre.</p>";db.avisarPorMail(c[0].email,c[0].nombre,"Recibiste una cotización - Encastre",msg);}}catch(e){}})();
       setCotF({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
       setYaEnvio(true);
       setMiCot({...datos,items:datos.presupuesto_items,created_at:new Date().toISOString()});
@@ -4784,7 +4773,6 @@ function VistaFlete({usuario,notif,bloqueado,onIrASuscripcion}){
       await db.insert("cotizaciones_flete",datos);
       // NO se toca ningún estado global del pedido: sobre cerrado — cada flete ve solo su propio estado.
       notif("¡Cotización enviada!");
-      (async()=>{try{const c=await db.select("usuarios",`?id=eq.${sel.solicitante_id}&recibir_avisos=eq.true&select=email,nombre`);if(c&&c[0]&&c[0].email){const msg="<p>Recibiste una <strong>nueva cotización de flete</strong> en Encastre.</p>";db.avisarPorMail(c[0].email,c[0].nombre,"Recibiste una cotización de flete - Encastre",msg);}}catch(e){}})();
       setCotF({items:[{descripcion:"",precio:"",cantidad:"1",modo:"viaje"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
       setYaEnvio(true);
       setMiCot({...datos,items:datos.presupuesto_items,created_at:new Date().toISOString()});
@@ -4863,7 +4851,6 @@ function VistaFlete({usuario,notif,bloqueado,onIrASuscripcion}){
     try{
       await db.insert("pedidos_flete",{solicitante_id:usuario.id,origen:pedF.origen,destino:pedF.destino,descripcion_carga:pedF.descripcion,fecha_deseada:pedF.fecha||null,notas:pedF.notas,provincia:pedF.provincia||null,ciudad:pedF.ciudad||null,barrio:pedF.barrio||null,fecha_limite:fechaLimiteISO(pedF.fechaLimite)});
       notif("¡Solicitud enviada a los fletes!");
-      (async()=>{try{const ps=await db.select("usuarios","?tipo=eq.flete&recibir_avisos=eq.true&select=email,nombre");const msg="<p>Tenés una <strong>nueva solicitud de flete para cotizar</strong> en Encastre.</p>";for(const c of (ps||[])){if(c.email)db.avisarPorMail(c.email,c.nombre,"Nueva solicitud de flete - Encastre",msg);}}catch(e){}})();
       setPedF({origen:"",destino:"",descripcion:"",fecha:"",notas:"",fechaLimite:"",provincia:usuario.provincia||"",ciudad:usuario.ciudad||"",barrio:usuario.barrio||""});
       setIntFl(false);
       cargarMisPedidos();
@@ -5307,7 +5294,6 @@ function VistaFerreteria({usuario,notif,bloqueado,onIrASuscripcion}){
       await db.insert("cotizaciones_ferreteria",datos);
       // NO se toca el estado global del pedido: sobre cerrado — cada ferretería ve solo su propio estado.
       notif("¡Cotización enviada!");
-      (async()=>{try{const c=await db.select("usuarios",`?id=eq.${sel.carpinteria_id}&recibir_avisos=eq.true&select=email,nombre`);if(c&&c[0]&&c[0].email){const msg="<p>Recibiste una <strong>nueva cotización</strong> de una ferretería en Encastre.</p>";db.avisarPorMail(c[0].email,c[0].nombre,"Recibiste una cotización - Encastre",msg);}}catch(e){}})();
       setCotF({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
       setYaEnvio(true);
       setMiCot({...datos,items:datos.presupuesto_items,created_at:new Date().toISOString()});
@@ -5605,7 +5591,6 @@ function VistaPintureria({usuario,notif,bloqueado,onIrASuscripcion}){
       await db.insert("cotizaciones_pintureria",datos);
       // NO se toca el estado global del pedido: sobre cerrado — cada pinturería ve solo su propio estado.
       notif("¡Cotización enviada!");
-      (async()=>{try{const c=await db.select("usuarios",`?id=eq.${sel.carpinteria_id}&recibir_avisos=eq.true&select=email,nombre`);if(c&&c[0]&&c[0].email){const msg="<p>Recibiste una <strong>nueva cotización</strong> de una pinturería en Encastre.</p>";db.avisarPorMail(c[0].email,c[0].nombre,"Recibiste una cotización - Encastre",msg);}}catch(e){}})();
       setCotF({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
       setYaEnvio(true);
       setMiCot({...datos,items:datos.presupuesto_items,created_at:new Date().toISOString()});
