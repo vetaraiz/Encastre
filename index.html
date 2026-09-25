@@ -1732,6 +1732,24 @@ const COLORES_MEL = ["Blanco","Negro","Roble","Nogal","Wengué","Gris perla","Ar
 const MADERAS_A = ["Roble","Cedro","Pino","Quebracho","Algarrobo","Lapacho"];
 
 const EC = {pendiente:C.acento,presupuestado:C.azul,aceptado:C.verde,cerrado:"#8A7A6A",rechazado:"#8A7A6A",enviada:C.acento,aceptada:C.verde,rechazada:"#8A7A6A",en_produccion:"#7A4A8B",finalizado:C.textoSuave,disponible:C.verde,en_viaje:C.acento,ocupado:C.rojo,cancelado:C.textoSuave};
+
+// ─── BOLSA DE TRABAJO: categorías por rubro, basadas en los convenios colectivos reales ───
+// Carpintería y Aserradero: CCT 335/75 (Industria de la Madera). Ferretería y Pinturería: CCT 130/75 (Empleados de Comercio). Flete: CCT 40/89 (Camioneros).
+const RUBROS_TRABAJADOR = [
+  {id:"carpinteria",emoji:"🔨",label:"Carpintería"},
+  {id:"aserradero",emoji:"🪵🪵",label:"Aserradero"},
+  {id:"ferreteria",emoji:"🔩",label:"Ferretería"},
+  {id:"pintureria",emoji:"🪣",label:"Pinturería"},
+  {id:"flete",emoji:"🚚",label:"Flete"},
+];
+const CATEGORIAS_TRABAJADOR = {
+  carpinteria: ["Oficial","Medio Oficial","Operario","Ayudante","Aprendiz"],
+  aserradero: ["Oficial","Medio Oficial","Operario","Ayudante","Aprendiz"],
+  ferreteria: ["Ventas / Atención al público","Auxiliar con oficio (service técnico)","Cajero/a","Administrativo/a","Maestranza y Servicios"],
+  pintureria: ["Ventas / Atención al público","Auxiliar con oficio (service técnico)","Cajero/a","Administrativo/a","Maestranza y Servicios"],
+  flete: ["Chofer 1ª","Chofer 2ª","Chofer 3ª","Peón / Ayudante de logística","Oficial mecánico","Medio Oficial mecánico","Ayudante mecánico"],
+};
+const DISPONIBILIDAD_LABEL = {tiempo_completo:"Tiempo completo",medio_tiempo:"Medio tiempo",changas:"Changas / por día"};
 const EL = {pendiente:"Pendiente",presupuestado:"Presupuestado",aceptado:"Aceptado",cerrado:"No seleccionado",rechazado:"No seleccionado",enviada:"Enviada",aceptada:"Aceptada",rechazada:"No seleccionada",en_produccion:"En producción",finalizado:"Finalizado",disponible:"Disponible",en_viaje:"En viaje",ocupado:"Ocupado",cancelado:"Cancelado"};
 
 const cmToMm = c=>(c*10).toFixed(0);
@@ -2193,6 +2211,7 @@ function AuthScreen({onAuth}){
     {id:"flete",emoji:"🚚",label:"Flete / Transporte",desc:"Traslado muebles y materiales"},
     {id:"ferreteria",emoji:"🔩",label:"Ferretería / Herrajes",desc:"Vendo herrajes, bisagras y materiales a carpinterías"},
     {id:"pintureria",emoji:"🪣",label:"Pinturería",desc:"Vendo pinturas, barnices, lacas y esmaltes a carpinterías"},
+    {id:"trabajador",emoji:"🧰",label:"Bolsa de trabajo",desc:"Soy oficial, medio oficial o ayudante y busco changas o empleo"},
   ];
 
   const submit=async()=>{
@@ -2246,7 +2265,7 @@ function AuthScreen({onAuth}){
           } else {
             nuevoUsuario=await db.insert("usuarios",{auth_id:userId,tipo,nombre,email:emailLimpio,ciudad,provincia:provincia||null,tipo_documento:tipoDoc,documento:docLimpio});
           }
-          if(tipo!=="cliente"){
+          if(tipo!=="cliente"&&tipo!=="trabajador"){
             const idNuevo=(nuevoUsuario&&nuevoUsuario[0]&&nuevoUsuario[0].id)||null;
             if(idNuevo){
               try{ await db.insert("suscripciones",{usuario_id:idNuevo,estado:"pendiente",fecha_vencimiento:new Date().toISOString()}); }catch{}
@@ -2318,7 +2337,7 @@ function AuthScreen({onAuth}){
             {enPromoLanzamiento&&<div style={{fontSize:14,color:C.textoSuave,marginBottom:8,fontStyle:"italic"}}>Estamos en el mes de lanzamiento: si te registrás como consumidor final, ya podés cargar tu pedido, pero las carpinterías van a poder verlo recién a partir del 26/10.</div>}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
               {tipos.map(t=>(
-                <button key={t.id} style={{...S.tag(tipo===t.id),padding:"10px 8px",textAlign:"center",lineHeight:1.4,height:"auto"}} onClick={()=>setTipo(t.id)}>
+                <button key={t.id} style={{...S.tag(tipo===t.id),padding:"10px 8px",textAlign:"center",lineHeight:1.4,height:"auto"}} onClick={()=>{setTipo(t.id); if(t.id==="trabajador"){setEntidad("persona");setDocumento("");}else if(entidad==="persona"&&tipo==="trabajador"){setEntidad("");}}}>
                   <div style={{fontSize:21,marginBottom:4}}>{t.emoji}</div>
                   <div style={{fontWeight:700,fontSize:16}}>{t.label}</div>
                   <div style={{fontSize:17,opacity:.7,marginTop:2}}>{t.desc}</div>
@@ -2330,13 +2349,15 @@ function AuthScreen({onAuth}){
               <input value={nombre} onChange={e=>setNombre(e.target.value)} placeholder="Tu nombre o el de tu negocio" style={S.input}/>
             </div>
             <SelectorUbicacion provincia={provincia} ciudad={ciudad} onProvincia={setProvincia} onCiudad={setCiudad}/>
-            <div style={{marginBottom:12}}>
-              <label style={S.label}>¿Empresa o persona?</label>
-              <div style={{display:"flex",gap:8}}>
-                <button type="button" style={{...S.tag(entidad==="empresa"),flex:1,justifyContent:"center",padding:"10px"}} onClick={()=>{setEntidad("empresa");setDocumento("");}}>🏢 Empresa</button>
-                <button type="button" style={{...S.tag(entidad==="persona"),flex:1,justifyContent:"center",padding:"10px"}} onClick={()=>{setEntidad("persona");setDocumento("");}}>🧑 Persona</button>
+            {tipo!=="trabajador"&&(
+              <div style={{marginBottom:12}}>
+                <label style={S.label}>¿Empresa o persona?</label>
+                <div style={{display:"flex",gap:8}}>
+                  <button type="button" style={{...S.tag(entidad==="empresa"),flex:1,justifyContent:"center",padding:"10px"}} onClick={()=>{setEntidad("empresa");setDocumento("");}}>🏢 Empresa</button>
+                  <button type="button" style={{...S.tag(entidad==="persona"),flex:1,justifyContent:"center",padding:"10px"}} onClick={()=>{setEntidad("persona");setDocumento("");}}>🧑 Persona</button>
+                </div>
               </div>
-            </div>
+            )}
             {entidad&&(
               <div style={{marginBottom:12}}>
                 <label style={S.label}>{entidad==="empresa"?"CUIT (11 números)":"DNI (sin puntos)"}</label>
@@ -2396,7 +2417,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-25.43</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-25.45</div>
     </div>
   );
 }
@@ -6972,7 +6993,7 @@ function AdminUsuarios(){
     setCargando(false);
   })();},[]);
 
-  const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🪣",admin:"🛡️"};
+  const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🪣",trabajador:"🧰",admin:"🛡️"};
   const filtrados=filtro?lista.filter(u=>u.tipo===filtro):lista;
   const suspendidoActivo=(u)=>u.suspendido_hasta&&new Date(u.suspendido_hasta)>new Date();
 
@@ -7084,7 +7105,7 @@ function AdminUsuarios(){
       <div style={{...S.cardTitle,fontSize:26,marginBottom:16}}>👥 Usuarios registrados ({lista.length})</div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
         <button style={S.btn(filtro===""?"dark":"ghost")} onClick={()=>setFiltro("")}>Todos</button>
-        {["cliente","carpinteria","aserradero","ferreteria","pintureria","flete"].map(t=>(
+        {["cliente","carpinteria","aserradero","ferreteria","pintureria","flete","trabajador"].map(t=>(
           <button key={t} style={S.btn(filtro===t?"dark":"ghost")} onClick={()=>setFiltro(t)}>{EMOJIS[t]} {t}</button>
         ))}
       </div>
@@ -7945,6 +7966,192 @@ function FiltroUbicacion({pedidos,provincia,ciudad,onProvincia,onCiudad}){
   );
 }
 
+// ─── BOLSA DE TRABAJO ────────────────────────────────────────────────────────
+function VistaBolsaTrabajo({usuario,notif}){
+  if(usuario.tipo==="trabajador") return <PerfilTrabajador usuario={usuario} notif={notif}/>;
+  return <BuscarTrabajadores usuario={usuario} notif={notif}/>;
+}
+
+function PerfilTrabajador({usuario,notif}){
+  const [perfil,setPerfil]=useState(null);
+  const [cargando,setCargando]=useState(true);
+  const [rubro,setRubro]=useState("");
+  const [categoria,setCategoria]=useState("");
+  const [especialidades,setEspecialidades]=useState("");
+  const [anios,setAnios]=useState("");
+  const [disponibilidad,setDisponibilidad]=useState("");
+  const [descripcion,setDescripcion]=useState("");
+  const [guardando,setGuardando]=useState(false);
+
+  useEffect(()=>{(async()=>{
+    try{
+      const d=await db.select("perfiles_trabajador",`?usuario_id=eq.${usuario.id}&limit=1`);
+      if(d&&d[0]){
+        setPerfil(d[0]);
+        setRubro(d[0].rubro||"");
+        setCategoria(d[0].categoria||"");
+        setEspecialidades(d[0].especialidades||"");
+        setAnios(d[0].anios_experiencia!=null?String(d[0].anios_experiencia):"");
+        setDisponibilidad(d[0].disponibilidad||"");
+        setDescripcion(d[0].descripcion||"");
+      }
+    }catch{}
+    setCargando(false);
+  })();},[usuario.id]);
+
+  const guardar=async()=>{
+    if(!rubro||!categoria){ notif&&notif("Elegí rubro y categoría"); return; }
+    setGuardando(true);
+    try{
+      const campos={usuario_id:usuario.id,rubro,categoria,especialidades:especialidades.trim()||null,anios_experiencia:anios?Number(anios):null,disponibilidad:disponibilidad||null,descripcion:descripcion.trim()||null};
+      if(perfil){
+        await db.updateMin("perfiles_trabajador",campos,`id=eq.${perfil.id}`);
+        setPerfil(p=>({...p,...campos}));
+      } else {
+        const r=await db.insert("perfiles_trabajador",campos);
+        setPerfil(r[0]);
+      }
+      notif&&notif("✅ Perfil guardado");
+    }catch(e){ notif&&notif("No se pudo guardar el perfil"); }
+    setGuardando(false);
+  };
+
+  if(cargando) return <div style={S.card}>Cargando...</div>;
+
+  return(
+    <div>
+      <div style={S.cardTitle}>🧰 Mi perfil de trabajador</div>
+      <div style={S.card}>
+        <div style={{fontSize:15,color:C.textoSuave,marginBottom:16}}>Completá tu perfil para que las carpinterías, aserraderos, ferreterías, pinturerías y fletes te encuentren cuando buscan gente para trabajar.</div>
+
+        <div style={{marginBottom:14}}>
+          <label style={S.label}>Rubro</label>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {RUBROS_TRABAJADOR.map(r=>(
+              <button key={r.id} type="button" style={{...S.tag(rubro===r.id),justifyContent:"center"}} onClick={()=>{setRubro(r.id);setCategoria("");}}>{r.emoji} {r.label}</button>
+            ))}
+          </div>
+        </div>
+
+        {rubro&&(
+          <div style={{marginBottom:14}}>
+            <label style={S.label}>Categoría</label>
+            <select style={S.input} value={categoria} onChange={e=>setCategoria(e.target.value)}>
+              <option value="">Elegí una categoría</option>
+              {(CATEGORIAS_TRABAJADOR[rubro]||[]).map(c=><option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        )}
+
+        <div style={{marginBottom:14}}>
+          <label style={S.label}>Especialidades / herramientas / maquinaria que manejás</label>
+          <textarea style={{...S.input,minHeight:70}} value={especialidades} onChange={e=>setEspecialidades(e.target.value)} placeholder="Ej: sierra sinfín, cepilladora, carnet de conducir profesional, etc."/>
+        </div>
+
+        <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:14}}>
+          <div style={{flex:1,minWidth:140}}>
+            <label style={S.label}>Años de experiencia</label>
+            <input type="number" min="0" style={S.input} value={anios} onChange={e=>setAnios(e.target.value)}/>
+          </div>
+          <div style={{flex:1,minWidth:140}}>
+            <label style={S.label}>Disponibilidad</label>
+            <select style={S.input} value={disponibilidad} onChange={e=>setDisponibilidad(e.target.value)}>
+              <option value="">Elegí una opción</option>
+              {Object.entries(DISPONIBILIDAD_LABEL).map(([k,v])=><option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div style={{marginBottom:16}}>
+          <label style={S.label}>Contate un poco más (opcional)</label>
+          <textarea style={{...S.input,minHeight:70}} value={descripcion} onChange={e=>setDescripcion(e.target.value)} placeholder="Experiencia, referencias, zona donde te movés, etc."/>
+        </div>
+
+        <div style={{fontSize:14,color:C.textoSuave,marginBottom:14}}>📍 Tu ubicación y teléfono son los que cargaste en "Mi cuenta". Revisalos ahí para que te puedan contactar.</div>
+
+        <button style={S.btn("dark")} disabled={guardando} onClick={guardar}>{guardando?"Guardando...":"💾 Guardar perfil"}</button>
+      </div>
+    </div>
+  );
+}
+
+function BuscarTrabajadores({usuario,notif}){
+  const [rubroTab,setRubroTab]=useState(RUBROS_TRABAJADOR.some(r=>r.id===usuario.tipo)?usuario.tipo:"carpinteria");
+  const [perfiles,setPerfiles]=useState([]);
+  const [cargando,setCargando]=useState(true);
+  const [filtroProv,setFiltroProv]=useState("");
+  const [filtroCiu,setFiltroCiu]=useState("");
+
+  const cargar=useCallback(async()=>{
+    setCargando(true);
+    try{
+      const d=await db.select("perfiles_trabajador",`?rubro=eq.${rubroTab}&order=created_at.desc`);
+      const ids=[...new Set(d.map(p=>p.usuario_id).filter(Boolean))];
+      let usuarios={};
+      if(ids.length){
+        const us=await db.select("usuarios",`?id=in.(${ids.join(",")})&select=id,nombre,telefono,ciudad,provincia,email`);
+        us.forEach(u=>{usuarios[u.id]=u;});
+      }
+      setPerfiles(d.map(p=>({...p,_usuario:usuarios[p.usuario_id]||{}})));
+    }catch{ setPerfiles([]); }
+    setCargando(false);
+  },[rubroTab]);
+  useEffect(()=>{cargar();},[cargar]);
+
+  const filtrados=perfiles.filter(p=>{
+    if(filtroProv&&p._usuario.provincia!==filtroProv) return false;
+    if(filtroCiu&&p._usuario.ciudad!==filtroCiu) return false;
+    return true;
+  });
+  const provincias=[...new Set(perfiles.map(p=>p._usuario.provincia).filter(Boolean))].sort();
+  const ciudades=[...new Set(perfiles.filter(p=>!filtroProv||p._usuario.provincia===filtroProv).map(p=>p._usuario.ciudad).filter(Boolean))].sort();
+
+  return(
+    <div>
+      <div style={S.cardTitle}>🧰 Bolsa de trabajo</div>
+      <TabsConectadas opciones={RUBROS_TRABAJADOR.map(r=>[r.id,`${r.emoji} ${r.label}`])} activo={rubroTab} onChange={setRubroTab}/>
+
+      {provincias.length>0&&(
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
+          <select style={{...S.input,width:"auto",minWidth:170}} value={filtroProv} onChange={e=>{setFiltroProv(e.target.value);setFiltroCiu("");}}>
+            <option value="">📍 Todas las provincias</option>
+            {provincias.map(p=><option key={p} value={p}>{p}</option>)}
+          </select>
+          {filtroProv&&(
+            <select style={{...S.input,width:"auto",minWidth:170}} value={filtroCiu} onChange={e=>setFiltroCiu(e.target.value)}>
+              <option value="">Todas las localidades</option>
+              {ciudades.map(c=><option key={c} value={c}>{c}</option>)}
+            </select>
+          )}
+        </div>
+      )}
+
+      {cargando?<div style={S.card}>Cargando...</div>:(
+        filtrados.length===0?<div style={S.card}><div style={{color:C.textoSuave,textAlign:"center",padding:20}}>Todavía no hay trabajadores cargados en este rubro.</div></div>:
+        filtrados.map(p=>(
+          <div key={p.id} style={{...S.card,marginBottom:12}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
+              <div>
+                <div style={{fontWeight:700,color:C.marron,fontSize:18}}>{p._usuario.nombre||"(sin nombre)"}</div>
+                <div style={{fontSize:15,color:C.textoSuave,marginTop:2}}>{p.categoria}{p.anios_experiencia!=null?` · ${p.anios_experiencia} años de experiencia`:""}</div>
+                {(p._usuario.ciudad||p._usuario.provincia)&&<div style={{fontSize:14,color:C.textoSuave,marginTop:2}}>📍 {[p._usuario.ciudad,p._usuario.provincia].filter(Boolean).join(", ")}</div>}
+              </div>
+              {p.disponibilidad&&<span style={{...S.badge("disponible"),fontSize:13}}>{DISPONIBILIDAD_LABEL[p.disponibilidad]||p.disponibilidad}</span>}
+            </div>
+            {p.especialidades&&<div style={{fontSize:15,color:C.texto,marginTop:10}}><b>Especialidades:</b> {p.especialidades}</div>}
+            {p.descripcion&&<div style={{fontSize:15,color:C.texto,marginTop:6}}>{p.descripcion}</div>}
+            <div style={{marginTop:12,display:"flex",gap:8,flexWrap:"wrap"}}>
+              {p._usuario.telefono&&<a href={`tel:${p._usuario.telefono}`} style={{...S.btn("dark"),fontSize:15,textDecoration:"none"}}>📞 Llamar</a>}
+              {p._usuario.email&&<a href={`mailto:${p._usuario.email}`} style={{...S.btn("ghost"),fontSize:15,textDecoration:"none"}}>✉️ Email</a>}
+              {!p._usuario.telefono&&!p._usuario.email&&<span style={{fontSize:14,color:C.textoSuave,fontStyle:"italic"}}>Este trabajador todavía no cargó datos de contacto.</span>}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
 function App(){
   const [sesion,setSesion]=useState(null);
   const [navTab,setNavTab]=useState("principal");
@@ -8066,7 +8273,7 @@ function App(){
   if(!avisoDiasCerrado&&(usuario.tipo==="carpinteria"||["aserradero","ferreteria","pintureria","flete"].includes(usuario.tipo))&&suscInfo.diasRestantes!=null&&(suscInfo.diasRestantes<=7||!usuario.vio_pantalla_prueba)){
     return <AvisoDiasRestantes dias={suscInfo.diasRestantes} estado={suscInfo.estado} tipo={usuario.tipo} onDarDeBaja={darDeBaja} onContinuar={cerrarAvisoDias}/>;
   }
-  const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🪣"};
+  const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🪣",trabajador:"🧰"};
 
   return(
     <div style={S.app}>
@@ -8084,6 +8291,9 @@ function App(){
             {usuario.tipo!=="flete"&&(
               <button style={{background:navTab==="flete"?C.acento:"transparent",color:navTab==="flete"?C.marron:C.suave,border:`1px solid ${C.suave}44`,borderRadius:0,padding:"4px 10px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Lato',sans-serif"}} onClick={()=>irAPrincipal("flete")}>Fletes<Badge9 n={badges.flete}/></button>
             )}
+            {["carpinteria","aserradero","ferreteria","pintureria","flete"].includes(usuario.tipo)&&(
+              <button style={{background:navTab==="bolsa"?C.acento:"transparent",color:navTab==="bolsa"?C.marron:C.suave,border:`1px solid ${C.suave}44`,borderRadius:0,padding:"4px 10px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Lato',sans-serif"}} onClick={()=>irAPrincipal("bolsa")}>🧰 Bolsa de trabajo</button>
+            )}
             <div style={{position:"relative"}}>
               <button aria-label="Menú" style={{background:"transparent",color:C.suave,border:`1px solid ${C.suave}44`,borderRadius:0,padding:"5px 12px",cursor:"pointer",fontSize:22,fontWeight:700,lineHeight:1,fontFamily:"'Lato',sans-serif"}} onClick={()=>setMenuAbierto(v=>!v)}>⋮</button>
               {menuAbierto&&(
@@ -8094,7 +8304,7 @@ function App(){
                     <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("privado");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setEnManual(false);setMenuAbierto(false);}}>Mi cuenta</button>
                     <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnManual(true);setEnMiCuenta(false);setEnContacto(false);setEnPapelera(false);setMenuAbierto(false);}}>Manual</button>
                     {(usuario.tipo==="cliente"||usuario.tipo==="carpinteria")&&<button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>irAPrincipal("conversor")}>Conversor</button>}
-                    {usuario.tipo!=="admin"&&usuario.tipo!=="cliente"&&<button style={{display:"block",width:"100%",textAlign:"left",background:suscInfo.vencida?"#C0392B22":"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:suscInfo.vencida?"#C0392B":C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setEnManual(false);setMenuAbierto(false);}}>Suscripción{suscInfo.vencida?" ⚠️":""}</button>}
+                    {usuario.tipo!=="admin"&&usuario.tipo!=="cliente"&&usuario.tipo!=="trabajador"&&<button style={{display:"block",width:"100%",textAlign:"left",background:suscInfo.vencida?"#C0392B22":"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:suscInfo.vencida?"#C0392B":C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setEnManual(false);setMenuAbierto(false);}}>Suscripción{suscInfo.vencida?" ⚠️":""}</button>}
                     <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnContacto(true);setEnMiCuenta(false);setEnPapelera(false);setEnManual(false);setMenuAbierto(false);}}>Reportar o comentar</button>
                     <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnPapelera(true);setEnMiCuenta(false);setEnContacto(false);setEnManual(false);setMenuAbierto(false);}}>Papelera</button>
                     <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setMenuAbierto(false);cerrar();setMostrarBienvenida(true);}}>Salir</button>
@@ -8124,7 +8334,9 @@ function App(){
             {navTab==="principal"&&usuario.tipo==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);}}/>}
             {navTab==="principal"&&usuario.tipo==="ferreteria"&&<VistaFerreteria usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);}}/>}
             {navTab==="principal"&&usuario.tipo==="pintureria"&&<VistaPintureria usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);}}/>}
+            {navTab==="principal"&&usuario.tipo==="trabajador"&&<VistaBolsaTrabajo usuario={usuario} notif={setNotifMsg}/>}
             {navTab==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);}}/>}
+            {navTab==="bolsa"&&<VistaBolsaTrabajo usuario={usuario} notif={setNotifMsg}/>}
             {navTab==="conversor"&&<VistaConversor/>}
           </>
         )}
