@@ -2396,7 +2396,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-23.42</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-25.43</div>
     </div>
   );
 }
@@ -4312,7 +4312,7 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
 }
 
 // ─── VISTA ASERRADERO ─────────────────────────────────────────────────────────
-function VistaAserradero({usuario,notif}){
+function VistaAserradero({usuario,notif,bloqueado,onIrASuscripcion}){
   const [pedidos,setPedidos]=useState([]);
   const [sel,setSel]=useState(null);
   useEffect(()=>{const h=()=>setSel(null);window.addEventListener("encastre-ir-principal",h);return()=>window.removeEventListener("encastre-ir-principal",h);},[]);
@@ -4590,15 +4590,22 @@ function VistaAserradero({usuario,notif}){
   return(
     <div>
       <div style={S.secTitle}>Pedidos de carpinterías</div>
+      {bloqueado&&(
+        <div style={{marginBottom:14,padding:"14px 16px",background:"#FDECEA",border:`1px solid ${C.error}`,color:C.error}}>
+          <div style={{fontWeight:700,fontSize:17,marginBottom:6}}>🔒 Necesitás una suscripción activa para ver y cotizar pedidos de carpinterías</div>
+          <div style={{fontSize:15,marginBottom:10}}>Los pedidos siguen apareciendo en la lista, pero no se pueden abrir hasta activar la suscripción. El resto de Encastre lo podés seguir usando con normalidad.</div>
+          <button style={{...S.btn("dark"),fontSize:15}} onClick={onIrASuscripcion}>💳 Activar suscripción</button>
+        </div>
+      )}
       <TabsConectadas opciones={[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]]} activo={filtro} cuenta={cuenta} onChange={setFiltro}/>
       <FiltroUbicacion pedidos={pedidos} provincia={filtroUbicProv} ciudad={filtroUbicCiu} onProvincia={setFiltroUbicProv} onCiudad={setFiltroUbicCiu}/>
       {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
       {pedidos.length>0&&lista.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría</div>}
       {lista.map(p=>{
-        const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
+        const et=bloqueado?{t:"🔒 Bloqueado",bg:C.error,fg:"#fff"}:p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
         return(
-        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",borderColor:p._nuevo?"#009966":"#8B451399",borderWidth:p._nuevo?2:1}} onClick={()=>abrirPedido(p)}
-          onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
+        <div key={p.id} style={{...S.card,cursor:bloqueado?"not-allowed":"pointer",opacity:bloqueado?0.75:1,transition:"all .15s",borderColor:p._nuevo?"#009966":"#8B451399",borderWidth:p._nuevo?2:1}} onClick={()=>{ if(bloqueado){ notif&&notif("🔒 Activá tu suscripción para ver este pedido"); return; } abrirPedido(p); }}
+          onMouseEnter={e=>{if(!bloqueado){e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}}
           onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div>
@@ -4650,7 +4657,7 @@ function VistaConversor(){
   );
 }
 
-function VistaFlete({usuario,notif}){
+function VistaFlete({usuario,notif,bloqueado,onIrASuscripcion}){
   const esFlete=usuario.tipo==="flete";
   const [archivadosCotFlete,setArchivadosCotFlete]=useState(new Set());
   useEffect(()=>{(async()=>{
@@ -5022,16 +5029,23 @@ function VistaFlete({usuario,notif}){
     return(
       <div>
         <div style={S.secTitle}>🚚 Pedidos de flete</div>
+        {bloqueado&&(
+          <div style={{marginBottom:14,padding:"14px 16px",background:"#FDECEA",border:`1px solid ${C.error}`,color:C.error}}>
+            <div style={{fontWeight:700,fontSize:17,marginBottom:6}}>🔒 Necesitás una suscripción activa para ver y cotizar pedidos de flete</div>
+            <div style={{fontSize:15,marginBottom:10}}>Los pedidos siguen apareciendo en la lista, pero no se pueden abrir hasta activar la suscripción. El resto de Encastre lo podés seguir usando con normalidad.</div>
+            <button style={{...S.btn("dark"),fontSize:15}} onClick={onIrASuscripcion}>💳 Activar suscripción</button>
+          </div>
+        )}
         <TabsConectadas opciones={[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]]} activo={filtro} cuenta={cuenta} onChange={setFiltro}/>
         <div style={{fontSize:13,color:C.textoSuave,marginBottom:8}}>📍 Filtro por ubicación de origen de la carga</div>
         <FiltroUbicacion pedidos={pedidos} provincia={filtroUbicProv} ciudad={filtroUbicCiu} onProvincia={setFiltroUbicProv} onCiudad={setFiltroUbicCiu}/>
         {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
         {pedidos.length>0&&lista.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría</div>}
         {lista.map(p=>{
-          const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
+          const et=bloqueado?{t:"🔒 Bloqueado",bg:C.error,fg:"#fff"}:p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
           return(
-          <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",borderColor:p._nuevo?"#009966":"#8B451399",borderWidth:p._nuevo?2:1}} onClick={()=>abrirPedido(p)}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
+          <div key={p.id} style={{...S.card,cursor:bloqueado?"not-allowed":"pointer",opacity:bloqueado?0.75:1,transition:"all .15s",borderColor:p._nuevo?"#009966":"#8B451399",borderWidth:p._nuevo?2:1}} onClick={()=>{ if(bloqueado){ notif&&notif("🔒 Activá tu suscripción para ver este pedido"); return; } abrirPedido(p); }}
+            onMouseEnter={e=>{if(!bloqueado){e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}}
             onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
             <div style={{display:"flex",justifyContent:"space-between"}}>
               <div>
@@ -5182,7 +5196,7 @@ function VistaFlete({usuario,notif}){
 
 
 // ─── VISTA FERRETERÍA ─────────────────────────────────────────────────────────
-function VistaFerreteria({usuario,notif}){
+function VistaFerreteria({usuario,notif,bloqueado,onIrASuscripcion}){
   const [pedidos,setPedidos]=useState([]);
   const [sel,setSel]=useState(null);
   useEffect(()=>{const h=()=>setSel(null);window.addEventListener("encastre-ir-principal",h);return()=>window.removeEventListener("encastre-ir-principal",h);},[]);
@@ -5446,15 +5460,22 @@ function VistaFerreteria({usuario,notif}){
   return(
     <div>
       <div style={S.secTitle}>Pedidos de herrajes de carpinterías</div>
+      {bloqueado&&(
+        <div style={{marginBottom:14,padding:"14px 16px",background:"#FDECEA",border:`1px solid ${C.error}`,color:C.error}}>
+          <div style={{fontWeight:700,fontSize:17,marginBottom:6}}>🔒 Necesitás una suscripción activa para ver y cotizar pedidos de carpinterías</div>
+          <div style={{fontSize:15,marginBottom:10}}>Los pedidos siguen apareciendo en la lista, pero no se pueden abrir hasta activar la suscripción. El resto de Encastre lo podés seguir usando con normalidad.</div>
+          <button style={{...S.btn("dark"),fontSize:15}} onClick={onIrASuscripcion}>💳 Activar suscripción</button>
+        </div>
+      )}
       <TabsConectadas opciones={[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]]} activo={filtro} cuenta={cuenta} onChange={setFiltro}/>
       <FiltroUbicacion pedidos={pedidos} provincia={filtroUbicProv} ciudad={filtroUbicCiu} onProvincia={setFiltroUbicProv} onCiudad={setFiltroUbicCiu}/>
       {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
       {pedidos.length>0&&lista.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría</div>}
       {lista.map(p=>{
-        const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
+        const et=bloqueado?{t:"🔒 Bloqueado",bg:C.error,fg:"#fff"}:p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
         return(
-        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",borderColor:p._nuevo?"#009966":"#8B451399",borderWidth:p._nuevo?2:1}} onClick={()=>abrirPedido(p)}
-          onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
+        <div key={p.id} style={{...S.card,cursor:bloqueado?"not-allowed":"pointer",opacity:bloqueado?0.75:1,transition:"all .15s",borderColor:p._nuevo?"#009966":"#8B451399",borderWidth:p._nuevo?2:1}} onClick={()=>{ if(bloqueado){ notif&&notif("🔒 Activá tu suscripción para ver este pedido"); return; } abrirPedido(p); }}
+          onMouseEnter={e=>{if(!bloqueado){e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}}
           onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div>
@@ -5473,7 +5494,7 @@ function VistaFerreteria({usuario,notif}){
 }
 
 // ─── VISTA PINTURERÍA ─────────────────────────────────────────────────────────
-function VistaPintureria({usuario,notif}){
+function VistaPintureria({usuario,notif,bloqueado,onIrASuscripcion}){
   const [pedidos,setPedidos]=useState([]);
   const [sel,setSel]=useState(null);
   useEffect(()=>{const h=()=>setSel(null);window.addEventListener("encastre-ir-principal",h);return()=>window.removeEventListener("encastre-ir-principal",h);},[]);
@@ -5737,15 +5758,22 @@ function VistaPintureria({usuario,notif}){
   return(
     <div>
       <div style={S.secTitle}>Pedidos de pinturas de carpinterías</div>
+      {bloqueado&&(
+        <div style={{marginBottom:14,padding:"14px 16px",background:"#FDECEA",border:`1px solid ${C.error}`,color:C.error}}>
+          <div style={{fontWeight:700,fontSize:17,marginBottom:6}}>🔒 Necesitás una suscripción activa para ver y cotizar pedidos de carpinterías</div>
+          <div style={{fontSize:15,marginBottom:10}}>Los pedidos siguen apareciendo en la lista, pero no se pueden abrir hasta activar la suscripción. El resto de Encastre lo podés seguir usando con normalidad.</div>
+          <button style={{...S.btn("dark"),fontSize:15}} onClick={onIrASuscripcion}>💳 Activar suscripción</button>
+        </div>
+      )}
       <TabsConectadas opciones={[["cotizar","Para cotizar"],["cotizados","Cotizados"],["vencido","Vencidos"],["todos","Todos"]]} activo={filtro} cuenta={cuenta} onChange={setFiltro}/>
       <FiltroUbicacion pedidos={pedidos} provincia={filtroUbicProv} ciudad={filtroUbicCiu} onProvincia={setFiltroUbicProv} onCiudad={setFiltroUbicCiu}/>
       {pedidos.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:28,fontStyle:"italic"}}>No hay pedidos aún</div>}
       {pedidos.length>0&&lista.length===0&&<div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría</div>}
       {lista.map(p=>{
-        const et=p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
+        const et=bloqueado?{t:"🔒 Bloqueado",bg:C.error,fg:"#fff"}:p._miEstado?{t:"Cotizado por mí",bg:C.acento,fg:C.marron}:estaVencido(p)?{t:"Vencido",bg:"#B23A2E",fg:"#fff"}:{t:"Para cotizar",bg:C.marron,fg:C.crema};
         return(
-        <div key={p.id} style={{...S.card,cursor:"pointer",transition:"all .15s",borderColor:p._nuevo?"#009966":"#8B451399",borderWidth:p._nuevo?2:1}} onClick={()=>abrirPedido(p)}
-          onMouseEnter={e=>{e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}
+        <div key={p.id} style={{...S.card,cursor:bloqueado?"not-allowed":"pointer",opacity:bloqueado?0.75:1,transition:"all .15s",borderColor:p._nuevo?"#009966":"#8B451399",borderWidth:p._nuevo?2:1}} onClick={()=>{ if(bloqueado){ notif&&notif("🔒 Activá tu suscripción para ver este pedido"); return; } abrirPedido(p); }}
+          onMouseEnter={e=>{if(!bloqueado){e.currentTarget.style.borderColor=C.acento;e.currentTarget.style.transform="translateY(-1px)";}}}
           onMouseLeave={e=>{e.currentTarget.style.borderColor=p._nuevo?"#009966":C.borde;e.currentTarget.style.transform="none";}}>
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div>
@@ -7787,52 +7815,6 @@ function ConfirmarPago({precio,numeroMes,cargando,onContinuar,onDarDeBaja,onVolv
   );
 }
 
-function PantallaSuscripcionVencida({onCerrar,estado,onDarDeBaja}){
-  const [pagando,setPagando]=useState(false);
-  const [cargandoPreview,setCargandoPreview]=useState(false);
-  const [confirmar,setConfirmar]=useState(null);
-  const [err,setErr]=useState("");
-  const esPrimeraVez=estado==="pendiente";
-  const verPrecio=async()=>{
-    setCargandoPreview(true); setErr("");
-    try{
-      const data=await db.crearPago(true);
-      if(data.precio!=null) setConfirmar({precio:data.precio,numeroMes:data.numeroMes});
-      else setErr("No se pudo calcular el precio.");
-    }catch(e){ setErr(e.message||"No se pudo calcular el precio."); }
-    setCargandoPreview(false);
-  };
-  const pagar=async()=>{
-    setPagando(true); setErr("");
-    try{
-      const data=await db.crearPago(false);
-      if(data.init_point) window.location.href=data.init_point;
-      else setErr("No se pudo generar el link de pago.");
-    }catch(e){ setErr(e.message||"No se pudo generar el link de pago."); }
-    setPagando(false);
-  };
-  return(
-    <div style={{...S.app,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"100vh",padding:20,textAlign:"center"}}>
-      <div style={{fontSize:48,marginBottom:12}}>💳</div>
-      <div style={{...S.cardTitle,fontSize:24,marginBottom:10}}>{esPrimeraVez?"Activá tu suscripción":"Tu suscripción venció"}</div>
-      <div style={{fontSize:16,color:C.textoSuave,marginBottom:24,maxWidth:420}}>
-        {esPrimeraVez
-          ? "Para empezar a recibir pedidos como proveedor en Encastre, activá tu suscripción mensual."
-          : "Para seguir usando Encastre como proveedor, renová tu suscripción mensual."}
-      </div>
-      {err&&<div style={{fontSize:15,color:C.error,marginBottom:14}}>{err}</div>}
-      {!confirmar?(
-        <>
-          <button style={{...S.btn("gold"),maxWidth:340,width:"100%",justifyContent:"center",marginBottom:14}} onClick={verPrecio} disabled={cargandoPreview}>{cargandoPreview?"⟳ Calculando...":"💳 Pagar suscripción mensual"}</button>
-          <button style={{...S.btn("ghost"),maxWidth:340,width:"100%",justifyContent:"center"}} onClick={onCerrar}>Cerrar sesión</button>
-        </>
-      ):(
-        <ConfirmarPago precio={confirmar.precio} numeroMes={confirmar.numeroMes} cargando={pagando} onContinuar={pagar} onDarDeBaja={onDarDeBaja} onVolver={()=>setConfirmar(null)}/>
-      )}
-    </div>
-  );
-}
-
 function AvisoDiasRestantes({dias,estado,tipo,onContinuar,onDarDeBaja}){
   const [pagando,setPagando]=useState(false);
   const [cargandoPreview,setCargandoPreview]=useState(false);
@@ -7861,18 +7843,18 @@ function AvisoDiasRestantes({dias,estado,tipo,onContinuar,onDarDeBaja}){
     <div style={{...S.app,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"100vh",padding:20,textAlign:"center"}}>
       <div style={{fontSize:48,marginBottom:12}}>⏳</div>
       <div style={{...S.cardTitle,fontSize:24,marginBottom:10}}>
-        {dias!=null&&dias>=0?`Te quedan ${dias} día${dias===1?"":"s"} de ${prueba?"período de prueba":"suscripción"}`:"Estado de tu suscripción"}
+        {dias!=null&&dias>=0?`Te quedan ${dias} día${dias===1?"":"s"} de ${prueba?"Período de Lanzamiento":"suscripción"}`:"Terminó tu Período de Lanzamiento"}
       </div>
       <div style={{fontSize:16,color:C.textoSuave,marginBottom:24,maxWidth:420}}>
         {tipo==="carpinteria"
           ? (dias!=null&&dias>=0
               ? (prueba
-                  ? "Cuando termine tu período de prueba vas a necesitar una suscripción activa para ver y cotizar pedidos de clientes. El resto de Encastre lo vas a poder seguir usando igual."
+                  ? "Durante el Período de Lanzamiento usás Encastre gratis. Cuando termine, vas a necesitar una suscripción activa para ver y cotizar pedidos de clientes. El resto de Encastre lo vas a poder seguir usando igual."
                   : "Renová a tiempo para no perder el acceso a pedidos de clientes.")
               : "Sin una suscripción activa no podés ver ni cotizar pedidos de clientes nuevos. El resto de Encastre lo podés seguir usando con normalidad.")
           : (dias!=null&&dias>=0
-              ? "Terminado el mes de lanzamiento vas a necesitar una suscripción activa para seguir usando Encastre como proveedor."
-              : "Sin una suscripción activa no podés usar Encastre como proveedor.")}
+              ? "Durante el Período de Lanzamiento recibís pedidos de carpinterías gratis. Cuando termine, vas a necesitar una suscripción activa para seguir recibiendo y cotizando pedidos. El resto de Encastre lo vas a poder seguir usando igual."
+              : "Sin una suscripción activa no podés recibir ni cotizar pedidos nuevos. El resto de Encastre lo podés seguir usando con normalidad.")}
       </div>
       {err&&<div style={{fontSize:15,color:C.error,marginBottom:14}}>{err}</div>}
       {!confirmar?(
@@ -8081,7 +8063,6 @@ function App(){
   };
   if(usuario.tipo==="admin") return <VistaAdmin usuario={usuario} onSalir={async()=>{await cerrar();setMostrarBienvenida(true);}}/>;
   if(suscInfo.cargando) return <div style={{...S.app,display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",fontSize:16,color:C.textoSuave}}>Cargando...</div>;
-  if(suscInfo.vencida&&usuario.tipo!=="carpinteria") return <PantallaSuscripcionVencida estado={suscInfo.estado} onDarDeBaja={darDeBaja} onCerrar={async()=>{await cerrar();setMostrarBienvenida(true);}}/>;
   if(!avisoDiasCerrado&&(usuario.tipo==="carpinteria"||["aserradero","ferreteria","pintureria","flete"].includes(usuario.tipo))&&suscInfo.diasRestantes!=null&&(suscInfo.diasRestantes<=7||!usuario.vio_pantalla_prueba)){
     return <AvisoDiasRestantes dias={suscInfo.diasRestantes} estado={suscInfo.estado} tipo={usuario.tipo} onDarDeBaja={darDeBaja} onContinuar={cerrarAvisoDias}/>;
   }
@@ -8139,11 +8120,11 @@ function App(){
           <>
             {navTab==="principal"&&usuario.tipo==="cliente"&&<VistaCliente usuario={usuario} notif={setNotifMsg}/>}
             {navTab==="principal"&&usuario.tipo==="carpinteria"&&<VistaCarpinteria usuario={usuario} notif={setNotifMsg} bloqueadoClientes={suscInfo.vencida} onIrASuscripcion={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);}}/>}
-            {navTab==="principal"&&usuario.tipo==="aserradero"&&<VistaAserradero usuario={usuario} notif={setNotifMsg}/>}
-            {navTab==="principal"&&usuario.tipo==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg}/>}
-            {navTab==="principal"&&usuario.tipo==="ferreteria"&&<VistaFerreteria usuario={usuario} notif={setNotifMsg}/>}
-            {navTab==="principal"&&usuario.tipo==="pintureria"&&<VistaPintureria usuario={usuario} notif={setNotifMsg}/>}
-            {navTab==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg}/>}
+            {navTab==="principal"&&usuario.tipo==="aserradero"&&<VistaAserradero usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);}}/>}
+            {navTab==="principal"&&usuario.tipo==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);}}/>}
+            {navTab==="principal"&&usuario.tipo==="ferreteria"&&<VistaFerreteria usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);}}/>}
+            {navTab==="principal"&&usuario.tipo==="pintureria"&&<VistaPintureria usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);}}/>}
+            {navTab==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);}}/>}
             {navTab==="conversor"&&<VistaConversor/>}
           </>
         )}
