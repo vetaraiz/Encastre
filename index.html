@@ -2439,7 +2439,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-26.8</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-26.9</div>
     </div>
   );
 }
@@ -3816,18 +3816,18 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
   return(
     <div>
       <div style={{display:"flex",marginBottom:22,alignItems:"stretch"}}>
-        <div style={{flex:1,display:"flex"}}>
+        <div style={{flex:3,display:"flex",minWidth:0}}>
           {[["aserradero","Aserraderos"],["ferreteria","Ferreterías"],["pintureria","Pinturerías"]].map(([id,l])=>{
             const n=badges[id]||0;
             return(
-            <button key={id} style={{...tabBase(id),flex:1,fontSize:19,padding:"14px 8px"}} onClick={()=>setTab(id)}>
-              <span>{l}</span><Badge9 n={n}/>
+            <button key={id} style={{...tabBase(id),flex:1,minWidth:0,fontSize:14,padding:"10px 3px"}} onClick={()=>setTab(id)}>
+              <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l}</span><Badge9 n={n}/>
             </button>
             );
           })}
         </div>
-        <button style={{...tabBase("pedidos"),flex:"0 0 32%",flexDirection:"column",fontSize:21,padding:"14px 8px",textAlign:"center"}} onClick={()=>setTab("pedidos")}>
-          <span>Pedidos de clientes</span>
+        <button style={{...tabBase("pedidos"),flex:1,minWidth:0,flexDirection:"column",fontSize:14,padding:"10px 3px",textAlign:"center"}} onClick={()=>setTab("pedidos")}>
+          <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"100%"}}>Pedidos de clientes</span>
           <Badge9 n={badges.pedidos||0}/>
         </button>
       </div>
@@ -3845,7 +3845,7 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
             <div style={{marginBottom:14,background:"transparent",color:C.error}}>
               <div style={{fontWeight:700,fontSize:17,marginBottom:6}}>🔒 Necesitás una suscripción activa para ver y cotizar pedidos de clientes</div>
               <div style={{fontSize:15,marginBottom:10}}>Los pedidos siguen apareciendo en la lista, pero no se pueden abrir hasta activar la suscripción. El resto de Encastre lo podés seguir usando con normalidad.</div>
-              <button style={{...S.btn("dark"),fontSize:15}} onClick={onIrASuscripcion}>💳 Activar suscripción</button>
+              <button style={{...S.btn("dark"),fontSize:15,display:"flex",justifyContent:"center",margin:"0 auto",borderRadius:8}} onClick={onIrASuscripcion}>💳 Activar suscripción</button>
             </div>
           )}
           <div style={{position:"relative",marginBottom:14}}>
