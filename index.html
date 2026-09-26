@@ -2439,7 +2439,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-26.6</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-26.7</div>
     </div>
   );
 }
@@ -3287,7 +3287,7 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
     }catch{}
   },[usuario.id]);
   useEffect(()=>{cargarArchivadosCot();},[cargarArchivadosCot]);
-  useEffect(()=>{const h=()=>{setSelAserr(null);setSelFerr(null);setSelPint(null);setTab("pedidos");};window.addEventListener("encastre-ir-principal",h);return()=>window.removeEventListener("encastre-ir-principal",h);},[]);
+  useEffect(()=>{const h=()=>{setSelAserr(null);setSelFerr(null);setSelPint(null);setTab("aserradero");};window.addEventListener("encastre-ir-principal",h);return()=>window.removeEventListener("encastre-ir-principal",h);},[]);
   const archivarCot=async(ct,tipo)=>{
     try{
       await db.insertMin("elementos_archivados",{usuario_id:usuario.id,tipo_elemento:"cotizacion",elemento_id:ct.id});
@@ -3330,7 +3330,7 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
     }catch(e){ notif("No se pudieron archivar todos"); }
     setArchivandoSel(false);
   };
-  const [tab,setTab]=useState("pedidos");
+  const [tab,setTab]=useState("aserradero");
   const [pedidos,setPedidos]=useState([]);
   const [sel,setSel]=useState(null);
   const [presF,setPresF]=useState({items:[{descripcion:"",precio:"",cantidad:"1"}],tiempo:"",usarDesc:false,descTipo:"porcentaje",descValor:"",usarIva:false,ivaPct:"21"});
@@ -3836,13 +3836,13 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
         <div>
           <div style={S.secTitle}>Pedidos de presupuesto de clientes</div>
           {new Date()<FECHA_FIN_PROMO&&(
-            <div style={{marginBottom:14,padding:"14px 16px",background:C.suave,border:`1px solid ${C.acento}`,color:C.marron}}>
+            <div style={{marginBottom:14,background:"transparent",color:C.marron}}>
               <div style={{fontWeight:700,fontSize:17,marginBottom:6}}>📅 Estamos en el mes de lanzamiento</div>
               <div style={{fontSize:15}}>Los pedidos de clientes se guardan, pero recién se activan a partir del {FECHA_FIN_PROMO.toLocaleDateString("es-AR")}. Hasta esa fecha es normal que esta lista esté vacía o no se actualice.</div>
             </div>
           )}
           {bloqueadoClientes&&(
-            <div style={{marginBottom:14,padding:"14px 16px",background:"#FDECEA",border:`1px solid ${C.error}`,color:C.error}}>
+            <div style={{marginBottom:14,background:"transparent",color:C.error}}>
               <div style={{fontWeight:700,fontSize:17,marginBottom:6}}>🔒 Necesitás una suscripción activa para ver y cotizar pedidos de clientes</div>
               <div style={{fontSize:15,marginBottom:10}}>Los pedidos siguen apareciendo en la lista, pero no se pueden abrir hasta activar la suscripción. El resto de Encastre lo podés seguir usando con normalidad.</div>
               <button style={{...S.btn("dark"),fontSize:15}} onClick={onIrASuscripcion}>💳 Activar suscripción</button>
