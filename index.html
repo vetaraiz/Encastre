@@ -1737,9 +1737,9 @@ const EC = {pendiente:C.acento,presupuestado:C.azul,aceptado:C.verde,cerrado:"#8
 // Carpintería y Aserradero: CCT 335/75 (Industria de la Madera). Ferretería y Pinturería: CCT 130/75 (Empleados de Comercio). Flete: CCT 40/89 (Camioneros).
 const RUBROS_TRABAJADOR = [
   {id:"carpinteria",emoji:"🔨",label:"Carpintería"},
-  {id:"aserradero",emoji:"🪵🪵",label:"Aserradero"},
+  {id:"aserradero",emoji:"🌲",label:"Aserradero"},
   {id:"ferreteria",emoji:"🔩",label:"Ferretería"},
-  {id:"pintureria",emoji:"🪣",label:"Pinturería"},
+  {id:"pintureria",emoji:"🖌️",label:"Pinturería"},
   {id:"flete",emoji:"🚚",label:"Flete"},
 ];
 const CATEGORIAS_TRABAJADOR = {
@@ -1855,6 +1855,26 @@ function TagNuevo({on}){
 function TagMsjNuevo({on}){
   if(!on)return null;
   return <span style={{marginLeft:8,fontSize:12,fontWeight:700,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>💬 Mensaje nuevo</span>;
+}
+
+// Círculo chico tildable para selección múltiple (listas con archivado en bloque)
+function SelCirculo({on,onToggle}){
+  return(
+    <button type="button" aria-label={on?"Quitar de la selección":"Seleccionar"} onClick={e=>{e.stopPropagation();onToggle();}} style={{width:22,height:22,minHeight:"auto",flexShrink:0,borderRadius:"50%",border:`2px solid ${on?C.acento:C.borde}`,background:on?C.acento:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0}}>
+      {on&&<span style={{color:C.marron,fontSize:13,fontWeight:900,lineHeight:1}}>✓</span>}
+    </button>
+  );
+}
+// Barra que aparece arriba de una lista cuando hay 1+ elementos tildados, con la acción de archivar en bloque
+function BarraSeleccion({cant,onArchivar,onCancelar,archivando}){
+  if(cant===0)return null;
+  return(
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,padding:"10px 14px",background:C.suave,border:`1px solid ${C.acento}`}}>
+      <span style={{fontSize:15,color:C.marron,fontWeight:700}}>{cant} seleccionado{cant>1?"s":""}</span>
+      <button style={{...S.btn("dark"),fontSize:14,padding:"7px 14px"}} onClick={onArchivar} disabled={archivando}>{archivando?"⟳ Archivando...":"🗑️ Archivar seleccionados"}</button>
+      <button style={{...S.btn("ghost"),fontSize:14,padding:"7px 14px"}} onClick={onCancelar}>Cancelar</button>
+    </div>
+  );
 }
 
 // Antes era un punto verde sin número (no se podía saber si realmente quedaba algo pendiente
@@ -2006,7 +2026,7 @@ function Stars({v=0}){
 function Notif({msg,onClose}){
   useEffect(()=>{ if(msg){ const t=setTimeout(onClose,3500); return()=>clearTimeout(t); } },[msg]);
   if(!msg) return null;
-  return <div style={S.notif} className="fade">🪵 {msg}</div>;
+  return <div style={S.notif} className="fade">🌲 {msg}</div>;
 }
 
 function Divider(){ return <div style={S.divider}/>; }
@@ -2165,6 +2185,7 @@ function AuthScreen({onAuth}){
   const [documento,setDocumento]=useState("");
   const [captchaToken,setCaptchaToken]=useState("");
   const [aceptaTerminos,setAceptaTerminos]=useState(false);
+  const [resaltarTerminos,setResaltarTerminos]=useState(false);
   const [verLegal,setVerLegal]=useState(null); // null | "terminos" | "privacidad"
   const captchaWidgetId=useRef(null);
   const CAPTCHA_SITE_KEY="0x4AAAAAAEQA-qNlI1IMVVKL";
@@ -2207,11 +2228,11 @@ function AuthScreen({onAuth}){
   const tipos=[
     {id:"cliente",emoji:"🪑",label:"Consumidor Final",desc:"Quiero encargar muebles o construcciones en madera"},
     {id:"carpinteria",emoji:"🔨",label:"Carpintería",desc:"Recibo pedidos y presupuesto trabajos"},
-    {id:"aserradero",emoji:"🪵🪵",label:"Aserradero",desc:"Vendo madera a carpinterías y negocios"},
+    {id:"aserradero",emoji:"🌲",label:"Aserradero",desc:"Vendo madera a carpinterías y negocios"},
     {id:"flete",emoji:"🚚",label:"Flete / Transporte",desc:"Traslado muebles y materiales"},
     {id:"ferreteria",emoji:"🔩",label:"Ferretería / Herrajes",desc:"Vendo herrajes, bisagras y materiales a carpinterías"},
-    {id:"pintureria",emoji:"🪣",label:"Pinturería",desc:"Vendo pinturas, barnices, lacas y esmaltes a carpinterías"},
-    {id:"trabajador",emoji:"🧰",label:"Bolsa de trabajo",desc:"Soy oficial, medio oficial o ayudante y busco changas o empleo"},
+    {id:"pintureria",emoji:"🖌️",label:"Pinturería",desc:"Vendo pinturas, barnices, lacas y esmaltes a carpinterías"},
+    {id:"trabajador",emoji:"🧰",label:"Trabajador/a",desc:"Busco changas o empleo (oficial, medio oficial, ayudante)"},
   ];
 
   const submit=async()=>{
@@ -2222,7 +2243,7 @@ function AuthScreen({onAuth}){
         if(!entidad){setErr("Elegí si sos empresa o persona");setCargando(false);return;}
         if(entidad==="empresa"&&!validarCUIT(documento)){setErr("El CUIT no parece válido. Revisá que tenga los 11 números correctos.");setCargando(false);return;}
         if(entidad==="persona"&&!validarDNI(documento)){setErr("El DNI no parece válido. Debe tener 7 u 8 números, sin puntos.");setCargando(false);return;}
-        if(!aceptaTerminos){setErr("Tenés que aceptar los Términos y Condiciones y la Política de Privacidad para registrarte.");setCargando(false);return;}
+        if(!aceptaTerminos){setErr("Tenés que aceptar los Términos y Condiciones y la Política de Privacidad para registrarte.");setResaltarTerminos(true);setCargando(false);return;}
         const tipoDoc=entidad==="empresa"?"CUIT":"DNI";
         const docLimpio=soloDigitos(documento);
         const signUpRes=await db.signUp(email.trim().toLowerCase(),pass,captchaToken);
@@ -2383,14 +2404,15 @@ function AuthScreen({onAuth}){
         <div id="cf-turnstile-widget" style={{marginBottom:16,display:"flex",justifyContent:"center"}}></div>
 
         {modo==="registro"&&(
-          <label style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:16,cursor:"pointer",fontSize:15,color:C.texto,lineHeight:1.5}}>
-            <input type="checkbox" checked={aceptaTerminos} onChange={e=>setAceptaTerminos(e.target.checked)} style={{marginTop:3,minWidth:16,minHeight:16}}/>
+          <label style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:16,cursor:"pointer",fontSize:15,color:(resaltarTerminos&&!aceptaTerminos)?C.rojo:C.texto,lineHeight:1.5,padding:(resaltarTerminos&&!aceptaTerminos)?"8px":0,border:(resaltarTerminos&&!aceptaTerminos)?`2px solid ${C.rojo}`:"2px solid transparent"}}>
+            <input type="checkbox" checked={aceptaTerminos} onChange={e=>{setAceptaTerminos(e.target.checked);if(e.target.checked)setResaltarTerminos(false);}} style={{marginTop:3,minWidth:16,minHeight:16}}/>
             <span>
               Leí y acepto los{" "}
               <span style={{color:C.marron,fontWeight:700,textDecoration:"underline"}} onClick={(e)=>{e.preventDefault();setVerLegal("terminos");}}>Términos y Condiciones</span>
               {" "}y la{" "}
               <span style={{color:C.marron,fontWeight:700,textDecoration:"underline"}} onClick={(e)=>{e.preventDefault();setVerLegal("privacidad");}}>Política de Privacidad</span>
               {" "}de Encastre.
+              {(resaltarTerminos&&!aceptaTerminos)&&<div style={{fontWeight:700,marginTop:4}}>⚠️ Falta marcar esta casilla para poder registrarte.</div>}
             </span>
           </label>
         )}
@@ -2398,7 +2420,7 @@ function AuthScreen({onAuth}){
         {err&&<div style={{fontSize:17,color:C.rojo,background:C.rojo+"11",border:`1px solid ${C.rojo}33`,borderRadius:0,padding:"8px 12px",marginBottom:12}}>{err}</div>}
         {ok&&<div style={{fontSize:17,color:C.verde,background:C.verde+"11",border:`1px solid ${C.verde}33`,borderRadius:0,padding:"8px 12px",marginBottom:12}}>✅ {ok}</div>}
 
-        <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",fontSize:17,padding:"11px"}} onClick={submit} disabled={cargando||(modo==="registro"&&!aceptaTerminos)}>
+        <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",fontSize:17,padding:"11px"}} onClick={submit} disabled={cargando}>
           {cargando?"⟳ Procesando...":(modo==="login"?"Entrar →":"Crear cuenta →")}
         </button>
         {modo==="login"&&(
@@ -2417,7 +2439,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-26.1</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-26.4</div>
     </div>
   );
 }
@@ -2768,7 +2790,7 @@ function NuevoPedido({usuario,onGuardar,onCancelar,notif}){
           </div>
 
           <Divider/>
-          <div style={S.secTitle}>🪵 Material</div>
+          <div style={S.secTitle}>🌲 Material</div>
           <AvisoFalta cond={!it.material} texto="Falta elegir un material"/>
           <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:6}}>
             {MATS.map(m=><button key={m.id} style={S.tag(it.material===m.id)} onClick={()=>{setIt(i,"material",m.id);setIt(i,"especie","");setIt(i,"terminacion","");setIt(i,"color","");}}>{m.label}</button>)}
@@ -2914,12 +2936,36 @@ function VistaCliente({usuario,notif}){
     }catch(e){ notif("No se pudo archivar"); }
   };
 
+  const [presupSel,setPresupSel]=useState(new Set());
+  const togglePresupSel=(id)=>{
+    setPresupSel(prev=>{
+      const nuevo=new Set(prev);
+      if(nuevo.has(id))nuevo.delete(id); else nuevo.add(id);
+      return nuevo;
+    });
+  };
+  const [archivandoPresupSel,setArchivandoPresupSel]=useState(false);
+  const archivarPresupSeleccionados=async()=>{
+    if(presupSel.size===0)return;
+    if(!window.confirm(`¿Archivar ${presupSel.size} presupuesto${presupSel.size>1?"s":""}? Los vas a poder restaurar desde la Papelera.`))return;
+    setArchivandoPresupSel(true);
+    try{
+      for(const id of presupSel){
+        try{ await db.insertMin("elementos_archivados",{usuario_id:usuario.id,tipo_elemento:"presupuesto",elemento_id:id}); }catch{}
+      }
+      setArchivados(prev=>new Set([...prev,...presupSel]));
+      setPresupSel(new Set());
+      notif("Presupuestos archivados");
+    }catch(e){ notif("No se pudieron archivar todos"); }
+    setArchivandoPresupSel(false);
+  };
+
   const cargar=useCallback(async()=>{
     try{const d=await db.select("pedidos",`?cliente_id=eq.${usuario.id}&order=created_at.desc`);setPedidos(d);}catch{}
   },[usuario.id]);
 
   useEffect(()=>{cargar();},[cargar]);
-  useEffect(()=>{const h=()=>{setSel(null);setPresups([]);setSelPresup(null);setVista("lista");};window.addEventListener("encastre-ir-principal",h);return()=>window.removeEventListener("encastre-ir-principal",h);},[]);
+  useEffect(()=>{const h=()=>{setSel(null);setPresups([]);setSelPresup(null);setVista("lista");setPresupSel(new Set());};window.addEventListener("encastre-ir-principal",h);return()=>window.removeEventListener("encastre-ir-principal",h);},[]);
 
   const enriquecerPresups=async(d)=>{
     return await Promise.all(d.map(async pr=>{
@@ -2933,10 +2979,11 @@ function VistaCliente({usuario,notif}){
   };
 
   const abrirPedido=async(p)=>{
-    if(sel&&sel.id===p.id){ setSel(null); setPresups([]); setSelPresup(null); return; }
+    if(sel&&sel.id===p.id){ setSel(null); setPresups([]); setSelPresup(null); setPresupSel(new Set()); return; }
     setSel(p);
     setSelPresup(null);
     setPresups([]);
+    setPresupSel(new Set());
     try{
       const d=await db.select("presupuestos",`?pedido_id=eq.${p.id}&order=created_at.asc`);
       setPresups(await enriquecerPresups(d));
@@ -3111,11 +3158,13 @@ function VistaCliente({usuario,notif}){
                 <button style={{background:vistaComp==="grilla"?C.marron:C.card,color:vistaComp==="grilla"?C.crema:C.marron,border:"none",padding:"6px 12px",cursor:"pointer",fontSize:15,fontFamily:"'Lato',sans-serif",fontWeight:700}} onClick={()=>setVistaComp("grilla")}>▦ Cuadrícula</button>
               </div>
             </div>
+            <BarraSeleccion cant={presupSel.size} archivando={archivandoPresupSel} onArchivar={archivarPresupSeleccionados} onCancelar={()=>setPresupSel(new Set())}/>
             {vistaComp==="lista"?(
             <div style={{overflowX:"auto",border:`1px solid ${C.borde}`}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:15}}>
                 <thead>
                   <tr style={{background:C.crema}}>
+                    <th style={{padding:"8px 10px"}}></th>
                     <th style={{textAlign:"left",padding:"8px 10px",color:C.textoSuave,fontWeight:700}}>Carpintería</th>
                     <th style={{textAlign:"left",padding:"8px 10px",color:C.textoSuave,fontWeight:700}}>Pedido</th>
                     <th style={{textAlign:"right",padding:"8px 10px",color:C.textoSuave,fontWeight:700}}>Precio</th>
@@ -3124,7 +3173,8 @@ function VistaCliente({usuario,notif}){
                 </thead>
                 <tbody>
                   {[...presupsVisibles].sort((a,b)=>Number(a.monto)-Number(b.monto)).map((pr,i)=>(
-                    <tr key={i} style={{borderTop:`1px solid ${C.borde}`,background:i===0?"#00996611":"transparent",cursor:"pointer"}} onClick={()=>abrirCot(pr)}>
+                    <tr key={i} style={{borderTop:`1px solid ${C.borde}`,background:presupSel.has(pr.id)?C.suave:(i===0?"#00996611":"transparent"),cursor:"pointer"}} onClick={()=>abrirCot(pr)}>
+                      <td style={{padding:"8px 10px"}}><SelCirculo on={presupSel.has(pr.id)} onToggle={()=>togglePresupSel(pr.id)}/></td>
                       <td style={{padding:"8px 10px"}}>🔨 {pr.carpNombre}{pr.visto_cliente===false&&<span style={{marginLeft:6,fontSize:11,fontWeight:800,color:"#fff",background:"#009966",padding:"1px 6px"}}>NUEVO</span>}{pr.estado&&pr.estado!=="enviado"&&<span style={{marginLeft:6}}><Badge e={pr.estado}/></span>}</td>
                       <td style={{padding:"8px 10px",color:C.textoSuave}}>{sel.descripcion}</td>
                       <td style={{padding:"8px 10px",textAlign:"right",fontWeight:800,color:i===0?C.verde:C.marron}}>$ {Number(pr.monto).toLocaleString("es-AR")}{i===0&&" ✓"}</td>
@@ -3139,8 +3189,11 @@ function VistaCliente({usuario,notif}){
             ):(
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
               {[...presupsVisibles].sort((a,b)=>Number(a.monto)-Number(b.monto)).map((pr,i)=>(
-                <div key={i} style={{border:`1px solid ${i===0?C.verde:C.borde}`,background:i===0?"#00996611":C.card,padding:14,cursor:"pointer"}} onClick={()=>abrirCot(pr)}>
-                  <div style={{fontWeight:700,color:C.marron,marginBottom:6}}>🔨 {pr.carpNombre}</div>
+                <div key={i} style={{border:`1px solid ${presupSel.has(pr.id)?C.acento:(i===0?C.verde:C.borde)}`,background:presupSel.has(pr.id)?C.suave:(i===0?"#00996611":C.card),padding:14,cursor:"pointer"}} onClick={()=>abrirCot(pr)}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                    <div style={{fontWeight:700,color:C.marron}}>🔨 {pr.carpNombre}</div>
+                    <SelCirculo on={presupSel.has(pr.id)} onToggle={()=>togglePresupSel(pr.id)}/>
+                  </div>
                   <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
                     {pr.visto_cliente===false&&<span style={{fontSize:11,fontWeight:800,color:"#fff",background:"#009966",padding:"1px 6px"}}>NUEVO</span>}
                     {pr.estado&&pr.estado!=="enviado"&&<Badge e={pr.estado}/>}
@@ -3825,13 +3878,7 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
             if(pedidos.length>0&&lista.length===0) return <div style={{...S.card,color:C.textoSuave,textAlign:"center",padding:24,fontStyle:"italic"}}>No hay pedidos en esta categoría{q?` para "${buscarPedido}"`:""}</div>;
             return(
               <div>
-                {seleccionados.size>0&&(
-                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,padding:"10px 14px",background:C.suave,border:`1px solid ${C.acento}`}}>
-                    <span style={{fontSize:15,color:C.marron,fontWeight:700}}>{seleccionados.size} seleccionado{seleccionados.size>1?"s":""}</span>
-                    <button style={{...S.btn("dark"),fontSize:14,padding:"7px 14px"}} onClick={archivarSeleccionados} disabled={archivandoSel}>{archivandoSel?"⟳ Archivando...":"🗑️ Archivar seleccionados"}</button>
-                    <button style={{...S.btn("ghost"),fontSize:14,padding:"7px 14px"}} onClick={()=>setSeleccionados(new Set())}>Cancelar</button>
-                  </div>
-                )}
+                <BarraSeleccion cant={seleccionados.size} archivando={archivandoSel} onArchivar={archivarSeleccionados} onCancelar={()=>setSeleccionados(new Set())}/>
                 {lista.map((p,i)=>{
             const mat=MATS.find(m=>m.id===p.material);
             const vencido=p.fecha_limite&&new Date(p.fecha_limite)<new Date();
@@ -3849,7 +3896,7 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
                 onMouseLeave={e=>{e.currentTarget.style.borderColor=marcado?C.acento:(p._nuevo?"#009966":C.borde);e.currentTarget.style.transform="none";}}>
                 <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,flexShrink:0}}>
                   <div style={{width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",background:C.suave,border:`1px solid ${C.borde}`,fontSize:13,fontWeight:700,color:C.marron}}>{i+1}</div>
-                  <input type="checkbox" checked={marcado} onChange={()=>toggleSeleccion(p.id)} onClick={e=>e.stopPropagation()} style={{width:22,height:22,cursor:"pointer"}}/>
+                  <SelCirculo on={marcado} onToggle={()=>toggleSeleccion(p.id)}/>
                 </div>
                 <div style={{flex:1,minWidth:0}} onClick={()=>{ if(bloqueadoClientes){ notif&&notif("🔒 Activá tu suscripción para ver este pedido"); return; } if(!cerradoParaMi) abrirPedidoCliente(p); }}>
                 <div style={{display:"flex",justifyContent:"space-between",gap:10}}>
@@ -3875,7 +3922,7 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
       {tab==="aserradero"&&subAserr==="pedir"&&(
         <div style={S.card}>
           <button style={{...S.btn("link"),marginBottom:14}} onClick={()=>setSubAserr("mis")}>← Volver a mis pedidos</button>
-          <div style={S.cardTitle}>🪵🪵 Pedir madera al aserradero</div>
+          <div style={S.cardTitle}>🌲 Pedir madera al aserradero</div>
           <div style={{fontSize:17,color:C.textoSuave,marginBottom:14,fontStyle:"italic"}}>Las medidas van en pulgadas y pies (como trabaja el aserradero). Podés pedir varias maderas en un mismo pedido.</div>
           {asF.items.map((it,i)=>{
             const setIt=(campo,val)=>setAsF(f=>{const its=[...f.items];its[i]={...its[i],[campo]:val};return{...f,items:its};});
@@ -4169,7 +4216,7 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
           {subPint==="pedir"&&(
           <div style={S.card}>
             <button style={{...S.btn("link"),marginBottom:14}} onClick={()=>setSubPint("mis")}>← Volver a mis pedidos</button>
-            <div style={S.cardTitle}>🪣 Pedir pinturas a pinturería</div>
+            <div style={S.cardTitle}>🖌️ Pedir pinturas a pinturería</div>
             <div style={{fontSize:14,color:C.textoSuave,marginBottom:10}}>Agregá un renglón por cada producto que necesitás (incluí color/terminación en la descripción), con su cantidad en litros.</div>
             {pintF.items.map((it,i)=>(
               <div key={i} style={{border:`1px solid ${C.borde}`,borderRadius:0,padding:10,marginBottom:8,background:C.suave}}>
@@ -4268,7 +4315,7 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
                             <div key={key} style={{border:`1px solid ${abiertaCot?C.acento:C.borde}`,borderRadius:0,marginBottom:10,overflow:"hidden",background:C.input}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer"}}
                                 onClick={()=>{const ab=abiertaCot?null:key;setPintAbierta(ab);if(ab){if(ct.visto_carpinteria===false&&selPint)setMisPedidosPint(ps=>ps.map(p=>p.id===selPint.id?{...p,_cantCotNueva:Math.max(0,(p._cantCotNueva||0)-1)}:p));marcarCotVista("cotizaciones_pintureria","visto_carpinteria",ct);setCotizacionesPint(cs=>cs.map(x=>x.id===ct.id?{...x,visto_carpinteria:true}:x));cargarMisPedidosPint();}}}>
-                                <b style={{color:C.marron,fontSize:17}}>🪣 {ct.pintNombre||"Pinturería"}{ct.visto_carpinteria===false&&<span style={{marginLeft:8,fontSize:12,fontWeight:700,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</b>
+                                <b style={{color:C.marron,fontSize:17}}>🖌️ {ct.pintNombre||"Pinturería"}{ct.visto_carpinteria===false&&<span style={{marginLeft:8,fontSize:12,fontWeight:700,color:"#fff",background:"#009966",borderRadius:0,padding:"2px 8px",fontFamily:"'Lato',sans-serif",verticalAlign:"middle"}}>NUEVO</span>}</b>
                                 <div style={{display:"flex",alignItems:"center",gap:10}}>
                                   <b style={{color:C.verde,fontSize:16}}>{fmtPeso(ct.precio_total)}</b>
                                   <span style={{color:C.textoSuave,fontSize:16}}>{abiertaCot?"▲":"▼"}</span>
@@ -5821,9 +5868,9 @@ function PantallaBienvenida({onEntrar}){
         {[
           {e:"🪑",t:"Consumidor Final",d:"Creás un pedido describiendo lo que necesitás, con medidas y hasta una foto de tu croquis. Lo reciben las carpinterías, te mandan presupuestos y vos comparás y elegís el que más te convenga."},
           {e:"🔨",t:"Carpintería",d:"Recibís los pedidos de los clientes y enviás tu presupuesto. Si necesitás materiales, pedís madera a aserraderos, herrajes a ferreterías y pinturas a pinturerías desde la misma app."},
-          {e:"🪵🪵",t:"Aserradero",d:"Recibís pedidos de madera de las carpinterías y respondés con tu cotización."},
+          {e:"🌲",t:"Aserradero",d:"Recibís pedidos de madera de las carpinterías y respondés con tu cotización."},
           {e:"🔩",t:"Ferretería",d:"Recibís pedidos de herrajes y materiales, y cotizás de forma simple y rápida."},
-          {e:"🪣",t:"Pinturería",d:"Recibís pedidos de pinturas, barnices, lacas y esmaltes de las carpinterías, y respondés con tu cotización."},
+          {e:"🖌️",t:"Pinturería",d:"Recibís pedidos de pinturas, barnices, lacas y esmaltes de las carpinterías, y respondés con tu cotización."},
           {e:"🚚",t:"Flete",d:"Gestionás tu agenda de traslados y recibís solicitudes para mover los trabajos."},
         ].map(u=>(<div key={u.t} style={{borderLeft:`3px solid ${C.acento}`,paddingLeft:12,marginBottom:14}}>
           <div style={{fontWeight:700,color:C.marron,fontSize:17}}>{u.e} {u.t}</div>
@@ -5862,7 +5909,7 @@ function PantallaBienvenida({onEntrar}){
                 "Si querés ver y cotizar pedidos de consumidor final, pagás $10.000 por mes — cuando quieras, no hay plazo.",
                 "Antes de cada pago te mostramos el monto exacto y podés elegir «Continuar y pagar» o «Dar de baja» — te podés dar de baja cuando quieras, sin trámites.",
               ]},
-              {icon:"🪵🪣🔩",title:"Aserradero, ferretería y pinturería",color:C.medio,lines:[
+              {icon:"🌲🖌️🔩",title:"Aserradero, ferretería y pinturería",color:C.medio,lines:[
                 "Mes de lanzamiento gratis (hasta el 26/10). Después, $10.000 por mes.",
               ]},
               {icon:"🚚",title:"Flete",color:C.medio,lines:[
@@ -6322,7 +6369,7 @@ const FLUJOS = {
           "Si el cliente subió una foto del croquis, también aparece ahí.",
         ]},
         {type:"branch",label:"¿Te faltan materiales para poder presupuestar?",options:[
-          {icon:"🪵",title:"Sí, necesito comprar",color:C.azul,lines:[
+          {icon:"🌲",title:"Sí, necesito comprar",color:C.azul,lines:[
             "Desde tu panel armás un pedido a aserradero (madera), ferretería (herrajes) o pinturería (pintura).",
             "Esperás que te manden su cotización — también por sobre cerrado, solo la ves vos.",
             "Con ese precio en la mano, armás tu presupuesto para el cliente.",
@@ -6477,7 +6524,7 @@ const FLUJOS = {
   },
 
   aserradero:{
-    titulo:"🪵🪵 Tu circuito como Aserradero",
+    titulo:"🌲 Tu circuito como Aserradero",
     leyenda:[
       {e:"🔒",t:"Sobre cerrado: nadie ve tu precio ni vos el de otros aserraderos."},
       {e:"💬",t:"Chat: para hablar con la carpintería que te pidió el material."},
@@ -6633,7 +6680,7 @@ const FLUJOS = {
   },
 
   pintureria:{
-    titulo:"🪣 Tu circuito como Pinturería",
+    titulo:"🖌️ Tu circuito como Pinturería",
     leyenda:[
       {e:"🔒",t:"Sobre cerrado: nadie ve tu precio ni vos el de otras pinturerías."},
       {e:"💬",t:"Chat: para hablar con la carpintería que te pidió la pintura."},
@@ -6978,7 +7025,7 @@ function AdminUsuarios(){
     setCargando(false);
   })();},[]);
 
-  const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🪣",trabajador:"🧰",admin:"🛡️"};
+  const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🌲",flete:"🚚",ferreteria:"🔩",pintureria:"🖌️",trabajador:"🧰",admin:"🛡️"};
   const filtrados=filtro?lista.filter(u=>u.tipo===filtro):lista;
   const suspendidoActivo=(u)=>u.suspendido_hasta&&new Date(u.suspendido_hasta)>new Date();
 
@@ -7196,9 +7243,9 @@ function AdminQuejas(){
 
 const CIRCUITOS_MOV=[
   {id:"cliente",label:"🪑 Cliente → Carpintería",tablaPed:"pedidos",tablaCot:"presupuestos",campoReqId:"cliente_id",campoProvId:"carpinteria_id"},
-  {id:"aserradero",label:"🪵🪵 Carpintería → Aserradero",tablaPed:"pedidos_aserradero",tablaCot:"cotizaciones_aserradero",campoReqId:"carpinteria_id",campoProvId:"aserradero_id"},
+  {id:"aserradero",label:"🌲 Carpintería → Aserradero",tablaPed:"pedidos_aserradero",tablaCot:"cotizaciones_aserradero",campoReqId:"carpinteria_id",campoProvId:"aserradero_id"},
   {id:"ferreteria",label:"🔩 Carpintería → Ferretería",tablaPed:"pedidos_ferreteria",tablaCot:"cotizaciones_ferreteria",campoReqId:"carpinteria_id",campoProvId:"ferreteria_id"},
-  {id:"pintureria",label:"🪣 Carpintería → Pinturería",tablaPed:"pedidos_pintureria",tablaCot:"cotizaciones_pintureria",campoReqId:"carpinteria_id",campoProvId:"pintureria_id"},
+  {id:"pintureria",label:"🖌️ Carpintería → Pinturería",tablaPed:"pedidos_pintureria",tablaCot:"cotizaciones_pintureria",campoReqId:"carpinteria_id",campoProvId:"pintureria_id"},
   {id:"flete",label:"🚚 Flete",tablaPed:"pedidos_flete",tablaCot:"cotizaciones_flete",campoReqId:"solicitante_id",campoProvId:"flete_id"},
 ];
 
@@ -7953,11 +8000,11 @@ function FiltroUbicacion({pedidos,provincia,ciudad,onProvincia,onCiudad}){
 
 // ─── BOLSA DE TRABAJO ────────────────────────────────────────────────────────
 function VistaBolsaTrabajo({usuario,notif}){
-  const [subVista,setSubVista]=useState("buscar");
-  if(usuario.tipo==="trabajador") return <PerfilTrabajador usuario={usuario} notif={notif}/>;
+  const esTrabajador=usuario.tipo==="trabajador";
+  const [subVista,setSubVista]=useState(esTrabajador?"perfil":"buscar");
   return (
     <div>
-      <TabsConectadas opciones={[["buscar","🔍 Buscar gente"],["perfil","🙋 Sumarme a la bolsa"]]} activo={subVista} onChange={setSubVista}/>
+      <TabsConectadas opciones={[["buscar","🔍 Buscar gente"],["perfil",esTrabajador?"🙋 Mi perfil":"🙋 Sumarme a la bolsa"]]} activo={subVista} onChange={setSubVista}/>
       {subVista==="buscar"?<BuscarTrabajadores usuario={usuario} notif={notif}/>:<PerfilTrabajador usuario={usuario} notif={notif}/>}
     </div>
   );
@@ -8265,7 +8312,7 @@ function App(){
   if(!avisoDiasCerrado&&(usuario.tipo==="carpinteria"||["aserradero","ferreteria","pintureria","flete"].includes(usuario.tipo))&&suscInfo.diasRestantes!=null&&(suscInfo.diasRestantes<=7||!usuario.vio_pantalla_prueba)){
     return <AvisoDiasRestantes dias={suscInfo.diasRestantes} estado={suscInfo.estado} tipo={usuario.tipo} onDarDeBaja={darDeBaja} onContinuar={cerrarAvisoDias}/>;
   }
-  const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🪵🪵",flete:"🚚",ferreteria:"🔩",pintureria:"🪣",trabajador:"🧰"};
+  const EMOJIS={cliente:"🪑",carpinteria:"🔨",aserradero:"🌲",flete:"🚚",ferreteria:"🔩",pintureria:"🖌️",trabajador:"🧰"};
 
   return(
     <div style={S.app}>
@@ -8280,7 +8327,7 @@ function App(){
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
             <div style={{fontSize:18,color:C.crema,fontWeight:700,whiteSpace:"nowrap",fontFamily:"'Lato',sans-serif"}}>{usuario.nombre}</div>
-            {usuario.tipo!=="flete"&&(
+            {usuario.tipo!=="flete"&&usuario.tipo!=="trabajador"&&(
               <button style={{background:navTab==="flete"?C.acento:"transparent",color:navTab==="flete"?C.marron:C.suave,border:`1px solid ${C.suave}44`,borderRadius:0,padding:"4px 10px",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Lato',sans-serif"}} onClick={()=>irAPrincipal("flete")}>Fletes<Badge9 n={badges.flete}/></button>
             )}
             {["carpinteria","aserradero","ferreteria","pintureria","flete"].includes(usuario.tipo)&&(
