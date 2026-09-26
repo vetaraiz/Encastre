@@ -2417,7 +2417,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-25.46</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-26.1</div>
     </div>
   );
 }
@@ -7953,8 +7953,14 @@ function FiltroUbicacion({pedidos,provincia,ciudad,onProvincia,onCiudad}){
 
 // ─── BOLSA DE TRABAJO ────────────────────────────────────────────────────────
 function VistaBolsaTrabajo({usuario,notif}){
+  const [subVista,setSubVista]=useState("buscar");
   if(usuario.tipo==="trabajador") return <PerfilTrabajador usuario={usuario} notif={notif}/>;
-  return <BuscarTrabajadores usuario={usuario} notif={notif}/>;
+  return (
+    <div>
+      <TabsConectadas opciones={[["buscar","🔍 Buscar gente"],["perfil","🙋 Sumarme a la bolsa"]]} activo={subVista} onChange={setSubVista}/>
+      {subVista==="buscar"?<BuscarTrabajadores usuario={usuario} notif={notif}/>:<PerfilTrabajador usuario={usuario} notif={notif}/>}
+    </div>
+  );
 }
 
 function PerfilTrabajador({usuario,notif}){
@@ -8084,6 +8090,7 @@ function BuscarTrabajadores({usuario,notif}){
   useEffect(()=>{cargar();},[cargar]);
 
   const filtrados=perfiles.filter(p=>{
+    if(p.usuario_id===usuario.id) return false;
     if(filtroProv&&p._usuario.provincia!==filtroProv) return false;
     if(filtroCiu&&p._usuario.ciudad!==filtroCiu) return false;
     return true;
