@@ -2439,7 +2439,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-26.7</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-26.8</div>
     </div>
   );
 }
@@ -3837,7 +3837,7 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
           <div style={S.secTitle}>Pedidos de presupuesto de clientes</div>
           {new Date()<FECHA_FIN_PROMO&&(
             <div style={{marginBottom:14,background:"transparent",color:C.marron}}>
-              <div style={{fontWeight:700,fontSize:17,marginBottom:6}}>📅 Estamos en el mes de lanzamiento</div>
+              <div style={{fontWeight:700,fontSize:17,marginBottom:6}}>📅 Mes de lanzamiento: 30 días gratis</div>
               <div style={{fontSize:15}}>Los pedidos de clientes se guardan, pero recién se activan a partir del {FECHA_FIN_PROMO.toLocaleDateString("es-AR")}. Hasta esa fecha es normal que esta lista esté vacía o no se actualice.</div>
             </div>
           )}
@@ -8138,7 +8138,7 @@ function PerfilTrabajador({usuario,notif}){
 
         <div style={{marginBottom:14}}>
           <label style={S.label}>Rubro</label>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
             {RUBROS_TRABAJADOR.map(r=>(
               <button key={r.id} type="button" style={{...S.tag(rubro===r.id),justifyContent:"center"}} onClick={()=>{setRubro(r.id);setCategoria("");}}>{r.emoji} {r.label}</button>
             ))}
