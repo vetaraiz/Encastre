@@ -1887,7 +1887,7 @@ function Badge9({n}){
 // Fila de "solapas" conectadas y redondeadas arriba (formato unificado de tabs en toda la app)
 function TabsConectadas({opciones,activo,onChange,cuenta}){
   return(
-    <div style={{display:"flex",flexWrap:"wrap",marginBottom:14}}>
+    <div style={{display:"flex",marginBottom:14}}>
       {opciones.map(([id,label])=>{
         const on=activo===id;
         return(
@@ -1903,8 +1903,13 @@ function TabsConectadas({opciones,activo,onChange,cuenta}){
             cursor:"pointer",
             fontFamily:"'Lato',sans-serif",
             fontWeight:800,
-            fontSize:15,
-            padding:"10px 16px",
+            fontSize:14,
+            padding:"10px 6px",
+            flex:1,
+            minWidth:0,
+            overflow:"hidden",
+            textOverflow:"ellipsis",
+            whiteSpace:"nowrap",
           }}>{label}{cuenta&&cuenta[id]!=null?` ${cuenta[id]}`:""}</button>
         );
       })}
@@ -2439,7 +2444,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-26.9</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-26.11</div>
     </div>
   );
 }
@@ -6916,7 +6921,6 @@ function ManualUsuario({tipo,onCerrar}){
   const seccion=f?f[tab]:null;
   return(
     <div style={{maxWidth:680,margin:"0 auto"}}>
-      <button style={{...S.btn("link"),marginBottom:16}} onClick={onCerrar}>← Volver</button>
       <div style={S.card}>
         {!f?(
           <>
@@ -7016,7 +7020,6 @@ function ContactoUnificado({usuario,onCerrar}){
 
   return(
     <div style={{maxWidth:640,margin:"0 auto"}}>
-      <button style={{...S.btn("link"),marginBottom:16}} onClick={onCerrar}>← Volver</button>
       <div style={{...S.cardTitle,fontSize:26,marginBottom:16}}>✉️ Reportar o comentar</div>
       <div style={S.card}>
         <label style={S.label}>¿Qué querés hacer?</label>
@@ -7512,7 +7515,6 @@ function Papelera({usuario,onCerrar}){
   };
   return(
     <div style={{maxWidth:640,margin:"0 auto"}}>
-      <button style={{...S.btn("link"),marginBottom:16}} onClick={onCerrar}>← Volver</button>
       <div style={{...S.cardTitle,fontSize:26,marginBottom:8}}>🗑️ Papelera</div>
       <div style={{fontSize:14,color:C.textoSuave,marginBottom:14}}>Los presupuestos y cotizaciones que archivaste. Podés restaurarlos (vuelven a tu lista) o eliminarlos definitivamente. Solo afecta tu vista; el que lo envió no se entera.</div>
       {cargandoArch?(
@@ -7718,7 +7720,6 @@ function MiCuenta({usuario,onCerrar,onActualizar,onDarDeBaja,tabInicial}){
 
   return(
     <div style={{maxWidth:640,margin:"0 auto"}}>
-      <button style={{...S.btn("link"),marginBottom:16}} onClick={onCerrar}>← Volver</button>
       <div style={{...S.cardTitle,fontSize:26,marginBottom:16}}>👤 Mi cuenta</div>
 
       <div style={{display:"flex",gap:8,marginBottom:18}}>
@@ -8160,12 +8161,12 @@ function PerfilTrabajador({usuario,notif}){
           <textarea style={{...S.input,minHeight:70}} value={especialidades} onChange={e=>setEspecialidades(e.target.value)} placeholder="Ej: sierra sinfín, cepilladora, carnet de conducir profesional, etc."/>
         </div>
 
-        <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:14}}>
-          <div style={{flex:1,minWidth:140}}>
+        <div style={{marginBottom:14}}>
+          <div style={{marginBottom:14}}>
             <label style={S.label}>Años de experiencia</label>
             <input type="number" min="0" style={S.input} value={anios} onChange={e=>setAnios(e.target.value)}/>
           </div>
-          <div style={{flex:1,minWidth:140}}>
+          <div>
             <label style={S.label}>Disponibilidad</label>
             <select style={S.input} value={disponibilidad} onChange={e=>setDisponibilidad(e.target.value)}>
               <option value="">Elegí una opción</option>
