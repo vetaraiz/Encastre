@@ -1743,11 +1743,11 @@ const RUBROS_TRABAJADOR = [
   {id:"flete",emoji:"🚚",label:"Flete"},
 ];
 const CATEGORIAS_TRABAJADOR = {
-  carpinteria: ["Oficial","Medio Oficial","Operario","Ayudante","Aprendiz"],
-  aserradero: ["Oficial","Medio Oficial","Operario","Ayudante","Aprendiz"],
+  carpinteria: ["Oficial/a","Medio Oficial/a","Operario/a","Ayudante/a","Aprendiz/a"],
+  aserradero: ["Oficial/a","Medio Oficial/a","Operario/a","Ayudante/a","Aprendiz/a"],
   ferreteria: ["Ventas / Atención al público","Auxiliar con oficio (service técnico)","Cajero/a","Administrativo/a","Maestranza y Servicios"],
   pintureria: ["Ventas / Atención al público","Auxiliar con oficio (service técnico)","Cajero/a","Administrativo/a","Maestranza y Servicios"],
-  flete: ["Chofer 1ª","Chofer 2ª","Chofer 3ª","Peón / Ayudante de logística","Oficial mecánico","Medio Oficial mecánico","Ayudante mecánico"],
+  flete: ["Chofer/a 1ª","Chofer/a 2ª","Chofer/a 3ª","Peón/a / Ayudante de logística","Oficial/a mecánico/a","Medio Oficial/a mecánico/a","Ayudante/a mecánico/a"],
 };
 const DISPONIBILIDAD_LABEL = {tiempo_completo:"Tiempo completo",medio_tiempo:"Medio tiempo",changas:"Changas / por día"};
 const EL = {pendiente:"Pendiente",presupuestado:"Presupuestado",aceptado:"Aceptado",cerrado:"No seleccionado",rechazado:"No seleccionado",enviada:"Enviada",aceptada:"Aceptada",rechazada:"No seleccionada",en_produccion:"En producción",finalizado:"Finalizado",disponible:"Disponible",en_viaje:"En viaje",ocupado:"Ocupado",cancelado:"Cancelado"};
@@ -2289,7 +2289,7 @@ function AuthScreen({onAuth}){
           if(tipo!=="cliente"&&tipo!=="trabajador"){
             const idNuevo=(nuevoUsuario&&nuevoUsuario[0]&&nuevoUsuario[0].id)||null;
             if(idNuevo){
-              try{ await db.insert("suscripciones",{usuario_id:idNuevo,estado:"pendiente",fecha_vencimiento:new Date().toISOString()}); }catch{}
+              try{ const vencPrueba=new Date(); vencPrueba.setDate(vencPrueba.getDate()+30); await db.insert("suscripciones",{usuario_id:idNuevo,estado:"prueba",fecha_vencimiento:vencPrueba.toISOString()}); }catch{}
             }
           }
         } finally { db.limpiarSesion(); }
@@ -2439,7 +2439,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-26.4</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-26.6</div>
     </div>
   );
 }
@@ -3816,10 +3816,6 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
   return(
     <div>
       <div style={{display:"flex",marginBottom:22,alignItems:"stretch"}}>
-        <button style={{...tabBase("pedidos"),flex:"0 0 32%",flexDirection:"column",fontSize:21,padding:"14px 8px",textAlign:"center"}} onClick={()=>setTab("pedidos")}>
-          <span>Pedidos de clientes</span>
-          <Badge9 n={badges.pedidos||0}/>
-        </button>
         <div style={{flex:1,display:"flex"}}>
           {[["aserradero","Aserraderos"],["ferreteria","Ferreterías"],["pintureria","Pinturerías"]].map(([id,l])=>{
             const n=badges[id]||0;
@@ -3830,11 +3826,21 @@ function VistaCarpinteria({usuario,notif,bloqueadoClientes,onIrASuscripcion}){
             );
           })}
         </div>
+        <button style={{...tabBase("pedidos"),flex:"0 0 32%",flexDirection:"column",fontSize:21,padding:"14px 8px",textAlign:"center"}} onClick={()=>setTab("pedidos")}>
+          <span>Pedidos de clientes</span>
+          <Badge9 n={badges.pedidos||0}/>
+        </button>
       </div>
 
       {tab==="pedidos"&&(
         <div>
           <div style={S.secTitle}>Pedidos de presupuesto de clientes</div>
+          {new Date()<FECHA_FIN_PROMO&&(
+            <div style={{marginBottom:14,padding:"14px 16px",background:C.suave,border:`1px solid ${C.acento}`,color:C.marron}}>
+              <div style={{fontWeight:700,fontSize:17,marginBottom:6}}>📅 Estamos en el mes de lanzamiento</div>
+              <div style={{fontSize:15}}>Los pedidos de clientes se guardan, pero recién se activan a partir del {FECHA_FIN_PROMO.toLocaleDateString("es-AR")}. Hasta esa fecha es normal que esta lista esté vacía o no se actualice.</div>
+            </div>
+          )}
           {bloqueadoClientes&&(
             <div style={{marginBottom:14,padding:"14px 16px",background:"#FDECEA",border:`1px solid ${C.error}`,color:C.error}}>
               <div style={{fontWeight:700,fontSize:17,marginBottom:6}}>🔒 Necesitás una suscripción activa para ver y cotizar pedidos de clientes</div>
@@ -5872,6 +5878,7 @@ function PantallaBienvenida({onEntrar}){
           {e:"🔩",t:"Ferretería",d:"Recibís pedidos de herrajes y materiales, y cotizás de forma simple y rápida."},
           {e:"🖌️",t:"Pinturería",d:"Recibís pedidos de pinturas, barnices, lacas y esmaltes de las carpinterías, y respondés con tu cotización."},
           {e:"🚚",t:"Flete",d:"Gestionás tu agenda de traslados y recibís solicitudes para mover los trabajos."},
+          {e:"🧰",t:"Trabajador/a",d:"Buscás changas o empleo en el rubro madera. Cargás tu perfil (rubro, categoría, experiencia) y las carpinterías, aserraderos, ferreterías, pinturerías y fletes te encuentran para ofrecerte trabajo. No pagás nada."},
         ].map(u=>(<div key={u.t} style={{borderLeft:`3px solid ${C.acento}`,paddingLeft:12,marginBottom:14}}>
           <div style={{fontWeight:700,color:C.marron,fontSize:17}}>{u.e} {u.t}</div>
           <div style={{fontSize:16,color:C.textoSuave,marginTop:3,lineHeight:1.6}}>{u.d}</div>
@@ -5915,6 +5922,9 @@ function PantallaBienvenida({onEntrar}){
               {icon:"🚚",title:"Flete",color:C.medio,lines:[
                 "Mes de lanzamiento gratis (hasta el 26/10). Después, $7.000 por mes.",
               ]},
+              {icon:"🧰",title:"Trabajador/a",color:C.verde,lines:[
+                "Encastre es gratis para vos. No pagás suscripción, nunca.",
+              ]},
             ]}/>
             <FlowArrow/>
             <FlowStep n={2} icon="🔑" title="Iniciás sesión" lines={[
@@ -5956,6 +5966,7 @@ function PantallaBienvenida({onEntrar}){
           "🚚 Agenda de fletes para coordinar los traslados.",
           "⭐ Calificaciones con estrellas al finalizar un trabajo.",
           "📍 Ubicación por provincia y localidad, para encontrar trabajos y proveedores cerca.",
+          "🧰 Bolsa de trabajo, para buscar changas o publicarte y que te encuentren.",
           "✉️ Reportar un problema o enviar un comentario a la administración.",
         ].map((p,i)=>(<div key={i} style={{fontSize:16,color:C.textoSuave,lineHeight:1.7,marginBottom:6}}>{p}</div>))}
         <button style={{...S.btn("dark"),width:"100%",justifyContent:"center",marginTop:16}} onClick={onEntrar}>Registrarme / Ingresar →</button>
@@ -6828,6 +6839,69 @@ const FLUJOS = {
         ]},
         {type:"arrow"},
         {type:"step",n:8,icon:"✉️",title:"Reportás un problema o dejás un comentario",lines:[
+          "Tocás los tres puntitos (⋮) → «Reportar o comentar».",
+          "El mensaje llega directo a la administración de Encastre.",
+        ]},
+      ]
+    }
+  },
+
+  trabajador:{
+    titulo:"🧰 Tu circuito como Trabajador/a",
+    leyenda:[
+      {e:"🔍",t:"Buscar gente: ahí también aparece tu propio perfil, marcado «VOS»."},
+      {e:"🎁",t:"La bolsa de trabajo es gratis, no pagás suscripción."},
+      {e:"⋮",t:"Los tres puntitos arriba a la derecha: ahí está el menú."},
+    ],
+    pagos:{
+      titulo:"Inscripción",
+      pasos:[
+        {type:"step",n:1,icon:"📝",title:"Te registraste",lines:[
+          "Elegiste «Trabajador/a» como tipo de usuario.",
+          "Completaste nombre, email, teléfono y contraseña.",
+          "Cargaste tu provincia y tu localidad.",
+        ]},
+        {type:"arrow",label:"siempre gratis"},
+        {type:"step",n:2,icon:"🎁",title:"No pagás nada",lines:[
+          "La bolsa de trabajo es gratis para vos, sin límite de tiempo.",
+        ]},
+        {type:"arrow"},
+        {type:"step",n:3,icon:"🔑",title:"Iniciás sesión",lines:[
+          "Entrás con tu email y tu contraseña, cada vez que volvés a usar la app.",
+        ]},
+      ]
+    },
+    practico:{
+      titulo:"Cómo funciona tu circuito",
+      pasos:[
+        {type:"step",n:1,icon:"🙋",title:"Cargás tu perfil",lines:[
+          "Elegís tu rubro: carpintería, aserradero, ferretería, pinturería o flete.",
+          "Elegís tu categoría (Oficial/a, Medio Oficial/a, Ayudante/a, etc.).",
+          "Contás tus especialidades, herramientas o maquinaria que manejás.",
+          "Cargás años de experiencia y tu disponibilidad.",
+          "Tocás «Guardar perfil».",
+        ]},
+        {type:"arrow"},
+        {type:"step",n:2,icon:"🔍",title:"Verificás cómo te ven",lines:[
+          "Entrás a «Buscar gente» y elegís tu mismo rubro.",
+          "Tu propia tarjeta aparece ahí también, marcada con «VOS», para que revises que quedó bien cargada.",
+        ]},
+        {type:"arrow"},
+        {type:"step",n:3,icon:"📍",title:"Tu contacto es lo que ven de vos",lines:[
+          "Las carpinterías, aserraderos, ferreterías, pinturerías y fletes ven tu nombre, teléfono, ubicación y email.",
+          "Tu ubicación y teléfono son los que cargaste en «Mi cuenta»: revisalos ahí para que te puedan contactar bien.",
+        ]},
+        {type:"arrow"},
+        {type:"step",n:4,icon:"✉️",title:"Te contactan por teléfono o email",lines:[
+          "Quien te busca te puede llamar o escribirte un email directamente desde tu tarjeta.",
+          "Todavía no hay chat dentro de la app para esto — te contactan por fuera, con los datos que cargaste.",
+        ]},
+        {type:"arrow"},
+        {type:"step",n:5,icon:"🔍",title:"También podés buscar vos",lines:[
+          "Desde «Buscar gente» podés mirar el perfil de otros trabajadores en cualquier rubro, con filtro por provincia y localidad.",
+        ]},
+        {type:"arrow"},
+        {type:"step",n:6,icon:"✉️",title:"Reportás un problema o dejás un comentario",lines:[
           "Tocás los tres puntitos (⋮) → «Reportar o comentar».",
           "El mensaje llega directo a la administración de Encastre.",
         ]},
@@ -8137,7 +8211,6 @@ function BuscarTrabajadores({usuario,notif}){
   useEffect(()=>{cargar();},[cargar]);
 
   const filtrados=perfiles.filter(p=>{
-    if(p.usuario_id===usuario.id) return false;
     if(filtroProv&&p._usuario.provincia!==filtroProv) return false;
     if(filtroCiu&&p._usuario.ciudad!==filtroCiu) return false;
     return true;
@@ -8168,10 +8241,10 @@ function BuscarTrabajadores({usuario,notif}){
       {cargando?<div style={S.card}>Cargando...</div>:(
         filtrados.length===0?<div style={S.card}><div style={{color:C.textoSuave,textAlign:"center",padding:20}}>Todavía no hay trabajadores cargados en este rubro.</div></div>:
         filtrados.map(p=>(
-          <div key={p.id} style={{...S.card,marginBottom:12}}>
+          <div key={p.id} style={{...S.card,marginBottom:12,...(p.usuario_id===usuario.id?{borderColor:C.acento,borderWidth:2}:{})}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
               <div>
-                <div style={{fontWeight:700,color:C.marron,fontSize:18}}>{p._usuario.nombre||"(sin nombre)"}</div>
+                <div style={{fontWeight:700,color:C.marron,fontSize:18}}>{p._usuario.nombre||"(sin nombre)"}{p.usuario_id===usuario.id&&<span style={{marginLeft:8,fontSize:12,fontWeight:700,color:C.marron,background:C.acento,padding:"2px 8px"}}>VOS</span>}</div>
                 <div style={{fontSize:15,color:C.textoSuave,marginTop:2}}>{p.categoria}{p.anios_experiencia!=null?` · ${p.anios_experiencia} años de experiencia`:""}</div>
                 {(p._usuario.ciudad||p._usuario.provincia)&&<div style={{fontSize:14,color:C.textoSuave,marginTop:2}}>📍 {[p._usuario.ciudad,p._usuario.provincia].filter(Boolean).join(", ")}</div>}
               </div>
@@ -8181,7 +8254,7 @@ function BuscarTrabajadores({usuario,notif}){
             {p.descripcion&&<div style={{fontSize:15,color:C.texto,marginTop:6}}>{p.descripcion}</div>}
             <div style={{marginTop:12,display:"flex",gap:8,flexWrap:"wrap"}}>
               {p._usuario.telefono&&<a href={`tel:${p._usuario.telefono}`} style={{...S.btn("dark"),fontSize:15,textDecoration:"none"}}>📞 Llamar</a>}
-              {p._usuario.email&&<a href={`mailto:${p._usuario.email}`} style={{...S.btn("ghost"),fontSize:15,textDecoration:"none"}}>✉️ Email</a>}
+              {p._usuario.email&&<button type="button" style={{...S.btn("ghost"),fontSize:15}} onClick={()=>{const em=p._usuario.email;try{navigator.clipboard.writeText(em);}catch{}notif&&notif(`✉️ ${em} (copiado)`);window.location.href=`mailto:${em}`;}}>✉️ {p._usuario.email}</button>}
               {!p._usuario.telefono&&!p._usuario.email&&<span style={{fontSize:14,color:C.textoSuave,fontStyle:"italic"}}>Este trabajador todavía no cargó datos de contacto.</span>}
             </div>
           </div>
@@ -8203,7 +8276,29 @@ function App(){
   const [enManual,setEnManual]=useState(false);
   const [suscInfo,setSuscInfo]=useState({cargando:true,vencida:false});
   const [cuentaTab,setCuentaTab]=useState("privado");
+  const [idxPantalla,setIdxPantalla]=useState(0);
+  const [maxIdxPantalla,setMaxIdxPantalla]=useState(0);
   const badges=useBadges(sesion?.usuario);
+
+  // Navegación tipo navegador: cada pantalla (Mi cuenta, Manual, Contacto, Papelera, y las solapas principal/flete/bolsa/conversor)
+  // queda registrada en el historial del navegador, para poder usar "← Atrás" / "Adelante →" (propios o del navegador) entre ellas.
+  const aplicarPantalla=(desc)=>{
+    setNavTab(desc.navTab||"principal");
+    setEnMiCuenta(!!desc.enMiCuenta);
+    setEnContacto(!!desc.enContacto);
+    setEnPapelera(!!desc.enPapelera);
+    setEnManual(!!desc.enManual);
+    if(desc.cuentaTab) setCuentaTab(desc.cuentaTab);
+    setMenuAbierto(false);
+  };
+  const cambiarPantalla=(cambios)=>{
+    const desc={navTab,cuentaTab,enMiCuenta:false,enContacto:false,enPapelera:false,enManual:false,...cambios};
+    aplicarPantalla(desc);
+    const nuevoIdx=idxPantalla+1;
+    try{ window.history.pushState({encastrePantalla:desc,idx:nuevoIdx},""); }catch{}
+    setIdxPantalla(nuevoIdx);
+    setMaxIdxPantalla(nuevoIdx);
+  };
 
   useEffect(()=>{
     const usu=sesion?.usuario;
@@ -8240,8 +8335,7 @@ function App(){
 
   // Volver a la pantalla principal cerrando todo lo que esté abierto encima
   const irAPrincipal=(id)=>{
-    setEnMiCuenta(false); setEnContacto(false); setEnPapelera(false); setMenuAbierto(false);
-    setNavTab(id);
+    cambiarPantalla({navTab:id});
     // aviso a las vistas hijas para que cierren cualquier pedido/cotización abierto
     try{ window.dispatchEvent(new CustomEvent("encastre-ir-principal")); }catch{}
   };
@@ -8262,9 +8356,21 @@ function App(){
     };
     window.addEventListener("encastre-sesion-vencida",vencida);
 
-    // Interceptar el botón "atrás" para confirmar antes de salir de la app
-    try{ window.history.pushState({encastre:true},""); }catch{}
+    // Pantalla raíz del historial de navegación interna, más el interceptor del botón "atrás" del dispositivo:
+    // si hay una pantalla interna (Mi cuenta, Manual, etc.) para volver, se muestra esa; si no queda ninguna, se confirma salida.
+    try{ window.history.pushState({encastre:true,idx:0},""); }catch{}
     const alVolver=(ev)=>{
+      const st=ev.state;
+      if(st&&st.encastrePantalla){
+        aplicarPantalla(st.encastrePantalla);
+        setIdxPantalla(st.idx||0);
+        return;
+      }
+      if(st&&st.encastre){
+        aplicarPantalla({navTab:"principal"});
+        setIdxPantalla(0);
+        return;
+      }
       const salir=window.confirm("¿Desea salir de la aplicación?");
       if(salir){
         // dejar que el navegador vaya atrás de verdad
@@ -8272,7 +8378,8 @@ function App(){
         window.history.back();
       }else{
         // re-empujar el estado para seguir interceptando
-        try{ window.history.pushState({encastre:true},""); }catch{}
+        try{ window.history.pushState({encastre:true,idx:0},""); }catch{}
+        setIdxPantalla(0);
       }
     };
     window.addEventListener("popstate",alVolver);
@@ -8340,12 +8447,12 @@ function App(){
                   <div onClick={()=>setMenuAbierto(false)} style={{position:"fixed",inset:0,zIndex:200}}/>
                   <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:C.card,border:`1px solid ${C.borde}`,borderRadius:0,boxShadow:"0 6px 24px #5A4A3A44",zIndex:201,minWidth:190,overflow:"hidden"}}>
                     <div style={{padding:"12px 18px",borderBottom:`1px solid ${C.borde}`,fontSize:13,fontWeight:700,color:C.textoSuave,textTransform:"uppercase",letterSpacing:.5}}>{usuario.tipo}</div>
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("privado");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setEnManual(false);setMenuAbierto(false);}}>Mi cuenta</button>
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnManual(true);setEnMiCuenta(false);setEnContacto(false);setEnPapelera(false);setMenuAbierto(false);}}>Manual</button>
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>cambiarPantalla({enMiCuenta:true,cuentaTab:"privado"})}>Mi cuenta</button>
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>cambiarPantalla({enManual:true})}>Manual</button>
                     {(usuario.tipo==="cliente"||usuario.tipo==="carpinteria")&&<button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>irAPrincipal("conversor")}>Conversor</button>}
-                    {usuario.tipo!=="admin"&&usuario.tipo!=="cliente"&&usuario.tipo!=="trabajador"&&<button style={{display:"block",width:"100%",textAlign:"left",background:suscInfo.vencida?"#C0392B22":"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:suscInfo.vencida?"#C0392B":C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);setEnContacto(false);setEnPapelera(false);setEnManual(false);setMenuAbierto(false);}}>Suscripción{suscInfo.vencida?" ⚠️":""}</button>}
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnContacto(true);setEnMiCuenta(false);setEnPapelera(false);setEnManual(false);setMenuAbierto(false);}}>Reportar o comentar</button>
-                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setEnPapelera(true);setEnMiCuenta(false);setEnContacto(false);setEnManual(false);setMenuAbierto(false);}}>Papelera</button>
+                    {usuario.tipo!=="admin"&&usuario.tipo!=="cliente"&&usuario.tipo!=="trabajador"&&<button style={{display:"block",width:"100%",textAlign:"left",background:suscInfo.vencida?"#C0392B22":"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:suscInfo.vencida?"#C0392B":C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>cambiarPantalla({enMiCuenta:true,cuentaTab:"suscripcion"})}>Suscripción{suscInfo.vencida?" ⚠️":""}</button>}
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>cambiarPantalla({enContacto:true})}>Reportar o comentar</button>
+                    <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>cambiarPantalla({enPapelera:true})}>Papelera</button>
                     <button style={{display:"block",width:"100%",textAlign:"left",background:"transparent",border:"none",borderTop:`1px solid ${C.borde}`,padding:"14px 18px",cursor:"pointer",fontSize:16,fontWeight:400,color:C.marron,fontFamily:"'Lato',sans-serif"}} onClick={()=>{setMenuAbierto(false);cerrar();setMostrarBienvenida(true);}}>Salir</button>
                   </div>
                 </>
@@ -8357,24 +8464,30 @@ function App(){
 
       {/* CONTENIDO */}
       <div style={S.main}>
+        {(idxPantalla>0||idxPantalla<maxIdxPantalla)&&(
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
+            <div>{idxPantalla>0&&<button type="button" style={{...S.btn("link"),background:"transparent"}} onClick={()=>window.history.back()}>← Atrás</button>}</div>
+            <div>{idxPantalla<maxIdxPantalla&&<button type="button" style={{...S.btn("link"),background:"transparent"}} onClick={()=>window.history.forward()}>Adelante →</button>}</div>
+          </div>
+        )}
         {enMiCuenta ? (
-          <MiCuenta usuario={usuario} onCerrar={()=>setEnMiCuenta(false)} onActualizar={actualizarUsuario} onDarDeBaja={darDeBaja} tabInicial={cuentaTab}/>
+          <MiCuenta usuario={usuario} onCerrar={()=>window.history.back()} onActualizar={actualizarUsuario} onDarDeBaja={darDeBaja} tabInicial={cuentaTab}/>
         ) : enContacto ? (
-          <ContactoUnificado usuario={usuario} onCerrar={()=>setEnContacto(false)}/>
+          <ContactoUnificado usuario={usuario} onCerrar={()=>window.history.back()}/>
         ) : enPapelera ? (
-          <Papelera usuario={usuario} onCerrar={()=>setEnPapelera(false)}/>
+          <Papelera usuario={usuario} onCerrar={()=>window.history.back()}/>
         ) : enManual ? (
-          <ManualUsuario tipo={usuario.tipo} onCerrar={()=>setEnManual(false)}/>
+          <ManualUsuario tipo={usuario.tipo} onCerrar={()=>window.history.back()}/>
         ) : (
           <>
             {navTab==="principal"&&usuario.tipo==="cliente"&&<VistaCliente usuario={usuario} notif={setNotifMsg}/>}
-            {navTab==="principal"&&usuario.tipo==="carpinteria"&&<VistaCarpinteria usuario={usuario} notif={setNotifMsg} bloqueadoClientes={suscInfo.vencida} onIrASuscripcion={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);}}/>}
-            {navTab==="principal"&&usuario.tipo==="aserradero"&&<VistaAserradero usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);}}/>}
-            {navTab==="principal"&&usuario.tipo==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);}}/>}
-            {navTab==="principal"&&usuario.tipo==="ferreteria"&&<VistaFerreteria usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);}}/>}
-            {navTab==="principal"&&usuario.tipo==="pintureria"&&<VistaPintureria usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);}}/>}
+            {navTab==="principal"&&usuario.tipo==="carpinteria"&&<VistaCarpinteria usuario={usuario} notif={setNotifMsg} bloqueadoClientes={suscInfo.vencida} onIrASuscripcion={()=>cambiarPantalla({enMiCuenta:true,cuentaTab:"suscripcion"})}/>}
+            {navTab==="principal"&&usuario.tipo==="aserradero"&&<VistaAserradero usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>cambiarPantalla({enMiCuenta:true,cuentaTab:"suscripcion"})}/>}
+            {navTab==="principal"&&usuario.tipo==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>cambiarPantalla({enMiCuenta:true,cuentaTab:"suscripcion"})}/>}
+            {navTab==="principal"&&usuario.tipo==="ferreteria"&&<VistaFerreteria usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>cambiarPantalla({enMiCuenta:true,cuentaTab:"suscripcion"})}/>}
+            {navTab==="principal"&&usuario.tipo==="pintureria"&&<VistaPintureria usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>cambiarPantalla({enMiCuenta:true,cuentaTab:"suscripcion"})}/>}
             {navTab==="principal"&&usuario.tipo==="trabajador"&&<VistaBolsaTrabajo usuario={usuario} notif={setNotifMsg}/>}
-            {navTab==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>{setCuentaTab("suscripcion");setEnMiCuenta(true);}}/>}
+            {navTab==="flete"&&<VistaFlete usuario={usuario} notif={setNotifMsg} bloqueado={suscInfo.vencida} onIrASuscripcion={()=>cambiarPantalla({enMiCuenta:true,cuentaTab:"suscripcion"})}/>}
             {navTab==="bolsa"&&<VistaBolsaTrabajo usuario={usuario} notif={setNotifMsg}/>}
             {navTab==="conversor"&&<VistaConversor/>}
           </>
