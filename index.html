@@ -2444,7 +2444,7 @@ function AuthScreen({onAuth}){
       </div>
 
       <div style={{marginTop:20,fontSize:17,color:C.textoSuave,letterSpacing:.5}}>Donde la madera tiene origen</div>
-      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-26.11</div>
+      <div style={{marginTop:6,fontSize:13,color:"#B8A99A"}}>v2026-09-26.12</div>
     </div>
   );
 }
@@ -8129,6 +8129,20 @@ function PerfilTrabajador({usuario,notif}){
     setGuardando(false);
   };
 
+  const [borrando,setBorrando]=useState(false);
+  const desinscribirse=async()=>{
+    if(!perfil)return;
+    if(!window.confirm("¿Desinscribirte de la bolsa de trabajo? Tu perfil deja de aparecer en \"Buscar gente\". Podés volver a cargarlo cuando quieras."))return;
+    setBorrando(true);
+    try{
+      await db.remove("perfiles_trabajador",`id=eq.${perfil.id}`);
+      setPerfil(null);
+      setRubro(""); setCategoria(""); setEspecialidades(""); setAnios(""); setDisponibilidad(""); setDescripcion("");
+      notif&&notif("Te desinscribiste de la bolsa de trabajo");
+    }catch(e){ notif&&notif("No se pudo desinscribir"); }
+    setBorrando(false);
+  };
+
   if(cargando) return <div style={S.card}>Cargando...</div>;
 
   return(
@@ -8183,6 +8197,12 @@ function PerfilTrabajador({usuario,notif}){
         <div style={{fontSize:14,color:C.textoSuave,marginBottom:14}}>📍 Tu ubicación y teléfono son los que cargaste en "Mi cuenta". Revisalos ahí para que te puedan contactar.</div>
 
         <button style={S.btn("dark")} disabled={guardando} onClick={guardar}>{guardando?"Guardando...":"💾 Guardar perfil"}</button>
+
+        {perfil&&(
+          <div style={{marginTop:18,paddingTop:14,borderTop:`1px solid ${C.borde}`}}>
+            <button type="button" style={{...S.btn("ghost"),fontSize:14,color:C.error,border:`1px solid ${C.error}`}} disabled={borrando} onClick={desinscribirse}>{borrando?"⟳ Desinscribiendo...":"🚫 Desinscribirme de la bolsa de trabajo"}</button>
+          </div>
+        )}
       </div>
     </div>
   );
