@@ -3476,7 +3476,13 @@ function AuthScreen({
         });
       }
     } catch (e) {
-      setErr("Error: " + (e.message || "Revisá tu conexión"));
+      const em = String(e && e.message || "");
+      if (em.includes("usuarios_documento_unique") || em.includes("23505") && em.includes("documento")) {
+        const td = entidad === "empresa" ? "CUIT" : "DNI";
+        setErr(`Ya existe una cuenta con ese ${td}. Si es tuya, iniciá sesión o usá '¿Olvidaste tu contraseña?' para recuperarla.`);
+      } else {
+        setErr("Error: " + (em || "Revisá tu conexión"));
+      }
     }
     if (window.turnstile && captchaWidgetId.current !== null) {
       try {
@@ -3952,7 +3958,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-09-27.1"));
+  }, "v2026-09-28.1"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -18802,7 +18808,7 @@ function App() {
     }
     await cerrar();
     setMostrarBienvenida(true);
-    alert("Tu cuenta fue dada de baja. ¡Gracias por haber sido parte de Encastre!");
+    alert("Tu cuenta fue dada de baja. ¡Gracias por haber sido parte de Encastre! Te esperamos, que vuelvas pronto.");
   };
   if (mostrarBienvenida && !sesion) return /*#__PURE__*/React.createElement(PantallaBienvenida, {
     onEntrar: () => setMostrarBienvenida(false)
