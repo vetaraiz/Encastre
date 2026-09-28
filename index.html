@@ -3958,7 +3958,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-09-28.1"));
+  }, "v2026-09-28.2"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -11257,7 +11257,7 @@ function VistaFlete({
     placeholder: "¿Necesita ayudante, embalaje, acceso difícil, etc.?",
     style: S.input
   })), pedF.origen && pedF.destino && /*#__PURE__*/React.createElement("a", {
-    href: `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${encodeURIComponent(pedF.origen)};${encodeURIComponent(pedF.destino)}`,
+    href: `https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=${encodeURIComponent(/argentina/i.test(pedF.origen) ? pedF.origen : pedF.origen + ", Argentina")}&destination=${encodeURIComponent(/argentina/i.test(pedF.destino) ? pedF.destino : pedF.destino + ", Argentina")}`,
     target: "_blank",
     rel: "noopener noreferrer",
     style: {
@@ -18988,7 +18988,10 @@ function App() {
       lineHeight: 1,
       fontFamily: "'Lato',sans-serif"
     },
-    onClick: () => setMenuAbierto(v => !v)
+    onClick: e => {
+      const r = e.currentTarget.getBoundingClientRect();
+      setMenuAbierto(v => v ? false : Math.round(r.bottom + 6));
+    }
   }, "⋮"), menuAbierto && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     onClick: () => setMenuAbierto(false),
     style: {
@@ -18998,16 +19001,19 @@ function App() {
     }
   }), /*#__PURE__*/React.createElement("div", {
     style: {
-      position: "absolute",
-      right: 0,
-      top: "calc(100% + 6px)",
+      position: "fixed",
+      right: 8,
+      top: typeof menuAbierto === "number" ? menuAbierto : 60,
       background: C.card,
       border: `1px solid ${C.borde}`,
       borderRadius: 0,
       boxShadow: "0 6px 24px #5A4A3A44",
       zIndex: 201,
       minWidth: 190,
-      overflow: "hidden"
+      maxWidth: "calc(100vw - 16px)",
+      maxHeight: `calc(100vh - ${typeof menuAbierto === "number" ? menuAbierto : 60}px - 12px)`,
+      overflowX: "hidden",
+      overflowY: "auto"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
