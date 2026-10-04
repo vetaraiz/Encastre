@@ -3988,10 +3988,33 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-04.1"));
+  }, "v2026-10-04.2"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
+// Fecha + hora de un mensaje de chat: "Hoy 14:32", "Ayer 09:10", "03/10 18:45" (con año si no es el actual)
+function fechaHoraChat(iso) {
+  const d = new Date(iso);
+  const hora = d.toLocaleTimeString("es-AR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+  const hoy = new Date();
+  const ayer = new Date();
+  ayer.setDate(hoy.getDate() - 1);
+  const mismoDia = (x, y) => x.getFullYear() === y.getFullYear() && x.getMonth() === y.getMonth() && x.getDate() === y.getDate();
+  if (mismoDia(d, hoy)) return `Hoy ${hora}`;
+  if (mismoDia(d, ayer)) return `Ayer ${hora}`;
+  const fecha = d.toLocaleDateString("es-AR", d.getFullYear() === hoy.getFullYear() ? {
+    day: "2-digit",
+    month: "2-digit"
+  } : {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
+  return `${fecha} ${hora}`;
+}
 function Chat({
   pedidoId,
   tipoPedido,
@@ -4271,10 +4294,7 @@ function Chat({
         color: propio ? C.acento : C.textoSuave,
         marginBottom: 2
       }
-    }, new Date(m.created_at).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit"
-    })), /*#__PURE__*/React.createElement("div", {
+    }, fechaHoraChat(m.created_at)), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 16,
         color: propio ? C.crema : C.texto
