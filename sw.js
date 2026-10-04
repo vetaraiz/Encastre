@@ -1,4 +1,4 @@
-const CACHE_NAME = 'encastre-v5';
+const CACHE_NAME = 'encastre-v6';
 
 // Librerías pesadas que solo hace falta bajar una vez (no cambian nunca)
 const LIBS = [
@@ -71,7 +71,7 @@ self.addEventListener('push', event => {
     self.registration.showNotification(datos.titulo, {
       body: datos.cuerpo,
       icon: '/logo-192.png',
-      badge: '/logo-192.png',
+      badge: '/badge-96.png',
       data: { url: datos.url || '/' },
       vibrate: [100, 50, 100]
     })
