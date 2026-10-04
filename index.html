@@ -3194,6 +3194,7 @@ function AuthScreen({
   const [tipo, setTipo] = useState("");
   const [ciudad, setCiudad] = useState("");
   const [provincia, setProvincia] = useState("");
+  const [barrio, setBarrio] = useState("");
   const [err, setErr] = useState("");
   const [ok, setOk] = useState("");
   const [cargando, setCargando] = useState(false);
@@ -3258,7 +3259,7 @@ function AuthScreen({
     const d = soloDigitos(raw);
     return d.length >= 7 && d.length <= 8;
   };
-  const enPromoLanzamiento = new Date() < FECHA_FIN_PROMO;
+  const enPromoLanzamiento = false; // los pedidos de clientes se publican desde el primer día
   const tipos = [{
     id: "cliente",
     emoji: "🪑",
@@ -3329,6 +3330,31 @@ function AuthScreen({
         }
         const tipoDoc = entidad === "empresa" ? "CUIT" : "DNI";
         const docLimpio = soloDigitos(documento);
+        // Antes de crear el acceso: verificar que el documento esté libre y limpiar un acceso a medias
+        // (sin ficha) que haya quedado con este mail de un intento anterior. Si la función no existe o falla, se sigue igual.
+        try {
+          const rPrep = await fetch(`${SUPABASE_URL}/rest/v1/rpc/preparar_registro`, {
+            method: "POST",
+            headers: {
+              "apikey": SUPABASE_KEY,
+              "Authorization": `Bearer ${SUPABASE_KEY}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              p_doc: docLimpio,
+              p_email: email.trim().toLowerCase()
+            })
+          });
+          if (rPrep.ok) {
+            const prep = await rPrep.json();
+            if (prep === "documento_usado") {
+              setErr(`Ya existe una cuenta con ese ${tipoDoc}. Si es tuya, iniciá sesión o usá '¿Olvidaste tu contraseña?' para recuperarla.`);
+              resetCaptcha();
+              setCargando(false);
+              return;
+            }
+          }
+        } catch {}
         const signUpRes = await db.signUp(email.trim().toLowerCase(), pass, captchaToken);
         if (!signUpRes._httpOk) {
           const rawMsg = (signUpRes.msg || signUpRes.error_description || signUpRes.message || (typeof signUpRes.error === "string" ? signUpRes.error : signUpRes.error?.message) || "").toString();
@@ -3387,6 +3413,7 @@ function AuthScreen({
               email: emailLimpio,
               ciudad,
               provincia: provincia || null,
+              barrio: barrio || null,
               tipo_documento: tipoDoc,
               documento: docLimpio
             });
@@ -3398,6 +3425,7 @@ function AuthScreen({
               email: emailLimpio,
               ciudad,
               provincia: provincia || null,
+              barrio: barrio || null,
               tipo_documento: tipoDoc,
               documento: docLimpio
             });
@@ -3712,7 +3740,9 @@ function AuthScreen({
     provincia: provincia,
     ciudad: ciudad,
     onProvincia: setProvincia,
-    onCiudad: setCiudad
+    onCiudad: setCiudad,
+    barrio: barrio,
+    onBarrio: setBarrio
   }), tipo !== "trabajador" && /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 12
@@ -3958,7 +3988,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-09-28.2"));
+  }, "v2026-10-04.1"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -4460,7 +4490,7 @@ function NuevoPedido({
   onCancelar,
   notif
 }) {
-  const enPromoLanzamiento = new Date() < FECHA_FIN_PROMO;
+  const enPromoLanzamiento = false; // los pedidos de clientes se publican desde el primer día
   const itemVacio = () => ({
     descripcion: "",
     alto: "",
@@ -4985,18 +5015,10 @@ function NuevoPedido({
     provincia: provincia,
     ciudad: ciudad,
     onProvincia: setProvincia,
-    onCiudad: setCiudad
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginBottom: 14
-    }
-  }, /*#__PURE__*/React.createElement("label", {
-    style: S.label
-  }, "Barrio"), /*#__PURE__*/React.createElement("input", {
-    style: S.input,
-    value: barrio,
-    onChange: e => setBarrio(e.target.value)
-  })), /*#__PURE__*/React.createElement(Divider, null), /*#__PURE__*/React.createElement("div", {
+    onCiudad: setCiudad,
+    barrio: barrio,
+    onBarrio: setBarrio
+  }), /*#__PURE__*/React.createElement(Divider, null), /*#__PURE__*/React.createElement("div", {
     style: S.secTitle
   }, "⏰ Fecha límite para recibir presupuestos ", /*#__PURE__*/React.createElement("span", {
     style: {
@@ -6251,8 +6273,6 @@ function VistaCarpinteria({
   const cargar = useCallback(async () => {
     try {
       let d = await db.select("pedidos", "?order=created_at.desc");
-      // Mes de lanzamiento: los pedidos de consumidores finales se guardan pero se publican recién el 26/10
-      if (new Date() < FECHA_FIN_PROMO) d = d.filter(p => new Date(p.created_at) >= FECHA_FIN_PROMO);
       const ids = [...new Set(d.map(p => p.cliente_id).filter(Boolean))];
       let mapa = {};
       if (ids.length) {
@@ -7320,7 +7340,7 @@ function VistaCarpinteria({
     n: badges.pedidos || 0
   }))), tab === "pedidos" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: S.secTitle
-  }, "Pedidos de presupuesto de clientes"), new Date() < FECHA_FIN_PROMO && /*#__PURE__*/React.createElement("div", {
+  }, "Pedidos de presupuesto de clientes"), false && /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 14,
       background: "transparent",
@@ -7811,21 +7831,13 @@ function VistaCarpinteria({
     onCiudad: v => setAsF(f => ({
       ...f,
       ciudad: v
-    }))
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginBottom: 14
-    }
-  }, /*#__PURE__*/React.createElement("label", {
-    style: S.label
-  }, "Barrio"), /*#__PURE__*/React.createElement("input", {
-    style: S.input,
-    value: asF.barrio,
-    onChange: e => setAsF(f => ({
+    })),
+    barrio: asF.barrio,
+    onBarrio: v => setAsF(f => ({
       ...f,
-      barrio: e.target.value
+      barrio: v
     }))
-  })), /*#__PURE__*/React.createElement(BannerFalta, {
+  }), /*#__PURE__*/React.createElement(BannerFalta, {
     activo: intAs,
     lista: [[asF.items.every(it => !it.material.trim() || !it.pies || !it.pulgadas || !it.cantidad), "al menos una madera completa (tipo, largo, ancho y cantidad)"]]
   }), /*#__PURE__*/React.createElement("div", {
@@ -8304,21 +8316,13 @@ function VistaCarpinteria({
     onCiudad: v => setFerrF(f => ({
       ...f,
       ciudad: v
+    })),
+    barrio: ferrF.barrio,
+    onBarrio: v => setFerrF(f => ({
+      ...f,
+      barrio: v
     }))
   }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginBottom: 14
-    }
-  }, /*#__PURE__*/React.createElement("label", {
-    style: S.label
-  }, "Barrio"), /*#__PURE__*/React.createElement("input", {
-    style: S.input,
-    value: ferrF.barrio,
-    onChange: e => setFerrF(f => ({
-      ...f,
-      barrio: e.target.value
-    }))
-  })), /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 12
     }
@@ -8836,21 +8840,13 @@ function VistaCarpinteria({
     onCiudad: v => setPintF(f => ({
       ...f,
       ciudad: v
+    })),
+    barrio: pintF.barrio,
+    onBarrio: v => setPintF(f => ({
+      ...f,
+      barrio: v
     }))
   }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginBottom: 14
-    }
-  }, /*#__PURE__*/React.createElement("label", {
-    style: S.label
-  }, "Barrio"), /*#__PURE__*/React.createElement("input", {
-    style: S.input,
-    value: pintF.barrio,
-    onChange: e => setPintF(f => ({
-      ...f,
-      barrio: e.target.value
-    }))
-  })), /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 12
     }
@@ -11182,21 +11178,13 @@ function VistaFlete({
     onCiudad: v => setPedF(f => ({
       ...f,
       ciudad: v
+    })),
+    barrio: pedF.barrio,
+    onBarrio: v => setPedF(f => ({
+      ...f,
+      barrio: v
     }))
   }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginBottom: 14
-    }
-  }, /*#__PURE__*/React.createElement("label", {
-    style: S.label
-  }, "Barrio"), /*#__PURE__*/React.createElement("input", {
-    style: S.input,
-    value: pedF.barrio,
-    onChange: e => setPedF(f => ({
-      ...f,
-      barrio: e.target.value
-    }))
-  })), /*#__PURE__*/React.createElement("div", {
     style: {
       ...S.row,
       marginTop: 10
@@ -17285,7 +17273,9 @@ function MiCuenta({
     provincia: provincia,
     ciudad: ciudad,
     onProvincia: setProvincia,
-    onCiudad: setCiudad
+    onCiudad: setCiudad,
+    barrio: barrio,
+    onBarrio: setBarrio
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 14
@@ -17305,17 +17295,6 @@ function MiCuenta({
       marginBottom: 14
     }
   }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1,
-      minWidth: 140
-    }
-  }, /*#__PURE__*/React.createElement("label", {
-    style: S.label
-  }, "Barrio"), /*#__PURE__*/React.createElement("input", {
-    style: S.input,
-    value: barrio,
-    onChange: e => setBarrio(e.target.value)
-  })), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       minWidth: 140
@@ -18048,15 +18027,24 @@ async function cargarLocalidades(provinciaNombre) {
   }
   return GEOREF_CACHE.localidades[provinciaNombre];
 }
+const CABA_PROV = "Ciudad Autónoma de Buenos Aires";
+const CABA_LOC = "Ciudad de Buenos Aires";
+// Provincia → Localidad → Barrio. En CABA la localidad es única ("Ciudad de Buenos Aires") y los barrios
+// salen de la lista oficial (Georef devuelve los barrios como "localidades" de CABA). En el resto del país,
+// la localidad se elige de la lista y el barrio se escribe a mano.
 function SelectorUbicacion({
   provincia,
   ciudad,
   onProvincia,
-  onCiudad
+  onCiudad,
+  barrio,
+  onBarrio
 }) {
   const [provincias, setProvincias] = useState([]);
   const [localidades, setLocalidades] = useState([]);
   const [cargando, setCargando] = useState(false);
+  const esCABA = provincia === CABA_PROV;
+  const conBarrio = typeof onBarrio === "function";
   useEffect(() => {
     cargarProvincias().then(setProvincias);
   }, []);
@@ -18077,6 +18065,13 @@ function SelectorUbicacion({
       cancelado = true;
     };
   }, [provincia]);
+  // CABA: fijar la localidad; si venía un barrio cargado como localidad (datos viejos), pasarlo a barrio
+  useEffect(() => {
+    if (!esCABA || ciudad === CABA_LOC) return;
+    if (conBarrio && ciudad && !barrio) onBarrio(ciudad);
+    onCiudad(CABA_LOC);
+  }, [esCABA, ciudad]);
+  const opcionesBarrio = esCABA && barrio && !localidades.includes(barrio) ? [barrio, ...localidades] : localidades;
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 14
@@ -18088,7 +18083,8 @@ function SelectorUbicacion({
     value: provincia,
     onChange: e => {
       onProvincia(e.target.value);
-      onCiudad("");
+      onCiudad(e.target.value === CABA_PROV ? CABA_LOC : "");
+      if (conBarrio) onBarrio("");
     }
   }, /*#__PURE__*/React.createElement("option", {
     value: ""
@@ -18101,7 +18097,13 @@ function SelectorUbicacion({
     }
   }, /*#__PURE__*/React.createElement("label", {
     style: S.label
-  }, "Localidad"), /*#__PURE__*/React.createElement("select", {
+  }, "Localidad"), esCABA ? /*#__PURE__*/React.createElement("select", {
+    style: S.input,
+    value: CABA_LOC,
+    disabled: true
+  }, /*#__PURE__*/React.createElement("option", {
+    value: CABA_LOC
+  }, CABA_LOC)) : /*#__PURE__*/React.createElement("select", {
     style: S.input,
     value: ciudad,
     onChange: e => onCiudad(e.target.value),
@@ -18111,7 +18113,29 @@ function SelectorUbicacion({
   }, cargando ? "Cargando..." : provincia ? "Elegí una localidad" : "Elegí primero la provincia"), localidades.map(l => /*#__PURE__*/React.createElement("option", {
     key: l,
     value: l
-  }, l)))));
+  }, l)))), conBarrio && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: S.label
+  }, "Barrio"), esCABA ? /*#__PURE__*/React.createElement("select", {
+    style: S.input,
+    value: barrio || "",
+    onChange: e => onBarrio(e.target.value),
+    disabled: cargando
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, cargando ? "Cargando..." : "Elegí un barrio"), opcionesBarrio.map(l => /*#__PURE__*/React.createElement("option", {
+    key: l,
+    value: l
+  }, l))) : /*#__PURE__*/React.createElement("input", {
+    style: S.input,
+    value: barrio || "",
+    onChange: e => onBarrio(e.target.value),
+    placeholder: provincia ? "Barrio (opcional)" : "Elegí primero la provincia",
+    disabled: !provincia
+  })));
 }
 
 // Filtro por ubicación para listas de pedidos recibidos: las opciones salen de lo que ya cargaron los pedidos (sin llamar a Georef de nuevo)
@@ -18608,6 +18632,47 @@ function App() {
   const [maxIdxPantalla, setMaxIdxPantalla] = useState(0);
   const badges = useBadges(sesion?.usuario);
 
+  // ── Aviso para activar notificaciones push (se pide al primer ingreso; si no las activa, queda un cartel) ──
+  const [pushAviso, setPushAviso] = useState(null);
+  const [pushModal, setPushModal] = useState(false);
+  const [pushBannerOculto, setPushBannerOculto] = useState(false);
+  const [activandoPush, setActivandoPush] = useState(false);
+  const pushUid = sesion?.usuario?.id;
+  const pushTipo = sesion?.usuario?.tipo;
+  useEffect(() => {
+    if (!pushUid || pushTipo === "admin") return;
+    (async () => {
+      const e = await db.pushEstado();
+      setPushAviso(e);
+      let yaPreguntado = false;
+      try {
+        yaPreguntado = localStorage.getItem("encastre_push_preguntado_" + pushUid) === "1";
+      } catch {}
+      if (e === "inactivo" && !yaPreguntado) setPushModal(true);
+    })();
+  }, [pushUid, pushTipo]);
+  const marcarPushPreguntado = () => {
+    try {
+      localStorage.setItem("encastre_push_preguntado_" + pushUid, "1");
+    } catch {}
+  };
+  const activarPushDesdeAviso = async () => {
+    setActivandoPush(true);
+    marcarPushPreguntado();
+    try {
+      await db.pushSuscribir(pushUid);
+      setPushAviso("activo");
+    } catch (err) {
+      setPushAviso(await db.pushEstado());
+    }
+    setPushModal(false);
+    setActivandoPush(false);
+  };
+  const cerrarPushModal = () => {
+    marcarPushPreguntado();
+    setPushModal(false);
+  };
+
   // Navegación tipo navegador: cada pantalla (Mi cuenta, Manual, Contacto, Papelera, y las solapas principal/flete/bolsa/conversor)
   // queda registrada en el historial del navegador, para poder usar "← Atrás" / "Adelante →" (propios o del navegador) entre ellas.
   const aplicarPantalla = desc => {
@@ -18878,7 +18943,96 @@ function App() {
       gap: 8,
       padding: "8px 12px"
     }
+  }, pushModal && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      background: "#2D243099",
+      zIndex: 400,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 16
+    }
   }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: C.card,
+      border: `1px solid ${C.borde}`,
+      maxWidth: 420,
+      width: "100%",
+      padding: 24,
+      textAlign: "center",
+      boxSizing: "border-box",
+      fontFamily: "'Lato',sans-serif"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 40,
+      marginBottom: 8
+    }
+  }, "🔔"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 19,
+      fontWeight: 700,
+      color: C.marron,
+      marginBottom: 10
+    }
+  }, "¿Querés enterarte al instante?"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 16,
+      color: C.textoSuave,
+      lineHeight: 1.5,
+      marginBottom: 20
+    }
+  }, "Activá las notificaciones y te avisamos apenas te llegue un presupuesto, un pedido o un mensaje."), /*#__PURE__*/React.createElement("button", {
+    style: {
+      ...S.btn("gold"),
+      width: "100%",
+      justifyContent: "center"
+    },
+    disabled: activandoPush,
+    onClick: activarPushDesdeAviso
+  }, activandoPush ? "Activando..." : "Activar notificaciones"), /*#__PURE__*/React.createElement("button", {
+    style: {
+      ...S.btn("link"),
+      marginTop: 12
+    },
+    onClick: cerrarPushModal
+  }, "Ahora no"))), !pushModal && !pushBannerOculto && (pushAviso === "inactivo" || pushAviso === "bloqueado") && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: C.crema,
+      color: C.marron,
+      border: `1px solid ${C.acento}`,
+      padding: "8px 10px",
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      flexWrap: "wrap",
+      fontSize: 14,
+      fontFamily: "'Lato',sans-serif"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: "1 1 180px",
+      minWidth: 0
+    }
+  }, pushAviso === "bloqueado" ? "🔕 Las notificaciones están bloqueadas en este dispositivo. Para recibir avisos, permitilas desde los ajustes del navegador." : "🔔 Activá las notificaciones para no perderte presupuestos, pedidos y mensajes."), pushAviso === "inactivo" && /*#__PURE__*/React.createElement("button", {
+    style: {
+      ...S.btn("gold"),
+      padding: "6px 14px",
+      minHeight: 36,
+      fontSize: 15
+    },
+    disabled: activandoPush,
+    onClick: activarPushDesdeAviso
+  }, activandoPush ? "Activando..." : "Activar"), /*#__PURE__*/React.createElement("button", {
+    style: {
+      ...S.btn("link"),
+      fontSize: 18
+    },
+    "aria-label": "Cerrar aviso",
+    onClick: () => setPushBannerOculto(true)
+  }, "✕")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",

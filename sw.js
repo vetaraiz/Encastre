@@ -1,10 +1,9 @@
-const CACHE_NAME = 'encastre-v4';
+const CACHE_NAME = 'encastre-v5';
 
 // Librerías pesadas que solo hace falta bajar una vez (no cambian nunca)
 const LIBS = [
   'https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js'
+  'https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js'
 ];
 
 self.addEventListener('install', event => {
