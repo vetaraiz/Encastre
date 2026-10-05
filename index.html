@@ -3988,7 +3988,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-04.2"));
+  }, "v2026-10-05.1"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -8121,7 +8121,11 @@ function VistaCarpinteria({
         tiempoEntrega: ct.tiempo_entrega,
         esEmpresa: false,
         aceptado: ct.estado === "aceptada"
-      })), /*#__PURE__*/React.createElement("div", {
+      })), /*#__PURE__*/React.createElement(EntregaMateriales, {
+        ct: ct,
+        tabla: "cotizaciones_aserradero",
+        modo: "carpinteria"
+      }), /*#__PURE__*/React.createElement("div", {
         style: {
           marginTop: 10
         }
@@ -8645,7 +8649,11 @@ function VistaCarpinteria({
         tiempoEntrega: ct.tiempo_entrega,
         esEmpresa: false,
         aceptado: ct.estado === "aceptada"
-      })), /*#__PURE__*/React.createElement("div", {
+      })), /*#__PURE__*/React.createElement(EntregaMateriales, {
+        ct: ct,
+        tabla: "cotizaciones_ferreteria",
+        modo: "carpinteria"
+      }), /*#__PURE__*/React.createElement("div", {
         style: {
           marginTop: 10
         }
@@ -9169,7 +9177,11 @@ function VistaCarpinteria({
         tiempoEntrega: ct.tiempo_entrega,
         esEmpresa: false,
         aceptado: ct.estado === "aceptada"
-      })), /*#__PURE__*/React.createElement("div", {
+      })), /*#__PURE__*/React.createElement(EntregaMateriales, {
+        ct: ct,
+        tabla: "cotizaciones_pintureria",
+        modo: "carpinteria"
+      }), /*#__PURE__*/React.createElement("div", {
         style: {
           marginTop: 10
         }
@@ -9407,6 +9419,7 @@ function VistaAserradero({
         descuento_valor: cotF.usarDesc ? nmb(cotF.descValor) : null,
         iva_porcentaje: cotF.usarIva ? nmb(cotF.ivaPct) : null,
         tiempo_entrega: cotF.tiempo,
+        ...datosEntregaCot(cotF, usuario),
         presupuesto_items: itemsValidos.map(it => ({
           descripcion: it.descripcion.trim(),
           precio: nmb(it.precio),
@@ -9513,6 +9526,10 @@ function VistaAserradero({
       tiempoEntrega: miCot.tiempo_entrega,
       esEmpresa: true,
       aceptado: false
+    }), /*#__PURE__*/React.createElement(EntregaMateriales, {
+      ct: miCot,
+      tabla: "cotizaciones_aserradero",
+      modo: "proveedor"
     })) : estaVencido(sel) ? /*#__PURE__*/React.createElement("div", {
       style: {
         marginTop: 20,
@@ -9682,7 +9699,11 @@ function VistaAserradero({
         })),
         placeholder: "Ej: 3 días",
         style: S.input
-      })), /*#__PURE__*/React.createElement("div", {
+      })), /*#__PURE__*/React.createElement(CamposEntregaCot, {
+        cotF: cotF,
+        setCotF: setCotF,
+        usuario: usuario
+      }), /*#__PURE__*/React.createElement("div", {
         style: {
           border: `1px solid ${C.borde}`,
           borderRadius: 0,
@@ -11754,6 +11775,7 @@ function VistaFerreteria({
         descuento_valor: cotF.usarDesc ? nmb(cotF.descValor) : null,
         iva_porcentaje: cotF.usarIva ? nmb(cotF.ivaPct) : null,
         tiempo_entrega: cotF.tiempo,
+        ...datosEntregaCot(cotF, usuario),
         presupuesto_items: itemsValidos.map(it => ({
           descripcion: it.descripcion.trim(),
           precio: nmb(it.precio),
@@ -11857,6 +11879,10 @@ function VistaFerreteria({
       tiempoEntrega: miCot.tiempo_entrega,
       esEmpresa: true,
       aceptado: false
+    }), /*#__PURE__*/React.createElement(EntregaMateriales, {
+      ct: miCot,
+      tabla: "cotizaciones_ferreteria",
+      modo: "proveedor"
     })) : estaVencido(sel) ? /*#__PURE__*/React.createElement("div", {
       style: {
         marginTop: 20,
@@ -12026,7 +12052,11 @@ function VistaFerreteria({
         })),
         placeholder: "Ej: 2 días",
         style: S.input
-      })), /*#__PURE__*/React.createElement("div", {
+      })), /*#__PURE__*/React.createElement(CamposEntregaCot, {
+        cotF: cotF,
+        setCotF: setCotF,
+        usuario: usuario
+      }), /*#__PURE__*/React.createElement("div", {
         style: {
           border: `1px solid ${C.borde}`,
           borderRadius: 0,
@@ -12546,6 +12576,7 @@ function VistaPintureria({
         descuento_valor: cotF.usarDesc ? nmb(cotF.descValor) : null,
         iva_porcentaje: cotF.usarIva ? nmb(cotF.ivaPct) : null,
         tiempo_entrega: cotF.tiempo,
+        ...datosEntregaCot(cotF, usuario),
         presupuesto_items: itemsValidos.map(it => ({
           descripcion: it.descripcion.trim(),
           precio: nmb(it.precio),
@@ -12649,6 +12680,10 @@ function VistaPintureria({
       tiempoEntrega: miCot.tiempo_entrega,
       esEmpresa: true,
       aceptado: false
+    }), /*#__PURE__*/React.createElement(EntregaMateriales, {
+      ct: miCot,
+      tabla: "cotizaciones_pintureria",
+      modo: "proveedor"
     })) : estaVencido(sel) ? /*#__PURE__*/React.createElement("div", {
       style: {
         marginTop: 20,
@@ -12818,7 +12853,11 @@ function VistaPintureria({
         })),
         placeholder: "Ej: 2 días",
         style: S.input
-      })), /*#__PURE__*/React.createElement("div", {
+      })), /*#__PURE__*/React.createElement(CamposEntregaCot, {
+        cotF: cotF,
+        setCotF: setCotF,
+        usuario: usuario
+      }), /*#__PURE__*/React.createElement("div", {
         style: {
           border: `1px solid ${C.borde}`,
           borderRadius: 0,
@@ -15860,7 +15899,267 @@ function ContactoUnificado({
     },
     onClick: enviar,
     disabled: enviando
-  }, enviando ? "Enviando..." : modo === "problema" ? "Enviar reporte" : "Enviar comentario")));
+  }, enviando ? "Enviando..." : modo === "problema" ? "Enviar reporte" : "Enviar comentario"), /*#__PURE__*/React.createElement(MisQuejas, {
+    usuario: usuario
+  })));
+}
+
+
+// ─── ENTREGA EN CIRCUITOS DE MATERIALES (aserradero / ferretería / pinturería) ───
+function plata(n) {
+  return "$" + Number(n || 0).toLocaleString("es-AR", {
+    maximumFractionDigits: 2
+  });
+}
+function datosEntregaCot(cotF, usuario) {
+  const retiro = String(cotF.retiro !== undefined ? cotF.retiro : usuario?.direccion || "").trim();
+  return {
+    hace_envio: !!cotF.envio,
+    costo_envio: cotF.envio && String(cotF.costoEnvio || "").trim() !== "" ? nmb(cotF.costoEnvio) : null,
+    retiro_direccion: retiro || null
+  };
+}
+function CamposEntregaCot({
+  cotF,
+  setCotF,
+  usuario
+}) {
+  const retiro = cotF.retiro !== undefined ? cotF.retiro : usuario?.direccion || "";
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      border: `1px solid ${C.borde}`,
+      padding: 10,
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: S.label
+  }, "Entrega"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      flexWrap: "wrap",
+      marginBottom: 10
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    style: {
+      ...S.btn(!cotF.envio ? "dark" : "ghost"),
+      flex: "1 1 140px",
+      justifyContent: "center"
+    },
+    onClick: () => setCotF(f => ({
+      ...f,
+      envio: false
+    }))
+  }, "🏠 Solo retiro"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    style: {
+      ...S.btn(cotF.envio ? "dark" : "ghost"),
+      flex: "1 1 140px",
+      justifyContent: "center"
+    },
+    onClick: () => setCotF(f => ({
+      ...f,
+      envio: true
+    }))
+  }, "🚚 Hago envío")), cotF.envio && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 10
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: S.label
+  }, "Costo del envío ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 400,
+      color: C.textoSuave
+    }
+  }, "(vacío = a convenir)")), /*#__PURE__*/React.createElement("input", {
+    style: S.input,
+    inputMode: "decimal",
+    value: cotF.costoEnvio || "",
+    onChange: e => setCotF(f => ({
+      ...f,
+      costoEnvio: e.target.value
+    })),
+    placeholder: "Ej: 5000"
+  })), /*#__PURE__*/React.createElement("label", {
+    style: S.label
+  }, "Dirección de retiro ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 400,
+      color: C.textoSuave
+    }
+  }, "(opcional)")), /*#__PURE__*/React.createElement("input", {
+    style: S.input,
+    value: retiro,
+    onChange: e => setCotF(f => ({
+      ...f,
+      retiro: e.target.value
+    })),
+    placeholder: "Ej: Av. Siempreviva 742"
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: C.textoSuave,
+      marginTop: 6
+    }
+  }, "Día y horario se coordinan por el chat."));
+}
+const MODOS_ENTREGA_MAT = {
+  retiro: "🏠 Retiro por el local",
+  envio: "🚚 Envío del proveedor",
+  flete: "🚛 Flete de Encastre"
+};
+function EntregaMateriales({
+  ct,
+  tabla,
+  modo
+}) {
+  const [elegido, setElegido] = useState(ct?.modo_entrega || "");
+  const [guardando, setGuardando] = useState(false);
+  useEffect(() => {
+    setElegido(ct?.modo_entrega || "");
+  }, [ct?.id, ct?.modo_entrega]);
+  if (!ct) return null;
+  const tieneDatos = ct.hace_envio != null || ct.retiro_direccion;
+  const oferta = !tieneDatos ? "A coordinar por el chat" : ct.hace_envio ? `🚚 Hace envío · ${ct.costo_envio != null ? plata(ct.costo_envio) : "costo a convenir"}` : "🏠 Solo retiro por el local";
+  const elegir = async v => {
+    if (guardando) return;
+    setGuardando(true);
+    try {
+      await db.update(tabla, {
+        modo_entrega: v
+      }, `id=eq.${ct.id}`);
+      setElegido(v);
+    } catch (e) {
+      alert("No se pudo guardar: " + (e.message || "revisá tu conexión"));
+    }
+    setGuardando(false);
+  };
+  const opciones = ["retiro", ...(ct.hace_envio ? ["envio"] : []), "flete"];
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 10,
+      padding: "10px 14px",
+      background: C.suave,
+      border: `1px solid ${C.acento}55`,
+      fontSize: 15,
+      color: C.marron
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700
+    }
+  }, "Entrega: ", oferta), ct.retiro_direccion && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 2
+    }
+  }, "📍 Retiro en: ", ct.retiro_direccion), ct.estado === "aceptada" && (modo === "carpinteria" ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      color: C.textoSuave,
+      marginBottom: 6
+    }
+  }, "¿Cómo vas a recibir los materiales?"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      flexWrap: "wrap"
+    }
+  }, opciones.map(o => /*#__PURE__*/React.createElement("button", {
+    key: o,
+    type: "button",
+    style: {
+      ...S.btn(elegido === o ? "dark" : "ghost"),
+      flex: "1 1 140px",
+      justifyContent: "center"
+    },
+    disabled: guardando,
+    onClick: () => elegir(o)
+  }, MODOS_ENTREGA_MAT[o]))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: C.textoSuave,
+      marginTop: 6
+    }
+  }, elegido === "flete" ? "Pedí el flete desde la solapa Flete. El día y horario coordinalos por el chat." : "Esto lo ve el proveedor. Día y horario se coordinan por el chat. Podés cambiarlo cuando quieras.")) : /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 8,
+      fontWeight: 700
+    }
+  }, elegido ? `La carpintería eligió: ${MODOS_ENTREGA_MAT[elegido] || elegido}` : "La carpintería todavía no eligió cómo recibir los materiales.")));
+}
+
+// ─── MIS CONSULTAS Y QUEJAS (lo que ve el usuario, con la respuesta de la administración) ───
+function MisQuejas({
+  usuario
+}) {
+  const [lista, setLista] = useState(null);
+  useEffect(() => {
+    if (!usuario?.id) return;
+    db.select("quejas", `?usuario_id=eq.${usuario.id}&order=created_at.desc&limit=20`).then(d => setLista(d || [])).catch(() => setLista([]));
+  }, [usuario?.id]);
+  if (!lista || lista.length === 0) return null;
+  const ESTADOS = {
+    nueva: "Recibida",
+    en_revision: "En revisión",
+    resuelta: "Resuelta"
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 24,
+      paddingTop: 16,
+      borderTop: `2px dashed ${C.borde}`
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: S.cardTitle
+  }, "📋 Mis reportes"), lista.map(q => /*#__PURE__*/React.createElement("div", {
+    key: q.id,
+    style: {
+      padding: "10px 0",
+      borderBottom: `1px dashed ${C.borde}`
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      gap: 8,
+      flexWrap: "wrap",
+      fontSize: 14,
+      color: C.textoSuave
+    }
+  }, /*#__PURE__*/React.createElement("span", null, q.created_at ? new Date(q.created_at).toLocaleDateString("es-AR") : ""), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 700,
+      color: C.marron
+    }
+  }, ESTADOS[q.estado] || "Recibida")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 15,
+      color: C.texto,
+      marginTop: 4,
+      whiteSpace: "pre-wrap"
+    }
+  }, String(q.descripcion || "").length > 220 ? String(q.descripcion).slice(0, 220) + "…" : q.descripcion), q.respuesta_usuario && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 8,
+      padding: "8px 12px",
+      background: C.suave,
+      borderLeft: `3px solid ${C.acento}`,
+      fontSize: 15,
+      color: C.marron,
+      whiteSpace: "pre-wrap"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700,
+      marginBottom: 2
+    }
+  }, "💬 Respuesta de Encastre"), q.respuesta_usuario))));
 }
 
 // ─── PANEL DE ADMINISTRACIÓN (solo usuario.tipo==="admin") ────────────────────
@@ -16196,12 +16495,25 @@ function AdminQuejas() {
   const [lista, setLista] = useState([]);
   const [sel, setSel] = useState(null);
   const [respuesta, setRespuesta] = useState("");
+  const [respUsuario, setRespUsuario] = useState("");
+  const [autores, setAutores] = useState({});
   const [guardando, setGuardando] = useState(false);
   const [filtro, setFiltro] = useState("");
   const cargar = useCallback(async () => {
     try {
       const d = await db.select("quejas", "?order=created_at.desc");
       setLista(d);
+      const ids = [...new Set((d || []).map(q => q.usuario_id).filter(Boolean))];
+      if (ids.length) {
+        try {
+          const us = await db.select("usuarios", `?id=in.(${ids.join(",")})&select=id,nombre,email,tipo`);
+          const m = {};
+          (us || []).forEach(u => {
+            m[u.id] = u;
+          });
+          setAutores(m);
+        } catch {}
+      }
     } catch {}
   }, []);
   useEffect(() => {
@@ -16227,6 +16539,30 @@ function AdminQuejas() {
   const abrir = q => {
     setSel(q);
     setRespuesta(q.respuesta_admin || "");
+    setRespUsuario(q.respuesta_usuario || "");
+  };
+  const enviarRespuestaUsuario = async () => {
+    if (!sel || !respUsuario.trim()) return;
+    setGuardando(true);
+    try {
+      const cambios = {
+        respuesta_usuario: respUsuario.trim(),
+        respondida_at: new Date().toISOString(),
+        estado: sel.estado === "nueva" || !sel.estado ? "en_revision" : sel.estado
+      };
+      await db.updateMin("quejas", cambios, `id=eq.${sel.id}`);
+      setLista(ls => ls.map(q => q.id === sel.id ? {
+        ...q,
+        ...cambios
+      } : q));
+      setSel(s => s ? {
+        ...s,
+        ...cambios
+      } : s);
+    } catch (e) {
+      alert("No se pudo enviar: " + (e.message || ""));
+    }
+    setGuardando(false);
   };
   const cambiarEstado = async estado => {
     if (!sel) return;
@@ -16297,12 +16633,23 @@ function AdminQuejas() {
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: S.label
-    }, "Quién la hizo"), /*#__PURE__*/React.createElement("div", {
+    }, "Quién la hizo"), autores[sel.usuario_id] ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 16
+      }
+    }, /*#__PURE__*/React.createElement("strong", null, autores[sel.usuario_id].nombre || "Sin nombre"), " · ", ROLES[autores[sel.usuario_id].tipo] || autores[sel.usuario_id].tipo, /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 15,
-        fontFamily: "monospace"
+        color: C.textoSuave,
+        wordBreak: "break-all"
       }
-    }, sel.usuario_id)), /*#__PURE__*/React.createElement("div", {
+    }, autores[sel.usuario_id].email)) : /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 15,
+        fontFamily: "monospace",
+        wordBreak: "break-all"
+      }
+    }, sel.usuario_id || "—")), /*#__PURE__*/React.createElement("div", {
       style: {
         marginBottom: 10
       }
@@ -16340,7 +16687,44 @@ function AdminQuejas() {
       }
     }, /*#__PURE__*/React.createElement("label", {
       style: S.label
-    }, "Respuesta / notas internas"), /*#__PURE__*/React.createElement("textarea", {
+    }, "💬 Respuesta para el usuario ", /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontWeight: 400,
+        color: C.textoSuave
+      }
+    }, "(la ve en la app y le llega una notificación)")), /*#__PURE__*/React.createElement("textarea", {
+      value: respUsuario,
+      onChange: e => setRespUsuario(e.target.value),
+      style: {
+        ...S.input,
+        minHeight: 80,
+        resize: "vertical"
+      }
+    }), /*#__PURE__*/React.createElement("button", {
+      style: {
+        ...S.btn("gold"),
+        marginTop: 8
+      },
+      disabled: guardando || !respUsuario.trim() || respUsuario.trim() === (sel.respuesta_usuario || ""),
+      onClick: enviarRespuestaUsuario
+    }, "📨 Enviar respuesta"), sel.respondida_at && /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 13,
+        color: C.textoSuave,
+        marginTop: 6
+      }
+    }, "Respuesta enviada el ", new Date(sel.respondida_at).toLocaleString("es-AR"))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginBottom: 10
+      }
+    }, /*#__PURE__*/React.createElement("label", {
+      style: S.label
+    }, "🔒 Notas internas ", /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontWeight: 400,
+        color: C.textoSuave
+      }
+    }, "(solo las ves vos)")), /*#__PURE__*/React.createElement("textarea", {
       value: respuesta,
       onChange: e => setRespuesta(e.target.value),
       style: {
@@ -16709,7 +17093,10 @@ function VistaAdmin({
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      width: "100%"
+      width: "100%",
+      flexWrap: "wrap",
+      rowGap: 6,
+      columnGap: 8
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -16760,7 +17147,10 @@ function VistaAdmin({
     style: {
       display: "flex",
       alignItems: "center",
-      gap: 10
+      gap: 10,
+      minWidth: 0,
+      maxWidth: "100%",
+      marginLeft: "auto"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -16768,6 +17158,9 @@ function VistaAdmin({
       color: C.crema,
       fontWeight: 700,
       whiteSpace: "nowrap",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      minWidth: 0,
       fontFamily: "'Lato',sans-serif"
     }
   }, "🛡️ ", usuario.nombre), /*#__PURE__*/React.createElement("button", {
@@ -16798,9 +17191,9 @@ function VistaAdmin({
       color: tab === id ? C.marron : C.suave,
       border: tab === id ? "none" : `1px solid ${C.acento}44`,
       borderRadius: 0,
-      padding: "10px 12px",
+      padding: "10px 4px",
       cursor: "pointer",
-      fontSize: 16,
+      fontSize: 15,
       fontWeight: 700,
       fontFamily: "'Lato',sans-serif",
       whiteSpace: "nowrap",
