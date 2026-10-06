@@ -4248,7 +4248,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-06.5"));
+  }, "v2026-10-06.7"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -14453,15 +14453,27 @@ function PantallaBienvenida({
     onClick: onPedir
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 26,
+      fontSize: 22,
       fontWeight: 800
     }
   }, "🪑 ¿Querés un mueble?"), /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 19,
+      fontSize: 17,
       fontWeight: 700
     }
   }, "Tocá acá →")), /*#__PURE__*/React.createElement("button", {
+    style: {
+      ...S.btn("link"),
+      alignSelf: "center",
+      fontSize: 17,
+      fontWeight: 700,
+      color: C.marron,
+      textDecoration: "underline",
+      padding: "2px 6px",
+      marginTop: -4
+    },
+    onClick: onEntrar
+  }, "¿Ya tenés cuenta de cliente? Ingresá acá"), /*#__PURE__*/React.createElement("button", {
     style: {
       ...S.btn("dark"),
       width: "100%",
@@ -14474,23 +14486,15 @@ function PantallaBienvenida({
     onClick: onEntrar
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 26,
+      fontSize: 22,
       fontWeight: 800
     }
   }, "🔨 ¿Sos profesional?"), /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 19,
+      fontSize: 17,
       fontWeight: 700
     }
-  }, "Ingresá acá →")), /*#__PURE__*/React.createElement("button", {
-    style: {
-      ...S.btn("link"),
-      alignSelf: "center",
-      fontSize: 16,
-      textDecoration: "underline"
-    },
-    onClick: onEntrar
-  }, "¿Ya tenés cuenta de cliente? Ingresá acá"), /*#__PURE__*/React.createElement("div", {
+  }, "Ingresá acá →")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8
@@ -19846,10 +19850,10 @@ function App() {
   };
   const enviarPedidoPendiente = async s => {
     const pend = pedidoPend;
-    if (!pend?.payload || !s?.usuario?.id) return;
+    if (!pend?.payload || !s?.usuario?.id) return false;
     if (s.usuario.tipo !== "cliente") {
-      alert("Entraste con una cuenta de " + (ROLES[s.usuario.tipo] || s.usuario.tipo) + ". Los pedidos de muebles se envían desde una cuenta de cliente. Tu pedido quedó guardado: entrá con una cuenta de cliente para enviarlo.");
-      return;
+      alert("Entraste con una cuenta de " + (ROLES[s.usuario.tipo] || s.usuario.tipo) + ". Los pedidos de muebles se envían desde una cuenta de cliente. Tu pedido quedó guardado en este dispositivo: cerrá sesión y entrá con una cuenta de cliente para enviarlo.");
+      return false;
     }
     try {
       await db.insert("pedidos", {
@@ -19859,9 +19863,10 @@ function App() {
       guardarPend(null);
       setBorradorEdit(null);
       setInvitado(false);
-      setNotifMsg("¡Pedido enviado a todas las carpinterías!");
+      return true;
     } catch (e) {
-      alert("Tu cuenta quedó lista, pero no se pudo enviar el pedido: " + (e.message || "revisá tu conexión") + ". Quedó guardado: cerrá sesión y volvé a entrar para reintentar.");
+      alert("Entraste bien, pero no se pudo enviar el pedido: " + (e.message || "revisá tu conexión") + ". Quedó guardado en este dispositivo: cerrá sesión y volvé a entrar para reintentar.");
+      return false;
     }
   };
   const badges = useBadges(sesion?.usuario);
@@ -20087,14 +20092,16 @@ function App() {
       window.removeEventListener("popstate", alVolver);
     };
   }, []);
-  const handleAuth = s => {
-    setSesion(s);
+  const handleAuth = async s => {
     db.setSesion(s);
+    // Si venía de armar un pedido sin cuenta, se envía ANTES de entrar, así ya aparece en su lista
+    const enviado = pedidoPend ? await enviarPedidoPendiente(s) : false;
+    setSesion(s);
     try {
       localStorage.setItem("encastre_sesion", JSON.stringify(s));
     } catch {}
     setNavTab("principal");
-    if (pedidoPend) enviarPedidoPendiente(s);
+    if (enviado) setTimeout(() => setNotifMsg("✅ ¡Tu pedido fue enviado a todas las carpinterías! Lo ves en \"Mis pedidos\"."), 300);
   };
   const darDeBaja = async () => {
     if (!window.confirm("¿Seguro que querés dar de baja tu cuenta? No vas a poder volver a ingresar con ella. Solo la administración puede reactivarla.")) return;
