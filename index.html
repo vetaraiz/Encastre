@@ -2165,7 +2165,7 @@ function TagNuevo({
       fontWeight: 700,
       color: "#fff",
       background: "#009966",
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "2px 8px",
       fontFamily: "'Lato',sans-serif",
       verticalAlign: "middle"
@@ -2184,7 +2184,7 @@ function TagMsjNuevo({
       fontWeight: 700,
       color: "#fff",
       background: "#009966",
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "2px 8px",
       fontFamily: "'Lato',sans-serif",
       verticalAlign: "middle"
@@ -2518,7 +2518,7 @@ const S = {
   card: {
     background: C.card,
     border: `1px solid ${C.borde}`,
-    borderRadius: 0,
+    borderRadius: 14,
     padding: 22,
     marginBottom: 16,
     boxShadow: "0 2px 8px #5A4A3A11"
@@ -2534,7 +2534,7 @@ const S = {
     background: v === "gold" ? C.acento : v === "dark" ? C.marron : v === "red" ? C.rojo : "transparent",
     color: v === "ghost" || v === "link" ? C.marron : C.crema,
     border: v === "ghost" ? `2px solid ${C.marron}` : "none",
-    borderRadius: 0,
+    borderRadius: v === "link" ? 0 : 10,
     padding: v === "link" ? "4px 2px" : "13px 24px",
     cursor: "pointer",
     fontSize: 17,
@@ -2550,7 +2550,7 @@ const S = {
     background: `linear-gradient(135deg,#3D1A6E,#1A3D6E)`,
     color: "#E8D5FF",
     border: "1px solid #6B3AAA55",
-    borderRadius: 0,
+    borderRadius: 10,
     padding: "13px 24px",
     cursor: "pointer",
     fontSize: 17,
@@ -2565,7 +2565,7 @@ const S = {
   input: {
     background: C.input,
     border: `1px solid ${C.borde}`,
-    borderRadius: 0,
+    borderRadius: 10,
     color: C.texto,
     padding: "13px 15px",
     fontSize: 17,
@@ -2606,7 +2606,7 @@ const S = {
     background: on ? C.marron : C.input,
     color: on ? C.crema : C.textoSuave,
     border: `1px solid ${on ? C.marron : C.borde}`,
-    borderRadius: 0,
+    borderRadius: 10,
     padding: "11px 18px",
     cursor: "pointer",
     fontSize: 17,
@@ -2618,7 +2618,7 @@ const S = {
     background: EC[e] + "22",
     color: EC[e],
     border: `1px solid ${EC[e]}55`,
-    borderRadius: 0,
+    borderRadius: 8,
     padding: "3px 10px",
     fontSize: 17,
     fontWeight: 700,
@@ -2629,7 +2629,7 @@ const S = {
   aiPanel: {
     background: "linear-gradient(135deg,#1E0A3C,#0A1E3C)",
     border: "1px solid #6B3AAA44",
-    borderRadius: 0,
+    borderRadius: 10,
     padding: 18,
     marginBottom: 14,
     boxShadow: "0 0 20px #6B3AAA22"
@@ -2640,7 +2640,7 @@ const S = {
     right: 16,
     background: C.marron,
     border: `2px solid ${C.acento}`,
-    borderRadius: 0,
+    borderRadius: 10,
     padding: "12px 18px",
     fontSize: 17,
     color: C.crema,
@@ -2718,7 +2718,7 @@ function AvisoVence({
       background: v.color + "18",
       color: v.color,
       border: `1px solid ${v.color}55`,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "2px 8px",
       fontSize: 14,
       fontWeight: 600,
@@ -2856,7 +2856,7 @@ Respondé SOLO con JSON válido, sin texto adicional:
       background: "#6B3AAA22",
       color: "#C4B5FD",
       border: "1px solid #6B3AAA44",
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "1px 7px",
       fontSize: 17,
       fontWeight: 700,
@@ -2899,7 +2899,7 @@ Respondé SOLO con JSON válido, sin texto adicional:
     style: {
       background: "#0D0A1A",
       border: "1px solid #2D1F5A",
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "8px 12px",
       marginBottom: 6,
       display: "flex",
@@ -2928,7 +2928,7 @@ Respondé SOLO con JSON válido, sin texto adicional:
     style: {
       background: "#080612",
       border: "1px dashed #4C1D9555",
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "8px 12px",
       marginTop: 10,
       fontSize: 17,
@@ -3037,7 +3037,7 @@ Respondé SOLO con JSON válido:
       background: "#6B3AAA22",
       color: "#C4B5FD",
       border: "1px solid #6B3AAA44",
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "1px 7px",
       fontSize: 15
     }
@@ -3088,7 +3088,7 @@ Respondé SOLO con JSON válido:
     style: {
       background: "#0D0A1A",
       border: "1px solid #2D1F5A",
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "8px 12px",
       marginBottom: 6,
       display: "flex",
@@ -3110,7 +3110,7 @@ Respondé SOLO con JSON válido:
     style: {
       background: "#080612",
       border: "1px dashed #4C1D9555",
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "8px 12px",
       marginTop: 8,
       fontSize: 17,
@@ -3600,7 +3600,7 @@ function AuthScreen({
   }, "← Volver al registro"), /*#__PURE__*/React.createElement("div", {
     style: {
       background: C.card,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: 24,
       border: `1px solid ${C.borde}`
     }
@@ -3737,7 +3737,7 @@ function AuthScreen({
       width: 60,
       height: 3,
       background: `linear-gradient(90deg,${C.acento},${C.marron})`,
-      borderRadius: 0,
+      borderRadius: 10,
       margin: "12px auto 0"
     }
   }), /*#__PURE__*/React.createElement("div", {
@@ -4036,7 +4036,7 @@ function AuthScreen({
       color: C.rojo,
       background: C.rojo + "11",
       border: `1px solid ${C.rojo}33`,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "8px 12px",
       marginBottom: 12
     }
@@ -4046,7 +4046,7 @@ function AuthScreen({
       color: C.verde,
       background: C.verde + "11",
       border: `1px solid ${C.verde}33`,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "8px 12px",
       marginBottom: 12
     }
@@ -4108,7 +4108,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-05.4"));
+  }, "v2026-10-06.1"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -4361,7 +4361,7 @@ function Chat({
       background: "transparent",
       border: `1px solid ${C.crema}77`,
       color: C.crema,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "3px 9px",
       cursor: "pointer",
       fontSize: 12,
@@ -4373,7 +4373,7 @@ function Chat({
       background: "transparent",
       border: `1px solid ${C.crema}77`,
       color: C.crema,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "3px 9px",
       cursor: "pointer",
       fontSize: 12,
@@ -4440,7 +4440,7 @@ function Chat({
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         background: propio ? C.marron : C.suave,
-        borderRadius: 0,
+        borderRadius: 10,
         padding: "6px 11px",
         maxWidth: "78%"
       }
@@ -4520,7 +4520,7 @@ function TrabajosGallery({
       background: i === idx ? C.marron : C.suave,
       color: i === idx ? C.crema : C.marron,
       border: "none",
-      borderRadius: 0,
+      borderRadius: 10,
       cursor: "pointer",
       whiteSpace: "nowrap"
     }
@@ -4619,7 +4619,7 @@ function Calificar({
     style: {
       marginTop: 10,
       background: C.input,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: 12,
       border: `1px solid ${C.borde}`
     },
@@ -4884,7 +4884,7 @@ function NuevoPedido({
       color: C.marron,
       background: C.crema,
       border: `1px solid ${C.acento}`,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "10px 14px",
       marginBottom: 16
     }
@@ -4892,7 +4892,7 @@ function NuevoPedido({
     key: i,
     style: {
       border: `1px solid ${C.borde}`,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: 14,
       marginBottom: 14,
       background: C.suave
@@ -5074,7 +5074,7 @@ function NuevoPedido({
     style: {
       maxWidth: "100%",
       maxHeight: 240,
-      borderRadius: 0,
+      borderRadius: 10,
       border: `1px solid ${C.borde}`
     }
   }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
@@ -5288,7 +5288,7 @@ function NuevoPedido({
       padding: "10px 14px",
       background: "#FDECEA",
       border: `1px solid ${C.rojo}`,
-      borderRadius: 0,
+      borderRadius: 10,
       color: C.rojo,
       fontSize: 16,
       fontWeight: 600
@@ -5632,7 +5632,7 @@ function VistaCliente({
     style: {
       marginTop: 10,
       border: `1px solid ${C.acento}`,
-      borderRadius: 0,
+      borderRadius: 10,
       overflow: "hidden"
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -5692,7 +5692,7 @@ function VistaCliente({
       style: {
         background: C.verde + "22",
         border: `1px solid ${C.verde}`,
-        borderRadius: 0,
+        borderRadius: 10,
         padding: 12,
         textAlign: "center",
         marginBottom: dentroDeHora ? 10 : 0
@@ -6425,7 +6425,7 @@ function VistaCarpinteria({
         padding: "10px 14px",
         background: "#FDECEA",
         border: `1px solid ${C.rojo}`,
-        borderRadius: 0,
+        borderRadius: 10,
         color: C.rojo,
         fontSize: 16,
         fontWeight: 600
@@ -7288,7 +7288,7 @@ function VistaCarpinteria({
       })), /*#__PURE__*/React.createElement("div", {
         style: {
           border: `1px solid ${C.borde}`,
-          borderRadius: 0,
+          borderRadius: 10,
           padding: 10,
           marginBottom: 10
         }
@@ -7351,7 +7351,7 @@ function VistaCarpinteria({
       })))), /*#__PURE__*/React.createElement("div", {
         style: {
           border: `1px solid ${C.borde}`,
-          borderRadius: 0,
+          borderRadius: 10,
           padding: 10,
           marginBottom: 14
         }
@@ -7393,7 +7393,7 @@ function VistaCarpinteria({
       }))), /*#__PURE__*/React.createElement("div", {
         style: {
           background: C.suave,
-          borderRadius: 0,
+          borderRadius: 10,
           padding: 12,
           border: `1px solid ${C.borde}`,
           marginBottom: 12
@@ -7838,7 +7838,7 @@ function VistaCarpinteria({
           fontSize: 13,
           fontWeight: 700,
           padding: "5px 10px",
-          borderRadius: 0,
+          borderRadius: 10,
           fontFamily: "'Lato',sans-serif"
         }
       }, et.t))));
@@ -7880,7 +7880,7 @@ function VistaCarpinteria({
       key: i,
       style: {
         border: `1px solid ${C.borde}`,
-        borderRadius: 0,
+        borderRadius: 10,
         padding: 10,
         marginBottom: 8,
         background: C.suave
@@ -8160,7 +8160,7 @@ function VistaCarpinteria({
         fontWeight: 700,
         color: "#fff",
         background: "#009966",
-        borderRadius: 0,
+        borderRadius: 10,
         padding: "2px 8px",
         fontFamily: "'Lato',sans-serif",
         verticalAlign: "middle"
@@ -8195,7 +8195,7 @@ function VistaCarpinteria({
         fontSize: 11,
         fontWeight: 700,
         padding: "3px 8px",
-        borderRadius: 0,
+        borderRadius: 10,
         fontFamily: "'Lato',sans-serif"
       }
     }, p._cantCot > 0 ? `${p._cantCot} cotización${p._cantCot > 1 ? "es" : ""}` : "Sin cotizaciones"), /*#__PURE__*/React.createElement("span", {
@@ -8230,7 +8230,7 @@ function VistaCarpinteria({
         key: key,
         style: {
           border: `1px solid ${abiertaCot ? C.acento : C.borde}`,
-          borderRadius: 0,
+          borderRadius: 10,
           marginBottom: 10,
           overflow: "hidden",
           background: C.input
@@ -8271,7 +8271,7 @@ function VistaCarpinteria({
           fontWeight: 700,
           color: "#fff",
           background: "#009966",
-          borderRadius: 0,
+          borderRadius: 10,
           padding: "2px 8px",
           fontFamily: "'Lato',sans-serif",
           verticalAlign: "middle"
@@ -8411,7 +8411,7 @@ function VistaCarpinteria({
     key: i,
     style: {
       border: `1px solid ${C.borde}`,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: 10,
       marginBottom: 8,
       background: C.suave
@@ -8693,7 +8693,7 @@ function VistaCarpinteria({
         fontWeight: 700,
         color: "#fff",
         background: "#009966",
-        borderRadius: 0,
+        borderRadius: 10,
         padding: "2px 8px",
         fontFamily: "'Lato',sans-serif",
         verticalAlign: "middle"
@@ -8723,7 +8723,7 @@ function VistaCarpinteria({
         fontSize: 11,
         fontWeight: 700,
         padding: "3px 8px",
-        borderRadius: 0,
+        borderRadius: 10,
         fontFamily: "'Lato',sans-serif"
       }
     }, p._cantCot > 0 ? `${p._cantCot} cotización${p._cantCot > 1 ? "es" : ""}` : "Sin cotizaciones"), /*#__PURE__*/React.createElement("span", {
@@ -8758,7 +8758,7 @@ function VistaCarpinteria({
         key: key,
         style: {
           border: `1px solid ${abiertaCot ? C.acento : C.borde}`,
-          borderRadius: 0,
+          borderRadius: 10,
           marginBottom: 10,
           overflow: "hidden",
           background: C.input
@@ -8799,7 +8799,7 @@ function VistaCarpinteria({
           fontWeight: 700,
           color: "#fff",
           background: "#009966",
-          borderRadius: 0,
+          borderRadius: 10,
           padding: "2px 8px",
           fontFamily: "'Lato',sans-serif",
           verticalAlign: "middle"
@@ -8939,7 +8939,7 @@ function VistaCarpinteria({
     key: i,
     style: {
       border: `1px solid ${C.borde}`,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: 10,
       marginBottom: 8,
       background: C.suave
@@ -9221,7 +9221,7 @@ function VistaCarpinteria({
         fontWeight: 700,
         color: "#fff",
         background: "#009966",
-        borderRadius: 0,
+        borderRadius: 10,
         padding: "2px 8px",
         fontFamily: "'Lato',sans-serif",
         verticalAlign: "middle"
@@ -9251,7 +9251,7 @@ function VistaCarpinteria({
         fontSize: 11,
         fontWeight: 700,
         padding: "3px 8px",
-        borderRadius: 0,
+        borderRadius: 10,
         fontFamily: "'Lato',sans-serif"
       }
     }, p._cantCot > 0 ? `${p._cantCot} cotización${p._cantCot > 1 ? "es" : ""}` : "Sin cotizaciones"), /*#__PURE__*/React.createElement("span", {
@@ -9286,7 +9286,7 @@ function VistaCarpinteria({
         key: key,
         style: {
           border: `1px solid ${abiertaCot ? C.acento : C.borde}`,
-          borderRadius: 0,
+          borderRadius: 10,
           marginBottom: 10,
           overflow: "hidden",
           background: C.input
@@ -9327,7 +9327,7 @@ function VistaCarpinteria({
           fontWeight: 700,
           color: "#fff",
           background: "#009966",
-          borderRadius: 0,
+          borderRadius: 10,
           padding: "2px 8px",
           fontFamily: "'Lato',sans-serif",
           verticalAlign: "middle"
@@ -9906,7 +9906,7 @@ function VistaAserradero({
       }), /*#__PURE__*/React.createElement("div", {
         style: {
           border: `1px solid ${C.borde}`,
-          borderRadius: 0,
+          borderRadius: 10,
           padding: 10,
           marginBottom: 10
         }
@@ -9969,7 +9969,7 @@ function VistaAserradero({
       })))), /*#__PURE__*/React.createElement("div", {
         style: {
           border: `1px solid ${C.borde}`,
-          borderRadius: 0,
+          borderRadius: 10,
           padding: 10,
           marginBottom: 14
         }
@@ -10034,7 +10034,7 @@ function VistaAserradero({
       })), /*#__PURE__*/React.createElement("div", {
         style: {
           background: C.suave,
-          borderRadius: 0,
+          borderRadius: 10,
           padding: 12,
           border: `1px solid ${C.borde}`,
           marginBottom: 12
@@ -10288,7 +10288,7 @@ function VistaAserradero({
         fontSize: 13,
         fontWeight: 700,
         padding: "5px 10px",
-        borderRadius: 0,
+        borderRadius: 10,
         fontFamily: "'Lato',sans-serif"
       }
     }, et.t)));
@@ -10341,7 +10341,7 @@ function VistaConversor() {
       style: {
         marginTop: 14,
         background: C.suave,
-        borderRadius: 0,
+        borderRadius: 10,
         padding: 16,
         border: `1px solid ${C.borde}`
       }
@@ -11003,7 +11003,7 @@ function VistaFlete({
         })), /*#__PURE__*/React.createElement("div", {
           style: {
             border: `1px solid ${C.borde}`,
-            borderRadius: 0,
+            borderRadius: 10,
             padding: 10,
             marginBottom: 10
           }
@@ -11066,7 +11066,7 @@ function VistaFlete({
         })))), /*#__PURE__*/React.createElement("div", {
           style: {
             border: `1px solid ${C.borde}`,
-            borderRadius: 0,
+            borderRadius: 10,
             padding: 10,
             marginBottom: 14
           }
@@ -11131,7 +11131,7 @@ function VistaFlete({
         })), /*#__PURE__*/React.createElement("div", {
           style: {
             background: C.suave,
-            borderRadius: 0,
+            borderRadius: 10,
             padding: 12,
             border: `1px solid ${C.borde}`,
             marginBottom: 12
@@ -11396,7 +11396,7 @@ function VistaFlete({
           fontSize: 13,
           fontWeight: 700,
           padding: "5px 10px",
-          borderRadius: 0,
+          borderRadius: 10,
           fontFamily: "'Lato',sans-serif"
         }
       }, et.t)));
@@ -11549,7 +11549,7 @@ function VistaFlete({
       gap: 6,
       background: C.suave,
       border: `1px solid ${C.borde}`,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "8px 14px",
       color: C.marron,
       fontSize: 17,
@@ -11652,7 +11652,7 @@ function VistaFlete({
         fontWeight: 700,
         color: "#fff",
         background: "#009966",
-        borderRadius: 0,
+        borderRadius: 10,
         padding: "2px 8px",
         fontFamily: "'Lato',sans-serif",
         verticalAlign: "middle"
@@ -11682,7 +11682,7 @@ function VistaFlete({
         fontSize: 11,
         fontWeight: 700,
         padding: "3px 8px",
-        borderRadius: 0,
+        borderRadius: 10,
         fontFamily: "'Lato',sans-serif"
       }
     }, p._cantCot > 0 ? `${p._cantCot} cotización${p._cantCot > 1 ? "es" : ""}` : "Sin cotizaciones"), /*#__PURE__*/React.createElement("span", {
@@ -11717,7 +11717,7 @@ function VistaFlete({
         key: key,
         style: {
           border: `1px solid ${abiertaCot ? C.acento : C.borde}`,
-          borderRadius: 0,
+          borderRadius: 10,
           marginBottom: 10,
           overflow: "hidden",
           background: C.input
@@ -11758,7 +11758,7 @@ function VistaFlete({
           fontWeight: 700,
           color: "#fff",
           background: "#009966",
-          borderRadius: 0,
+          borderRadius: 10,
           padding: "2px 8px",
           fontFamily: "'Lato',sans-serif",
           verticalAlign: "middle"
@@ -12314,7 +12314,7 @@ function VistaFerreteria({
       }), /*#__PURE__*/React.createElement("div", {
         style: {
           border: `1px solid ${C.borde}`,
-          borderRadius: 0,
+          borderRadius: 10,
           padding: 10,
           marginBottom: 10
         }
@@ -12377,7 +12377,7 @@ function VistaFerreteria({
       })))), /*#__PURE__*/React.createElement("div", {
         style: {
           border: `1px solid ${C.borde}`,
-          borderRadius: 0,
+          borderRadius: 10,
           padding: 10,
           marginBottom: 14
         }
@@ -12442,7 +12442,7 @@ function VistaFerreteria({
       })), /*#__PURE__*/React.createElement("div", {
         style: {
           background: C.suave,
-          borderRadius: 0,
+          borderRadius: 10,
           padding: 12,
           border: `1px solid ${C.borde}`,
           marginBottom: 12
@@ -12695,7 +12695,7 @@ function VistaFerreteria({
         fontSize: 13,
         fontWeight: 700,
         padding: "5px 10px",
-        borderRadius: 0,
+        borderRadius: 10,
         fontFamily: "'Lato',sans-serif"
       }
     }, et.t)));
@@ -13139,7 +13139,7 @@ function VistaPintureria({
       }), /*#__PURE__*/React.createElement("div", {
         style: {
           border: `1px solid ${C.borde}`,
-          borderRadius: 0,
+          borderRadius: 10,
           padding: 10,
           marginBottom: 10
         }
@@ -13202,7 +13202,7 @@ function VistaPintureria({
       })))), /*#__PURE__*/React.createElement("div", {
         style: {
           border: `1px solid ${C.borde}`,
-          borderRadius: 0,
+          borderRadius: 10,
           padding: 10,
           marginBottom: 14
         }
@@ -13267,7 +13267,7 @@ function VistaPintureria({
       })), /*#__PURE__*/React.createElement("div", {
         style: {
           background: C.suave,
-          borderRadius: 0,
+          borderRadius: 10,
           padding: 12,
           border: `1px solid ${C.borde}`,
           marginBottom: 12
@@ -13520,7 +13520,7 @@ function VistaPintureria({
         fontSize: 13,
         fontWeight: 700,
         padding: "5px 10px",
-        borderRadius: 0,
+        borderRadius: 10,
         fontFamily: "'Lato',sans-serif"
       }
     }, et.t)));
@@ -13565,7 +13565,7 @@ function PantallaBienvenida({
   }, "← Volver"), /*#__PURE__*/React.createElement("div", {
     style: {
       background: C.card,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: 24,
       border: `1px solid ${C.borde}`
     }
@@ -13820,7 +13820,7 @@ function PantallaBienvenida({
   }, "← Volver"), /*#__PURE__*/React.createElement("div", {
     style: {
       background: C.card,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: 24,
       border: `1px solid ${C.borde}`
     }
@@ -13874,7 +13874,7 @@ function PantallaBienvenida({
   }, "← Volver"), /*#__PURE__*/React.createElement("div", {
     style: {
       background: C.card,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: 24,
       border: `1px solid ${C.borde}`
     }
@@ -13978,7 +13978,7 @@ function PantallaBienvenida({
       width: 60,
       height: 3,
       background: `linear-gradient(90deg,${C.acento},${C.marron})`,
-      borderRadius: 0,
+      borderRadius: 10,
       margin: "12px auto 0"
     }
   })), /*#__PURE__*/React.createElement("div", {
@@ -14167,7 +14167,7 @@ function PedidoClienteFormato({
   return /*#__PURE__*/React.createElement("div", {
     style: {
       border: `1px solid ${C.borde}`,
-      borderRadius: 0,
+      borderRadius: 10,
       overflow: "hidden",
       background: "#fff"
     }
@@ -14286,7 +14286,7 @@ function PedidoClienteFormato({
       alt: "croquis del cliente",
       style: {
         width: "100%",
-        borderRadius: 0,
+        borderRadius: 10,
         border: `1px solid ${C.borde}`
       }
     })));
@@ -14327,7 +14327,7 @@ function FleteFormato({
   return /*#__PURE__*/React.createElement("div", {
     style: {
       border: `1px solid ${C.borde}`,
-      borderRadius: 0,
+      borderRadius: 10,
       overflow: "hidden",
       background: "#fff"
     }
@@ -14422,7 +14422,7 @@ function PedidoFormato({
   return /*#__PURE__*/React.createElement("div", {
     style: {
       border: `1px solid ${C.borde}`,
-      borderRadius: 0,
+      borderRadius: 10,
       overflow: "hidden",
       background: "#fff"
     }
@@ -14590,7 +14590,7 @@ function PresupuestoFormato({
   return /*#__PURE__*/React.createElement("div", {
     style: {
       border: `1px solid ${C.borde}`,
-      borderRadius: 0,
+      borderRadius: 10,
       overflow: "hidden",
       background: "#fff"
     }
@@ -14861,7 +14861,7 @@ function FlowStep({
       background: C.card,
       border: `2px solid ${bc}`,
       padding: "12px 14px",
-      borderRadius: 0,
+      borderRadius: 10,
       minWidth: 0
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -14959,7 +14959,7 @@ function FlowBranch({
       background: C.card,
       border: `2px solid ${o.color}`,
       padding: "12px 14px",
-      borderRadius: 0,
+      borderRadius: 10,
       minWidth: 0
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -16938,7 +16938,7 @@ function AdminQuejas() {
         fontSize: 13,
         fontWeight: 700,
         padding: "5px 10px",
-        borderRadius: 0
+        borderRadius: 10
       }
     }, LABEL_ESTADO[sel.estado] || sel.estado || "Nueva")), /*#__PURE__*/React.createElement("div", {
       style: {
@@ -17124,7 +17124,7 @@ function AdminQuejas() {
       fontSize: 12,
       fontWeight: 700,
       padding: "3px 9px",
-      borderRadius: 0,
+      borderRadius: 10,
       whiteSpace: "nowrap"
     }
   }, LABEL_ESTADO[q.estado || "nueva"])), /*#__PURE__*/React.createElement("div", {
@@ -17298,7 +17298,7 @@ function AdminMovimientos() {
       key: ct.id,
       style: {
         border: `1px solid ${abierta ? C.acento : C.borde}`,
-        borderRadius: 0,
+        borderRadius: 10,
         marginBottom: 10,
         overflow: "hidden"
       }
@@ -17430,7 +17430,7 @@ function VistaAdmin({
       width: 34,
       height: 34,
       objectFit: "contain",
-      borderRadius: 0,
+      borderRadius: 10,
       flexShrink: 0
     }
   }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
@@ -17488,7 +17488,7 @@ function VistaAdmin({
       background: "transparent",
       color: C.suave,
       border: `1px solid ${C.suave}44`,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "5px 12px",
       cursor: "pointer",
       fontSize: 14,
@@ -17509,7 +17509,7 @@ function VistaAdmin({
       background: tab === id ? C.acento : "transparent",
       color: tab === id ? C.marron : C.suave,
       border: tab === id ? "none" : `1px solid ${C.acento}44`,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "10px 4px",
       cursor: "pointer",
       fontSize: 15,
@@ -17949,7 +17949,7 @@ function MiCuenta({
     background: solapa === id ? C.acento : "transparent",
     color: solapa === id ? C.marron : C.textoSuave,
     border: solapa === id ? "none" : `1px solid ${C.borde}`,
-    borderRadius: 0,
+    borderRadius: 10,
     padding: "12px 8px",
     cursor: "pointer",
     fontSize: 16,
@@ -18044,7 +18044,7 @@ function MiCuenta({
   }))), esCliente && /*#__PURE__*/React.createElement("div", {
     style: {
       border: `1px solid ${C.borde}`,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: 12,
       marginBottom: 14,
       background: C.suave
@@ -18144,7 +18144,7 @@ function MiCuenta({
   }))), msg(okPriv, "ok"), " ", msg(errPriv, "err"), /*#__PURE__*/React.createElement("div", {
     style: {
       border: `1px solid ${C.borde}`,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: 12,
       marginTop: 14,
       marginBottom: 4,
@@ -18172,7 +18172,7 @@ function MiCuenta({
   }, esCliente ? "Te avisamos por mail cuando una carpintería te envía un presupuesto." : "Te avisamos por mail cuando hay un nuevo pedido para cotizar. Si recibís muchos, podés apagarlo.")), /*#__PURE__*/React.createElement("div", {
     style: {
       border: `1px solid ${C.borde}`,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: 12,
       marginTop: 12,
       marginBottom: 4,
@@ -18446,7 +18446,7 @@ function MiCuenta({
       width: "100%",
       height: 110,
       objectFit: "cover",
-      borderRadius: 0,
+      borderRadius: 10,
       border: `1px solid ${C.borde}`
     }
   }), tr.titulo && /*#__PURE__*/React.createElement("div", {
@@ -18482,7 +18482,7 @@ function MiCuenta({
       justifyContent: "center",
       height: 110,
       border: `2px dashed ${C.borde}`,
-      borderRadius: 0,
+      borderRadius: 10,
       cursor: "pointer",
       color: C.textoSuave,
       fontSize: 14
@@ -19919,7 +19919,7 @@ function App() {
       width: 34,
       height: 34,
       objectFit: "contain",
-      borderRadius: 0,
+      borderRadius: 10,
       flexShrink: 0
     }
   }), /*#__PURE__*/React.createElement("div", {
@@ -19964,7 +19964,7 @@ function App() {
       background: navTab === "flete" ? C.acento : "transparent",
       color: navTab === "flete" ? C.marron : C.suave,
       border: `1px solid ${C.suave}44`,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "4px 10px",
       cursor: "pointer",
       fontSize: 13,
@@ -19979,7 +19979,7 @@ function App() {
       background: navTab === "bolsa" ? C.acento : "transparent",
       color: navTab === "bolsa" ? C.marron : C.suave,
       border: `1px solid ${C.suave}44`,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "4px 10px",
       cursor: "pointer",
       fontSize: 13,
@@ -19997,7 +19997,7 @@ function App() {
       background: "transparent",
       color: C.suave,
       border: `1px solid ${C.suave}44`,
-      borderRadius: 0,
+      borderRadius: 10,
       padding: "5px 12px",
       cursor: "pointer",
       fontSize: 22,
@@ -20023,7 +20023,7 @@ function App() {
       top: typeof menuAbierto === "number" ? menuAbierto : 60,
       background: C.card,
       border: `1px solid ${C.borde}`,
-      borderRadius: 0,
+      borderRadius: 10,
       boxShadow: "0 6px 24px #5A4A3A44",
       zIndex: 201,
       minWidth: 190,
