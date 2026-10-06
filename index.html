@@ -3227,18 +3227,23 @@ const PRIVACIDAD_CLAUSULAS = [{
   d: "Podemos actualizar esta Política de Privacidad. Te avisaremos dentro de la plataforma y el uso continuado implicará la aceptación de la versión vigente."
 }];
 function AuthScreen({
-  onAuth
+  onAuth,
+  modoInicial,
+  tipoInicial,
+  ubicacionInicial,
+  avisoPedido,
+  onVolverPedido
 }) {
-  const [modo, setModo] = useState("login");
+  const [modo, setModo] = useState(modoInicial || "login");
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [pass2, setPass2] = useState("");
   const [verPass, setVerPass] = useState(false);
   const [nombre, setNombre] = useState("");
-  const [tipo, setTipo] = useState("");
-  const [ciudad, setCiudad] = useState("");
-  const [provincia, setProvincia] = useState("");
-  const [barrio, setBarrio] = useState("");
+  const [tipo, setTipo] = useState(tipoInicial || "");
+  const [ciudad, setCiudad] = useState(ubicacionInicial?.ciudad || "");
+  const [provincia, setProvincia] = useState(ubicacionInicial?.provincia || "");
+  const [barrio, setBarrio] = useState(ubicacionInicial?.barrio || "");
   const [err, setErr] = useState("");
   const [ok, setOk] = useState("");
   const [cargando, setCargando] = useState(false);
@@ -3453,6 +3458,7 @@ function AuthScreen({
         // Presentarse ante la base con la credencial, para poder crear la propia ficha
         db.setSesion(tokenReg);
         const emailLimpio = email.trim().toLowerCase();
+        let fichaNueva = null;
         try {
           let nuevoUsuario;
           if (!userId) {
@@ -3479,6 +3485,7 @@ function AuthScreen({
               documento: docLimpio
             });
           }
+          fichaNueva = Array.isArray(nuevoUsuario) ? nuevoUsuario[0] : nuevoUsuario;
           if (tipo !== "cliente" && tipo !== "trabajador") {
             const idNuevo = nuevoUsuario && nuevoUsuario[0] && nuevoUsuario[0].id || null;
             if (idNuevo) {
@@ -3495,6 +3502,15 @@ function AuthScreen({
           }
         } finally {
           db.limpiarSesion();
+        }
+        // Viene de armar un pedido sin cuenta: entra directo para que el pedido se envíe solo
+        if (avisoPedido && tokenReg && fichaNueva?.id) {
+          setCargando(false);
+          onAuth({
+            ...tokenReg,
+            usuario: fichaNueva
+          });
+          return;
         }
         setOk("¡Cuenta creada! Ahora iniciá sesión.");
         setModo("login");
@@ -3634,7 +3650,39 @@ function AuthScreen({
       padding: 20,
       background: `linear-gradient(160deg,${C.crema} 60%,${C.suave} 100%)`
     }
+  }, avisoPedido && /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 440,
+      width: "100%",
+      background: C.card,
+      border: `2px solid ${C.acento}`,
+      padding: "14px 16px",
+      marginBottom: 20,
+      boxSizing: "border-box",
+      fontFamily: "'Lato',sans-serif"
+    }
   }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 18,
+      fontWeight: 700,
+      color: C.marron,
+      marginBottom: 6
+    }
+  }, "📝 ¡Tu pedido está listo!"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 16,
+      color: C.texto,
+      lineHeight: 1.5
+    }
+  }, "Para enviarlo a las carpinterías, creá tu cuenta de cliente. Si ya tenés una, tocá \"Ingresar\" y se envía al entrar."), onVolverPedido && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    style: {
+      ...S.btn("link"),
+      marginTop: 8,
+      paddingLeft: 0
+    },
+    onClick: onVolverPedido
+  }, "← Volver a mi pedido")), /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       marginBottom: 32
@@ -4060,7 +4108,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-05.3"));
+  }, "v2026-10-05.4"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -4616,8 +4664,11 @@ function NuevoPedido({
   usuario,
   onGuardar,
   onCancelar,
-  notif
+  notif,
+  onPedirCuenta,
+  borrador
 }) {
+  const esInvitado = !usuario || !usuario.id;
   const enPromoLanzamiento = false; // los pedidos de clientes se publican desde el primer día
   const itemVacio = () => ({
     descripcion: "",
@@ -4635,11 +4686,11 @@ function NuevoPedido({
     cantidadCajones: "",
     medidasCajones: ""
   });
-  const [items, setItems] = useState([itemVacio()]);
-  const [fechaLimite, setFechaLimite] = useState("");
-  const [provincia, setProvincia] = useState(usuario.provincia || "");
-  const [ciudad, setCiudad] = useState(usuario.ciudad || "");
-  const [barrio, setBarrio] = useState(usuario.barrio || "");
+  const [items, setItems] = useState(() => borrador?.items?.length ? borrador.items : [itemVacio()]);
+  const [fechaLimite, setFechaLimite] = useState(borrador?.fechaLimite || "");
+  const [provincia, setProvincia] = useState(borrador?.provincia ?? usuario?.provincia ?? "");
+  const [ciudad, setCiudad] = useState(borrador?.ciudad ?? usuario?.ciudad ?? "");
+  const [barrio, setBarrio] = useState(borrador?.barrio ?? usuario?.barrio ?? "");
   const [procImgIdx, setProcImgIdx] = useState(null);
   const [intento, setIntento] = useState(false);
   const setIt = (i, k, v) => setItems(prev => {
@@ -4738,13 +4789,13 @@ function NuevoPedido({
     if (guardando) return;
     setGuardando(true);
     try {
-      if (!usuario || !usuario.id) {
+      if (esInvitado && !onPedirCuenta) {
         alert("Error: no se encontró tu usuario. Cerrá sesión y volvé a entrar.");
         setGuardando(false);
         return;
       }
       // Verificar que el usuario existe en la tabla antes de insertar
-      const verificar = await db.select("usuarios", `?id=eq.${usuario.id}&limit=1`);
+      const verificar = esInvitado ? [true] : await db.select("usuarios", `?id=eq.${usuario.id}&limit=1`);
       if (!verificar || verificar.length === 0) {
         alert("Error: tu perfil no está en la base de datos. Cerrá sesión y volvé a entrar.");
         setGuardando(false);
@@ -4768,8 +4819,7 @@ function NuevoPedido({
       const primero = itemsLimpios[0];
       const resumen = itemsLimpios.map(it => it.descripcion).join(" + ");
       // Guardamos items (lista) + columnas del primer mueble por compatibilidad con lo ya existente
-      await db.insert("pedidos", {
-        cliente_id: usuario.id,
+      const payloadPedido = {
         items: itemsLimpios,
         descripcion: resumen,
         alto: primero.alto,
@@ -4788,6 +4838,25 @@ function NuevoPedido({
         ciudad: ciudad || null,
         barrio: barrio || null,
         fecha_limite: fechaLimite ? new Date(fechaLimite + "T23:59:59").toISOString() : null
+      };
+      // Sin cuenta todavía: se guarda el pedido y se pide crear la cuenta (o ingresar) para enviarlo
+      if (esInvitado) {
+        onPedirCuenta({
+          payload: payloadPedido,
+          borrador: {
+            items,
+            fechaLimite,
+            provincia,
+            ciudad,
+            barrio
+          }
+        });
+        setGuardando(false);
+        return;
+      }
+      await db.insert("pedidos", {
+        cliente_id: usuario.id,
+        ...payloadPedido
       });
       // El aviso por mail a las carpinterías lo envía el servidor (webhook -> Edge Function avisar-pedido)
       notif(enPromoLanzamiento ? "¡Pedido guardado! Las carpinterías van a poder verlo y cotizarlo a partir del 26/10." : items.length > 1 ? `¡Pedido enviado a todas las carpinterías! (${items.length} muebles)` : "¡Pedido enviado a todas las carpinterías!");
@@ -5243,7 +5312,7 @@ function NuevoPedido({
       }
       guardar();
     }
-  }, guardando ? "⟳ Enviando..." : "📤 Enviar pedido"), /*#__PURE__*/React.createElement("button", {
+  }, guardando ? "⟳ Enviando..." : esInvitado ? "Continuar → crear cuenta y enviar" : "📤 Enviar pedido"), /*#__PURE__*/React.createElement("button", {
     style: S.btn("ghost"),
     onClick: onCancelar
   }, "Cancelar")));
@@ -13461,7 +13530,8 @@ function VistaPintureria({
 // ─── APP ──────────────────────────────────────────────────────────────────────
 
 function PantallaBienvenida({
-  onEntrar
+  onEntrar,
+  onPedir
 }) {
   const [vista, setVista] = useState("inicio");
   const [manualTab, setManualTab] = useState("practico");
@@ -13950,7 +14020,23 @@ function PantallaBienvenida({
       padding: "14px"
     },
     onClick: onEntrar
-  }, "Ingresar / Registrarme →"), /*#__PURE__*/React.createElement("div", {
+  }, "Ingresar / Registrarme →"), onPedir && /*#__PURE__*/React.createElement("button", {
+    style: {
+      ...S.btn("gold"),
+      width: "100%",
+      justifyContent: "center",
+      flexDirection: "column",
+      gap: 2,
+      fontSize: 17,
+      padding: "12px 14px"
+    },
+    onClick: onPedir
+  }, /*#__PURE__*/React.createElement("span", null, "📝 Pedí presupuesto para tu mueble"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      fontWeight: 400
+    }
+  }, "Armá tu pedido primero; tus datos los cargás al final")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8
@@ -19280,6 +19366,42 @@ function App() {
   const [cuentaTab, setCuentaTab] = useState("privado");
   const [idxPantalla, setIdxPantalla] = useState(0);
   const [maxIdxPantalla, setMaxIdxPantalla] = useState(0);
+  // Pedido de cliente armado sin cuenta: se guarda hasta que crea la cuenta o ingresa
+  const [invitado, setInvitado] = useState(false);
+  const [borradorEdit, setBorradorEdit] = useState(null);
+  const [pedidoPend, setPedidoPend] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("encastre_pedido_pendiente") || "null");
+    } catch {
+      return null;
+    }
+  });
+  const guardarPend = p => {
+    setPedidoPend(p);
+    try {
+      if (p) localStorage.setItem("encastre_pedido_pendiente", JSON.stringify(p));else localStorage.removeItem("encastre_pedido_pendiente");
+    } catch {}
+  };
+  const enviarPedidoPendiente = async s => {
+    const pend = pedidoPend;
+    if (!pend?.payload || !s?.usuario?.id) return;
+    if (s.usuario.tipo !== "cliente") {
+      alert("Entraste con una cuenta de " + (ROLES[s.usuario.tipo] || s.usuario.tipo) + ". Los pedidos de muebles se envían desde una cuenta de cliente. Tu pedido quedó guardado: entrá con una cuenta de cliente para enviarlo.");
+      return;
+    }
+    try {
+      await db.insert("pedidos", {
+        ...pend.payload,
+        cliente_id: s.usuario.id
+      });
+      guardarPend(null);
+      setBorradorEdit(null);
+      setInvitado(false);
+      setNotifMsg("¡Pedido enviado a todas las carpinterías!");
+    } catch (e) {
+      alert("Tu cuenta quedó lista, pero no se pudo enviar el pedido: " + (e.message || "revisá tu conexión") + ". Quedó guardado: cerrá sesión y volvé a entrar para reintentar.");
+    }
+  };
   const badges = useBadges(sesion?.usuario);
 
   // ── Aviso para activar notificaciones push (se pide al primer ingreso; si no las activa, queda un cartel) ──
@@ -19510,6 +19632,7 @@ function App() {
       localStorage.setItem("encastre_sesion", JSON.stringify(s));
     } catch {}
     setNavTab("principal");
+    if (pedidoPend) enviarPedidoPendiente(s);
   };
   const darDeBaja = async () => {
     if (!window.confirm("¿Seguro que querés dar de baja tu cuenta? No vas a poder volver a ingresar con ella. Solo la administración puede reactivarla.")) return;
@@ -19525,8 +19648,98 @@ function App() {
     setMostrarBienvenida(true);
     alert("Tu cuenta fue dada de baja. ¡Gracias por haber sido parte de Encastre! Te esperamos, que vuelvas pronto.");
   };
+  if (!sesion && pedidoPend) return /*#__PURE__*/React.createElement(AuthScreen, {
+    onAuth: handleAuth,
+    modoInicial: "registro",
+    tipoInicial: "cliente",
+    ubicacionInicial: pedidoPend.borrador,
+    avisoPedido: true,
+    onVolverPedido: () => {
+      setBorradorEdit(pedidoPend.borrador);
+      guardarPend(null);
+      setInvitado(true);
+    }
+  });
+  if (!sesion && invitado) return /*#__PURE__*/React.createElement("div", {
+    style: {
+      ...S.app,
+      minHeight: "100vh",
+      background: C.crema
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: C.marron,
+      color: C.crema,
+      padding: "10px 14px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 8,
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("img", {
+    src: LOGO_B64,
+    alt: "",
+    style: {
+      width: 34,
+      height: 34,
+      objectFit: "contain"
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: "'Stardos Stencil',serif",
+      fontSize: 22,
+      fontWeight: 700,
+      letterSpacing: 2
+    }
+  }, "ENCASTRE")), /*#__PURE__*/React.createElement("button", {
+    style: {
+      ...S.btn("ghost"),
+      color: C.crema,
+      borderColor: C.crema,
+      padding: "6px 12px"
+    },
+    onClick: () => {
+      setInvitado(false);
+      setBorradorEdit(null);
+      setMostrarBienvenida(false);
+    }
+  }, "Ya tengo cuenta")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 820,
+      margin: "0 auto",
+      padding: "16px 12px"
+    }
+  }, /*#__PURE__*/React.createElement(NuevoPedido, {
+    usuario: {
+      id: null
+    },
+    borrador: borradorEdit,
+    onPedirCuenta: p => {
+      guardarPend(p);
+      setInvitado(false);
+    },
+    onGuardar: () => {},
+    onCancelar: () => {
+      setInvitado(false);
+      setBorradorEdit(null);
+      setMostrarBienvenida(true);
+    },
+    notif: m => setNotifMsg(m)
+  })));
   if (mostrarBienvenida && !sesion) return /*#__PURE__*/React.createElement(PantallaBienvenida, {
-    onEntrar: () => setMostrarBienvenida(false)
+    onEntrar: () => setMostrarBienvenida(false),
+    onPedir: () => {
+      setMostrarBienvenida(false);
+      setBorradorEdit(null);
+      setInvitado(true);
+    }
   });
   if (!sesion) return /*#__PURE__*/React.createElement(AuthScreen, {
     onAuth: handleAuth
