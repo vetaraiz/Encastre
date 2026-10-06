@@ -2193,6 +2193,49 @@ function TagMsjNuevo({
 }
 
 // Círculo chico tildable para selección múltiple (listas con archivado en bloque)
+// Selección múltiple + archivado para listas de pedidos (mismo mecanismo que la Papelera)
+function useArchivoLista(usuario, tipo) {
+  const [archivados, setArchivados] = useState(new Set());
+  const [seleccionados, setSeleccionados] = useState(new Set());
+  const [archivando, setArchivando] = useState(false);
+  useEffect(() => {
+    if (!usuario?.id) return;
+    db.select("elementos_archivados", `?usuario_id=eq.${usuario.id}&tipo_elemento=eq.${tipo}&select=elemento_id`).then(a => setArchivados(new Set((a || []).map(x => x.elemento_id)))).catch(() => {});
+  }, [usuario?.id, tipo]);
+  const toggle = id => setSeleccionados(prev => {
+    const n = new Set(prev);
+    if (n.has(id)) n.delete(id);else n.add(id);
+    return n;
+  });
+  const archivarSel = async notif => {
+    if (seleccionados.size === 0) return;
+    if (!window.confirm(`¿Archivar ${seleccionados.size} pedido${seleccionados.size > 1 ? "s" : ""}? Los vas a poder restaurar desde la Papelera.`)) return;
+    setArchivando(true);
+    const hechos = [];
+    for (const id of seleccionados) {
+      try {
+        await db.insertMin("elementos_archivados", {
+          usuario_id: usuario.id,
+          tipo_elemento: tipo,
+          elemento_id: id
+        });
+        hechos.push(id);
+      } catch {}
+    }
+    setArchivados(prev => new Set([...prev, ...hechos]));
+    setSeleccionados(new Set());
+    setArchivando(false);
+    if (notif) notif(hechos.length === seleccionados.size ? "Pedidos archivados" : "No se pudieron archivar todos");
+  };
+  return {
+    archivados,
+    seleccionados,
+    toggle,
+    archivarSel,
+    archivando,
+    cancelar: () => setSeleccionados(new Set())
+  };
+}
 function SelCirculo({
   on,
   onToggle
@@ -3189,6 +3232,7 @@ function AuthScreen({
   const [modo, setModo] = useState("login");
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
+  const [pass2, setPass2] = useState("");
   const [verPass, setVerPass] = useState(false);
   const [nombre, setNombre] = useState("");
   const [tipo, setTipo] = useState("");
@@ -3319,6 +3363,11 @@ function AuthScreen({
         }
         if (entidad === "persona" && !validarDNI(documento)) {
           setErr("El DNI no parece válido. Debe tener 7 u 8 números, sin puntos.");
+          setCargando(false);
+          return;
+        }
+        if (pass !== pass2) {
+          setErr("Las contraseñas no coinciden. Escribila igual en los dos campos.");
           setCargando(false);
           return;
         }
@@ -3853,7 +3902,30 @@ function AuthScreen({
       padding: 6,
       lineHeight: 1
     }
-  }, verPass ? "🙈" : "👁️"))), /*#__PURE__*/React.createElement("div", {
+  }, verPass ? "🙈" : "👁️"))), modo === "registro" && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: S.label
+  }, "Repetí la contraseña"), /*#__PURE__*/React.createElement("input", {
+    type: verPass ? "text" : "password",
+    autoComplete: "new-password",
+    value: pass2,
+    onChange: e => setPass2(e.target.value),
+    placeholder: "Escribila de nuevo",
+    style: {
+      ...S.input,
+      borderColor: pass2 && pass2 !== pass ? C.rojo : undefined
+    },
+    onPaste: e => e.preventDefault()
+  }), pass2 && pass2 !== pass && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      color: C.rojo,
+      marginTop: 4
+    }
+  }, "Las contraseñas no coinciden.")), /*#__PURE__*/React.createElement("div", {
     id: "cf-turnstile-widget",
     style: {
       marginBottom: 16,
@@ -3988,7 +4060,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-05.1"));
+  }, "v2026-10-05.3"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -4015,6 +4087,31 @@ function fechaHoraChat(iso) {
   });
   return `${fecha} ${hora}`;
 }
+// Chats que quedan abiertos aunque la pantalla se vuelva a dibujar, y apertura automática al aceptar
+const CHATS_ABIERTOS = new Set();
+async function avisarAceptacionPorChat({
+  pedidoId,
+  tipoPedido,
+  de,
+  para,
+  texto
+}) {
+  if (!pedidoId || !de || !para) return;
+  const clave = `${tipoPedido}:${pedidoId}:${para}`;
+  CHATS_ABIERTOS.add(clave);
+  try {
+    await db.insert("mensajes", {
+      pedido_id: pedidoId,
+      tipo_pedido: tipoPedido,
+      de_usuario_id: de,
+      para_usuario_id: para,
+      texto
+    });
+  } catch {}
+  setTimeout(() => window.dispatchEvent(new CustomEvent("encastre:abrir-chat", {
+    detail: clave
+  })), 400);
+}
 function Chat({
   pedidoId,
   tipoPedido,
@@ -4027,9 +4124,20 @@ function Chat({
   const [txt, setTxt] = useState("");
   const [bloqueoMio, setBloqueoMio] = useState(null);
   const [meBloquearon, setMeBloquearon] = useState(false);
-  const [abierto, setAbierto] = useState(false);
-  const endRef = useRef(null);
   const otroId = otroUsuario?.id;
+  const claveChat = `${tipoPedido}:${pedidoId}:${otroId}`;
+  const [abierto, setAbierto] = useState(() => CHATS_ABIERTOS.has(claveChat));
+  const endRef = useRef(null);
+  useEffect(() => {
+    if (abierto) CHATS_ABIERTOS.add(claveChat);else CHATS_ABIERTOS.delete(claveChat);
+  }, [abierto, claveChat]);
+  useEffect(() => {
+    const h = e => {
+      if (e.detail === claveChat) setAbierto(true);
+    };
+    window.addEventListener("encastre:abrir-chat", h);
+    return () => window.removeEventListener("encastre:abrir-chat", h);
+  }, [claveChat]);
   const cargar = useCallback(async () => {
     try {
       const filtroPareja = otroId ? `&or=(and(de_usuario_id.eq.${miUsuario.id},para_usuario_id.eq.${otroId}),and(de_usuario_id.eq.${otroId},para_usuario_id.eq.${miUsuario.id}))` : "";
@@ -5397,7 +5505,17 @@ function VistaCliente({
         estado: "aceptado"
       }, `id=eq.${sel.id}`);
       notif("¡Presupuesto aceptado!");
-      setSelPresup(null);
+      await avisarAceptacionPorChat({
+        pedidoId: sel.id,
+        tipoPedido: "cliente",
+        de: usuario.id,
+        para: pr.carpinteria_id,
+        texto: "✅ ¡Acepté tu presupuesto! Coordinemos por acá los detalles, la entrega y el pago."
+      });
+      setSelPresup(p => p ? {
+        ...p,
+        estado: "aceptado"
+      } : p);
       setTipsPresup(null);
       cargar();
       recargarPresups(sel);
@@ -5817,13 +5935,6 @@ function VistaCliente({
         }
       }, "Carpintería"), /*#__PURE__*/React.createElement("th", {
         style: {
-          textAlign: "left",
-          padding: "8px 10px",
-          color: C.textoSuave,
-          fontWeight: 700
-        }
-      }, "Pedido"), /*#__PURE__*/React.createElement("th", {
-        style: {
           textAlign: "right",
           padding: "8px 10px",
           color: C.textoSuave,
@@ -5843,7 +5954,8 @@ function VistaCliente({
         onClick: () => abrirCot(pr)
       }, /*#__PURE__*/React.createElement("td", {
         style: {
-          padding: "8px 10px"
+          padding: "8px 4px 8px 8px",
+          width: 36
         }
       }, /*#__PURE__*/React.createElement(SelCirculo, {
         on: presupSel.has(pr.id),
@@ -5870,25 +5982,22 @@ function VistaCliente({
       }))), /*#__PURE__*/React.createElement("td", {
         style: {
           padding: "8px 10px",
-          color: C.textoSuave
-        }
-      }, sel.descripcion), /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "8px 10px",
           textAlign: "right",
           fontWeight: 800,
+          whiteSpace: "nowrap",
           color: i === 0 ? C.verde : C.marron
         }
       }, "$ ", Number(pr.monto).toLocaleString("es-AR"), i === 0 && " ✓"), /*#__PURE__*/React.createElement("td", {
         style: {
-          padding: "8px 10px",
-          textAlign: "right"
+          padding: "8px 8px 8px 4px",
+          textAlign: "right",
+          whiteSpace: "nowrap"
         }
       }, /*#__PURE__*/React.createElement("button", {
         style: {
           ...S.btn("ghost"),
           fontSize: 13,
-          padding: "4px 10px"
+          padding: "4px 8px"
         },
         onClick: e => {
           e.stopPropagation();
@@ -6452,6 +6561,13 @@ function VistaCarpinteria({
         estado: "aceptado"
       }, `id=eq.${selFerr.id}`);
       notif("¡Cotización de ferretería aceptada!");
+      await avisarAceptacionPorChat({
+        pedidoId: selFerr.id,
+        tipoPedido: "ferreteria",
+        de: usuario.id,
+        para: ct.ferreteria_id,
+        texto: "✅ ¡Acepté tu cotización! Coordinemos por acá la entrega y el pago."
+      });
       await abrirPedidoFerr(selFerr);
       cargarMisPedidosFerreria();
     } catch (e) {
@@ -6532,6 +6648,13 @@ function VistaCarpinteria({
         estado: "aceptado"
       }, `id=eq.${selPint.id}`);
       notif("¡Cotización de pinturería aceptada!");
+      await avisarAceptacionPorChat({
+        pedidoId: selPint.id,
+        tipoPedido: "pintureria",
+        de: usuario.id,
+        para: ct.pintureria_id,
+        texto: "✅ ¡Acepté tu cotización! Coordinemos por acá la entrega y el pago."
+      });
       await abrirPedidoPint(selPint);
       cargarMisPedidosPint();
     } catch (e) {
@@ -6736,6 +6859,13 @@ function VistaCarpinteria({
         estado: "aceptado"
       }, `id=eq.${selAserr.id}`);
       notif("¡Cotización de aserradero aceptada!");
+      await avisarAceptacionPorChat({
+        pedidoId: selAserr.id,
+        tipoPedido: "aserradero",
+        de: usuario.id,
+        para: ct.aserradero_id,
+        texto: "✅ ¡Acepté tu cotización! Coordinemos por acá la entrega y el pago."
+      });
       setSelAserr(s => ({
         ...s,
         estado: "aceptado"
@@ -9322,15 +9452,16 @@ function VistaAserradero({
       }));
     } catch {}
   }, [sel, miCot, yaEnvio]);
+  const arch = useArchivoLista(usuario, "pedido_aserradero");
   const cargar = useCallback(async () => {
     try {
       const d = await db.select("pedidos_aserradero", "?order=created_at.desc");
       // Sobre cerrado: solo sé si YO ya coticé, nunca si lo hizo otro aserradero.
       let mias = {};
       try {
-        const mc = await db.select("cotizaciones_aserradero", `?aserradero_id=eq.${usuario.id}&select=pedido_id`);
+        const mc = await db.select("cotizaciones_aserradero", `?aserradero_id=eq.${usuario.id}&select=pedido_id,estado`);
         mc.forEach(c => {
-          mias[c.pedido_id] = true;
+          mias[c.pedido_id] = c.estado || "enviado";
         });
       } catch {}
       let vistos = new Set();
@@ -9348,7 +9479,7 @@ function VistaAserradero({
       }
       setPedidos(d.map(p => ({
         ...p,
-        _miEstado: mias[p.id] ? "cotizado" : null,
+        _miEstado: mias[p.id] ? mias[p.id] === "aceptada" ? "aceptada" : mias[p.id] === "rechazada" ? "rechazada" : "cotizado" : null,
         _nuevo: !vistos.has(p.id),
         _msjNuevo: conMsj.has(p.id)
       })));
@@ -9502,7 +9633,7 @@ function VistaAserradero({
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: S.cardTitle
-    }, "✅ Cotización enviada"), /*#__PURE__*/React.createElement("div", {
+    }, miCot.estado === "aceptada" ? "🎉 ¡Te eligieron! Aceptaron tu cotización" : miCot.estado === "rechazada" ? "Eligieron otra cotización para este pedido" : "✅ Cotización enviada"), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 15,
         color: C.textoSuave,
@@ -9525,7 +9656,7 @@ function VistaAserradero({
       fecha: miCot.created_at ? new Date(miCot.created_at).toLocaleDateString("es-AR") : null,
       tiempoEntrega: miCot.tiempo_entrega,
       esEmpresa: true,
-      aceptado: false
+      aceptado: miCot.estado === "aceptada"
     }), /*#__PURE__*/React.createElement(EntregaMateriales, {
       ct: miCot,
       tabla: "cotizaciones_aserradero",
@@ -9915,6 +10046,7 @@ function VistaAserradero({
     todos: pedidos.length
   };
   const lista = pedidos.filter(p => {
+    if (arch.archivados.has(p.id)) return false;
     if (filtroUbicProv && p.provincia !== filtroUbicProv) return false;
     if (filtroUbicCiu && p.ciudad !== filtroUbicCiu) return false;
     if (filtro === "cotizar") return !p._miEstado && !estaVencido(p);
@@ -9976,10 +10108,23 @@ function VistaAserradero({
       padding: 24,
       fontStyle: "italic"
     }
-  }, "No hay pedidos en esta categoría"), lista.map(p => {
+  }, "No hay pedidos en esta categoría"), /*#__PURE__*/React.createElement(BarraSeleccion, {
+    cant: arch.seleccionados.size,
+    archivando: arch.archivando,
+    onArchivar: () => arch.archivarSel(typeof notif === "function" ? notif : null),
+    onCancelar: arch.cancelar
+  }), lista.map(p => {
     const et = bloqueado ? {
       t: "🔒 Bloqueado",
       bg: C.error,
+      fg: "#fff"
+    } : p._miEstado === "aceptada" ? {
+      t: "✅ Te eligieron",
+      bg: C.verde,
+      fg: "#fff"
+    } : p._miEstado === "rechazada" ? {
+      t: "Eligieron otra",
+      bg: "#8A7A6A",
       fg: "#fff"
     } : p._miEstado ? {
       t: "Cotizado por mí",
@@ -10024,9 +10169,18 @@ function VistaAserradero({
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
-        justifyContent: "space-between"
+        justifyContent: "space-between",
+        gap: 10
       }
-    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement(SelCirculo, {
+      on: arch.seleccionados.has(p.id),
+      onToggle: () => arch.toggle(p.id)
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, /*#__PURE__*/React.createElement("div", {
       style: {
         fontFamily: "'Lato',sans-serif",
         fontWeight: 700,
@@ -10212,15 +10366,16 @@ function VistaFlete({
   const [filtro, setFiltro] = useState("cotizar");
   const [filtroUbicProv, setFiltroUbicProv] = useState("");
   const [filtroUbicCiu, setFiltroUbicCiu] = useState("");
+  const arch = useArchivoLista(usuario, "pedido_flete");
   const cargar = useCallback(async () => {
     if (!esFlete) return;
     try {
       const d = await db.select("pedidos_flete", "?order=created_at.desc");
       let mias = {};
       try {
-        const mc = await db.select("cotizaciones_flete", `?flete_id=eq.${usuario.id}&select=pedido_id`);
+        const mc = await db.select("cotizaciones_flete", `?flete_id=eq.${usuario.id}&select=pedido_id,estado`);
         mc.forEach(c => {
-          mias[c.pedido_id] = true;
+          mias[c.pedido_id] = c.estado || "enviado";
         });
       } catch {}
       let nombres = {};
@@ -10248,7 +10403,7 @@ function VistaFlete({
       }
       setPedidos(d.map(p => ({
         ...p,
-        _miEstado: mias[p.id] ? "cotizado" : null,
+        _miEstado: mias[p.id] ? mias[p.id] === "aceptada" ? "aceptada" : mias[p.id] === "rechazada" ? "rechazada" : "cotizado" : null,
         _solNombre: nombres[p.solicitante_id] || "Solicitante",
         _nuevo: !vistos.has(p.id),
         _msjNuevo: conMsj.has(p.id)
@@ -10459,6 +10614,13 @@ function VistaFlete({
         estado: "aceptado"
       }, `id=eq.${selPedido.id}`);
       notif("¡Cotización de flete aceptada!");
+      await avisarAceptacionPorChat({
+        pedidoId: selPedido.id,
+        tipoPedido: "flete",
+        de: usuario.id,
+        para: ct.flete_id,
+        texto: "✅ ¡Acepté tu cotización de flete! Coordinemos por acá el día, el horario y el pago."
+      });
       await abrirMiPedido(selPedido);
       cargarMisPedidos();
     } catch (e) {
@@ -10540,7 +10702,7 @@ function VistaFlete({
         }
       }, /*#__PURE__*/React.createElement("div", {
         style: S.cardTitle
-      }, "✅ Cotización enviada"), /*#__PURE__*/React.createElement("div", {
+      }, miCot.estado === "aceptada" ? "🎉 ¡Te eligieron! Aceptaron tu cotización" : miCot.estado === "rechazada" ? "Eligieron otra cotización para este pedido" : "✅ Cotización enviada"), /*#__PURE__*/React.createElement("div", {
         style: {
           fontSize: 15,
           color: C.textoSuave,
@@ -10563,7 +10725,7 @@ function VistaFlete({
         fecha: miCot.created_at ? new Date(miCot.created_at).toLocaleDateString("es-AR") : null,
         tiempoEntrega: miCot.tiempo_entrega,
         esEmpresa: true,
-        aceptado: false
+        aceptado: miCot.estado === "aceptada"
       })) : estaVencido(sel) ? /*#__PURE__*/React.createElement("div", {
         style: {
           marginTop: 20,
@@ -10981,6 +11143,7 @@ function VistaFlete({
       todos: pedidos.length
     };
     const lista = pedidos.filter(p => {
+    if (arch.archivados.has(p.id)) return false;
       if (filtroUbicProv && p.provincia !== filtroUbicProv) return false;
       if (filtroUbicCiu && p.ciudad !== filtroUbicCiu) return false;
       if (filtro === "cotizar") return !p._miEstado && !estaVencido(p);
@@ -11048,12 +11211,25 @@ function VistaFlete({
         padding: 24,
         fontStyle: "italic"
       }
-    }, "No hay pedidos en esta categoría"), lista.map(p => {
+    }, "No hay pedidos en esta categoría"), /*#__PURE__*/React.createElement(BarraSeleccion, {
+    cant: arch.seleccionados.size,
+    archivando: arch.archivando,
+    onArchivar: () => arch.archivarSel(typeof notif === "function" ? notif : null),
+    onCancelar: arch.cancelar
+  }), lista.map(p => {
       const et = bloqueado ? {
         t: "🔒 Bloqueado",
         bg: C.error,
         fg: "#fff"
-      } : p._miEstado ? {
+      } : p._miEstado === "aceptada" ? {
+      t: "✅ Te eligieron",
+      bg: C.verde,
+      fg: "#fff"
+    } : p._miEstado === "rechazada" ? {
+      t: "Eligieron otra",
+      bg: "#8A7A6A",
+      fg: "#fff"
+    } : p._miEstado ? {
         t: "Cotizado por mí",
         bg: C.acento,
         fg: C.marron
@@ -11096,9 +11272,18 @@ function VistaFlete({
       }, /*#__PURE__*/React.createElement("div", {
         style: {
           display: "flex",
-          justifyContent: "space-between"
+          justifyContent: "space-between",
+        gap: 10
         }
-      }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      }, /*#__PURE__*/React.createElement(SelCirculo, {
+      on: arch.seleccionados.has(p.id),
+      onToggle: () => arch.toggle(p.id)
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, /*#__PURE__*/React.createElement("div", {
         style: {
           fontFamily: "'Lato',sans-serif",
           fontWeight: 700,
@@ -11679,14 +11864,15 @@ function VistaFerreteria({
       }));
     } catch {}
   }, [sel, miCot, yaEnvio]);
+  const arch = useArchivoLista(usuario, "pedido_ferreteria");
   const cargar = useCallback(async () => {
     try {
       const d = await db.select("pedidos_ferreteria", "?order=created_at.desc");
       let mias = {};
       try {
-        const mc = await db.select("cotizaciones_ferreteria", `?ferreteria_id=eq.${usuario.id}&select=pedido_id`);
+        const mc = await db.select("cotizaciones_ferreteria", `?ferreteria_id=eq.${usuario.id}&select=pedido_id,estado`);
         mc.forEach(c => {
-          mias[c.pedido_id] = true;
+          mias[c.pedido_id] = c.estado || "enviado";
         });
       } catch {}
       let vistos = new Set();
@@ -11704,7 +11890,7 @@ function VistaFerreteria({
       }
       setPedidos(d.map(p => ({
         ...p,
-        _miEstado: mias[p.id] ? "cotizado" : null,
+        _miEstado: mias[p.id] ? mias[p.id] === "aceptada" ? "aceptada" : mias[p.id] === "rechazada" ? "rechazada" : "cotizado" : null,
         _nuevo: !vistos.has(p.id),
         _msjNuevo: conMsj.has(p.id)
       })));
@@ -11855,7 +12041,7 @@ function VistaFerreteria({
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: S.cardTitle
-    }, "✅ Cotización enviada"), /*#__PURE__*/React.createElement("div", {
+    }, miCot.estado === "aceptada" ? "🎉 ¡Te eligieron! Aceptaron tu cotización" : miCot.estado === "rechazada" ? "Eligieron otra cotización para este pedido" : "✅ Cotización enviada"), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 15,
         color: C.textoSuave,
@@ -11878,7 +12064,7 @@ function VistaFerreteria({
       fecha: miCot.created_at ? new Date(miCot.created_at).toLocaleDateString("es-AR") : null,
       tiempoEntrega: miCot.tiempo_entrega,
       esEmpresa: true,
-      aceptado: false
+      aceptado: miCot.estado === "aceptada"
     }), /*#__PURE__*/React.createElement(EntregaMateriales, {
       ct: miCot,
       tabla: "cotizaciones_ferreteria",
@@ -12268,6 +12454,7 @@ function VistaFerreteria({
     todos: pedidos.length
   };
   const lista = pedidos.filter(p => {
+    if (arch.archivados.has(p.id)) return false;
     if (filtroUbicProv && p.provincia !== filtroUbicProv) return false;
     if (filtroUbicCiu && p.ciudad !== filtroUbicCiu) return false;
     if (filtro === "cotizar") return !p._miEstado && !estaVencido(p);
@@ -12329,10 +12516,23 @@ function VistaFerreteria({
       padding: 24,
       fontStyle: "italic"
     }
-  }, "No hay pedidos en esta categoría"), lista.map(p => {
+  }, "No hay pedidos en esta categoría"), /*#__PURE__*/React.createElement(BarraSeleccion, {
+    cant: arch.seleccionados.size,
+    archivando: arch.archivando,
+    onArchivar: () => arch.archivarSel(typeof notif === "function" ? notif : null),
+    onCancelar: arch.cancelar
+  }), lista.map(p => {
     const et = bloqueado ? {
       t: "🔒 Bloqueado",
       bg: C.error,
+      fg: "#fff"
+    } : p._miEstado === "aceptada" ? {
+      t: "✅ Te eligieron",
+      bg: C.verde,
+      fg: "#fff"
+    } : p._miEstado === "rechazada" ? {
+      t: "Eligieron otra",
+      bg: "#8A7A6A",
       fg: "#fff"
     } : p._miEstado ? {
       t: "Cotizado por mí",
@@ -12377,9 +12577,18 @@ function VistaFerreteria({
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
-        justifyContent: "space-between"
+        justifyContent: "space-between",
+        gap: 10
       }
-    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement(SelCirculo, {
+      on: arch.seleccionados.has(p.id),
+      onToggle: () => arch.toggle(p.id)
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, /*#__PURE__*/React.createElement("div", {
       style: {
         fontFamily: "'Lato',sans-serif",
         fontWeight: 700,
@@ -12480,14 +12689,15 @@ function VistaPintureria({
       }));
     } catch {}
   }, [sel, miCot, yaEnvio]);
+  const arch = useArchivoLista(usuario, "pedido_pintureria");
   const cargar = useCallback(async () => {
     try {
       const d = await db.select("pedidos_pintureria", "?order=created_at.desc");
       let mias = {};
       try {
-        const mc = await db.select("cotizaciones_pintureria", `?pintureria_id=eq.${usuario.id}&select=pedido_id`);
+        const mc = await db.select("cotizaciones_pintureria", `?pintureria_id=eq.${usuario.id}&select=pedido_id,estado`);
         mc.forEach(c => {
-          mias[c.pedido_id] = true;
+          mias[c.pedido_id] = c.estado || "enviado";
         });
       } catch {}
       let vistos = new Set();
@@ -12505,7 +12715,7 @@ function VistaPintureria({
       }
       setPedidos(d.map(p => ({
         ...p,
-        _miEstado: mias[p.id] ? "cotizado" : null,
+        _miEstado: mias[p.id] ? mias[p.id] === "aceptada" ? "aceptada" : mias[p.id] === "rechazada" ? "rechazada" : "cotizado" : null,
         _nuevo: !vistos.has(p.id),
         _msjNuevo: conMsj.has(p.id)
       })));
@@ -12656,7 +12866,7 @@ function VistaPintureria({
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: S.cardTitle
-    }, "✅ Cotización enviada"), /*#__PURE__*/React.createElement("div", {
+    }, miCot.estado === "aceptada" ? "🎉 ¡Te eligieron! Aceptaron tu cotización" : miCot.estado === "rechazada" ? "Eligieron otra cotización para este pedido" : "✅ Cotización enviada"), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 15,
         color: C.textoSuave,
@@ -12679,7 +12889,7 @@ function VistaPintureria({
       fecha: miCot.created_at ? new Date(miCot.created_at).toLocaleDateString("es-AR") : null,
       tiempoEntrega: miCot.tiempo_entrega,
       esEmpresa: true,
-      aceptado: false
+      aceptado: miCot.estado === "aceptada"
     }), /*#__PURE__*/React.createElement(EntregaMateriales, {
       ct: miCot,
       tabla: "cotizaciones_pintureria",
@@ -13069,6 +13279,7 @@ function VistaPintureria({
     todos: pedidos.length
   };
   const lista = pedidos.filter(p => {
+    if (arch.archivados.has(p.id)) return false;
     if (filtroUbicProv && p.provincia !== filtroUbicProv) return false;
     if (filtroUbicCiu && p.ciudad !== filtroUbicCiu) return false;
     if (filtro === "cotizar") return !p._miEstado && !estaVencido(p);
@@ -13130,10 +13341,23 @@ function VistaPintureria({
       padding: 24,
       fontStyle: "italic"
     }
-  }, "No hay pedidos en esta categoría"), lista.map(p => {
+  }, "No hay pedidos en esta categoría"), /*#__PURE__*/React.createElement(BarraSeleccion, {
+    cant: arch.seleccionados.size,
+    archivando: arch.archivando,
+    onArchivar: () => arch.archivarSel(typeof notif === "function" ? notif : null),
+    onCancelar: arch.cancelar
+  }), lista.map(p => {
     const et = bloqueado ? {
       t: "🔒 Bloqueado",
       bg: C.error,
+      fg: "#fff"
+    } : p._miEstado === "aceptada" ? {
+      t: "✅ Te eligieron",
+      bg: C.verde,
+      fg: "#fff"
+    } : p._miEstado === "rechazada" ? {
+      t: "Eligieron otra",
+      bg: "#8A7A6A",
       fg: "#fff"
     } : p._miEstado ? {
       t: "Cotizado por mí",
@@ -13178,9 +13402,18 @@ function VistaPintureria({
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
-        justifyContent: "space-between"
+        justifyContent: "space-between",
+        gap: 10
       }
-    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement(SelCirculo, {
+      on: arch.seleccionados.has(p.id),
+      onToggle: () => arch.toggle(p.id)
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, /*#__PURE__*/React.createElement("div", {
       style: {
         fontFamily: "'Lato',sans-serif",
         fontWeight: 700,
@@ -17233,6 +17466,10 @@ function Papelera({
               const c = await db.select("usuarios", `?id=eq.${p[0].cliente_id}&select=nombre&limit=1`);
               titulo = "Pedido de " + (c?.[0]?.nombre || "cliente") + (p[0].descripcion ? " · " + p[0].descripcion : "");
             }
+          } else if (["pedido_aserradero", "pedido_ferreteria", "pedido_pintureria", "pedido_flete"].includes(r.tipo_elemento)) {
+            const tabla = "pedidos_" + r.tipo_elemento.replace("pedido_", "");
+            const p = await db.select(tabla, `?id=eq.${r.elemento_id}&limit=1`);
+            if (p && p[0]) titulo = "Pedido · " + (p[0].descripcion || p[0].origen && `${p[0].origen} → ${p[0].destino || ""}` || "sin descripción");
           } else if (r.tipo_elemento === "cotizacion") {
             for (const [tabla, campo] of [["cotizaciones_aserradero", "aserradero_id"], ["cotizaciones_ferreteria", "ferreteria_id"], ["cotizaciones_pintureria", "pintureria_id"], ["cotizaciones_flete", "flete_id"]]) {
               const q = await db.select(tabla, `?id=eq.${r.elemento_id}&limit=1`);
