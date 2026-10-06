@@ -4248,7 +4248,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-06.4"));
+  }, "v2026-10-06.5"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -14446,26 +14446,51 @@ function PantallaBienvenida({
       width: "100%",
       justifyContent: "center",
       flexDirection: "column",
-      gap: 4,
-      fontSize: 19,
-      padding: "14px"
+      gap: 2,
+      padding: "18px 14px",
+      lineHeight: 1.2
     },
     onClick: onPedir
-  }, /*#__PURE__*/React.createElement("span", null, "🪑 ¿Querés un mueble? Tocá acá"), /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 14,
-      fontWeight: 400
+      fontSize: 26,
+      fontWeight: 800
     }
-  }, "Pedí presupuesto a carpinterías sin registrarte. Tus datos los cargás al final.")), /*#__PURE__*/React.createElement("button", {
+  }, "🪑 ¿Querés un mueble?"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 19,
+      fontWeight: 700
+    }
+  }, "Tocá acá →")), /*#__PURE__*/React.createElement("button", {
     style: {
       ...S.btn("dark"),
       width: "100%",
       justifyContent: "center",
-      fontSize: 17,
-      padding: "14px"
+      flexDirection: "column",
+      gap: 2,
+      padding: "18px 14px",
+      lineHeight: 1.2
     },
     onClick: onEntrar
-  }, "Ingresar / Registrarme →"), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 26,
+      fontWeight: 800
+    }
+  }, "🔨 ¿Sos profesional?"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 19,
+      fontWeight: 700
+    }
+  }, "Ingresá acá →")), /*#__PURE__*/React.createElement("button", {
+    style: {
+      ...S.btn("link"),
+      alignSelf: "center",
+      fontSize: 16,
+      textDecoration: "underline"
+    },
+    onClick: onEntrar
+  }, "¿Ya tenés cuenta de cliente? Ingresá acá"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8
