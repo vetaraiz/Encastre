@@ -2193,6 +2193,339 @@ function TagMsjNuevo({
 }
 
 // Círculo chico tildable para selección múltiple (listas con archivado en bloque)
+// ─── SOLAPA LATERAL "💬 Chats": todas las conversaciones en un solo lugar ───
+const TABLA_PEDIDO_CHAT = {
+  cliente: "pedidos",
+  aserradero: "pedidos_aserradero",
+  ferreteria: "pedidos_ferreteria",
+  pintureria: "pedidos_pintureria",
+  flete: "pedidos_flete"
+};
+const RUBRO_CHAT = {
+  cliente: "Mueble",
+  aserradero: "Madera",
+  ferreteria: "Ferretería",
+  pintureria: "Pinturería",
+  flete: "Flete"
+};
+function BandejaChats({
+  usuario
+}) {
+  const [abierta, setAbierta] = useState(false);
+  const [convs, setConvs] = useState([]);
+  const [cargando, setCargando] = useState(false);
+  const [actual, setActual] = useState(null);
+  const vivo = useRef(true);
+  useEffect(() => () => {
+    vivo.current = false;
+  }, []);
+  const cargar = useCallback(async () => {
+    if (!usuario?.id) return;
+    try {
+      const yo = usuario.id;
+      const ms = await db.select("mensajes", `?or=(de_usuario_id.eq.${yo},para_usuario_id.eq.${yo})&order=created_at.desc&limit=500`);
+      const grupos = {};
+      (ms || []).forEach(m => {
+        const otro = m.de_usuario_id === yo ? m.para_usuario_id : m.de_usuario_id;
+        if (!otro || !m.pedido_id) return;
+        const k = `${m.tipo_pedido}:${m.pedido_id}:${otro}`;
+        if (!grupos[k]) grupos[k] = {
+          k,
+          tipo: m.tipo_pedido,
+          pedidoId: m.pedido_id,
+          otro,
+          ultimo: m,
+          noLeidos: 0
+        };
+        if (m.para_usuario_id === yo && !m.leido) grupos[k].noLeidos++;
+      });
+      const lista = Object.values(grupos);
+      // nombres de las otras personas y descripción de cada pedido
+      const ids = [...new Set(lista.map(c => c.otro))];
+      const nombres = {};
+      if (ids.length) {
+        try {
+          const us = await db.select("usuarios", `?id=in.(${ids.join(",")})&select=id,nombre`);
+          (us || []).forEach(u => {
+            nombres[u.id] = u.nombre;
+          });
+        } catch {}
+      }
+      const descs = {};
+      for (const tipo of Object.keys(TABLA_PEDIDO_CHAT)) {
+        const pids = [...new Set(lista.filter(c => c.tipo === tipo).map(c => c.pedidoId))];
+        if (!pids.length) continue;
+        try {
+          const ps = await db.select(TABLA_PEDIDO_CHAT[tipo], `?id=in.(${pids.join(",")})`);
+          (ps || []).forEach(p => {
+            descs[tipo + ":" + p.id] = p.descripcion || p.items && p.items[0] && (p.items[0].descripcion || p.items[0].material) || p.descripcion_carga || (p.origen ? `${p.origen} → ${p.destino || ""}` : "");
+          });
+        } catch {}
+      }
+      lista.forEach(c => {
+        c.nombre = nombres[c.otro] || "Usuario";
+        c.desc = descs[c.tipo + ":" + c.pedidoId] || "";
+      });
+      lista.sort((a, b) => new Date(b.ultimo.created_at) - new Date(a.ultimo.created_at));
+      if (vivo.current) setConvs(lista);
+    } catch {}
+  }, [usuario?.id]);
+  useEffect(() => {
+    cargar();
+    const t = setInterval(cargar, 20000);
+    const alVolverFoco = () => cargar();
+    window.addEventListener("focus", alVolverFoco);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener("focus", alVolverFoco);
+    };
+  }, [cargar]);
+  if (!usuario?.id) return null;
+  const totalNoLeidos = convs.reduce((n, c) => n + c.noLeidos, 0);
+  const abrir = async () => {
+    setAbierta(true);
+    navPush(() => {
+      if (!vivo.current) return false;
+      setActual(null);
+      setAbierta(false);
+      return true;
+    }, () => {
+      if (!vivo.current) return false;
+      setAbierta(true);
+      return true;
+    });
+    setCargando(true);
+    await cargar();
+    if (vivo.current) setCargando(false);
+  };
+  return /*#__PURE__*/React.createElement(React.Fragment, null, !abierta && /*#__PURE__*/React.createElement("button", {
+    "aria-label": "Abrir mis chats",
+    onClick: abrir,
+    style: {
+      position: "fixed",
+      right: 0,
+      top: "42%",
+      zIndex: 290,
+      background: totalNoLeidos > 0 ? C.verde : C.marron,
+      color: "#fff",
+      border: "none",
+      borderRadius: "14px 0 0 14px",
+      padding: "14px 8px 14px 9px",
+      boxShadow: "-3px 3px 12px #5C2E0A55",
+      cursor: "pointer",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: 6,
+      fontFamily: "'Lato',sans-serif"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 22
+    }
+  }, "💬"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      writingMode: "vertical-rl",
+      transform: "rotate(180deg)",
+      fontSize: 16,
+      fontWeight: 800,
+      letterSpacing: 1
+    }
+  }, "Chats"), totalNoLeidos > 0 && /*#__PURE__*/React.createElement("span", {
+    style: {
+      background: "#fff",
+      color: C.verde,
+      borderRadius: 11,
+      minWidth: 22,
+      height: 22,
+      fontSize: 13,
+      fontWeight: 800,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "0 4px"
+    }
+  }, totalNoLeidos > 9 ? "9+" : totalNoLeidos)), abierta && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      zIndex: 295,
+      background: "#00000055",
+      display: "flex",
+      justifyContent: "flex-end"
+    },
+    onClick: () => window.history.back()
+  }, /*#__PURE__*/React.createElement("style", null, "@keyframes encastreDeslizar{from{transform:translateX(100%)}to{transform:translateX(0)}}"), /*#__PURE__*/React.createElement("div", {
+    onClick: e => e.stopPropagation(),
+    style: {
+      background: C.card,
+      width: "min(420px,100vw)",
+      height: "100%",
+      display: "flex",
+      flexDirection: "column",
+      boxShadow: "-6px 0 24px #5C2E0A44",
+      animation: "encastreDeslizar .25s ease-out",
+      fontFamily: "'Lato',sans-serif"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "16px 18px",
+      background: C.marron,
+      color: C.crema,
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 800,
+      fontSize: 20,
+      fontFamily: "'Playfair Display',serif"
+    }
+  }, "💬 Mis chats"), /*#__PURE__*/React.createElement("button", {
+    "aria-label": "Cerrar",
+    onClick: () => window.history.back(),
+    style: {
+      background: "transparent",
+      border: "none",
+      color: C.crema,
+      fontSize: 26,
+      cursor: "pointer",
+      lineHeight: 1,
+      padding: 0
+    }
+  }, "✕")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      overflowY: "auto"
+    }
+  }, cargando && convs.length === 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: 24,
+      textAlign: "center",
+      color: C.textoSuave
+    }
+  }, "Cargando..."), !cargando && convs.length === 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: 28,
+      textAlign: "center",
+      color: C.textoSuave,
+      fontSize: 16,
+      lineHeight: 1.5
+    }
+  }, "Todavía no tenés conversaciones.", /*#__PURE__*/React.createElement("br", null), "Cuando chatees por un pedido, aparece acá."), convs.map(c => /*#__PURE__*/React.createElement("button", {
+    key: c.k,
+    onClick: () => setActual(c),
+    style: {
+      display: "flex",
+      gap: 12,
+      alignItems: "center",
+      width: "100%",
+      textAlign: "left",
+      background: c.noLeidos > 0 ? C.suave : "transparent",
+      border: "none",
+      borderBottom: `1px solid ${C.borde}`,
+      padding: "12px 16px",
+      cursor: "pointer",
+      fontFamily: "'Lato',sans-serif"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 44,
+      height: 44,
+      borderRadius: "50%",
+      background: C.marron,
+      color: C.crema,
+      flexShrink: 0,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 19,
+      fontWeight: 800
+    }
+  }, (c.nombre || "?").trim().charAt(0).toUpperCase()), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: c.noLeidos > 0 ? 800 : 700,
+      fontSize: 16,
+      color: C.marron,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap"
+    }
+  }, c.nombre), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      color: c.noLeidos > 0 ? C.verde : C.textoSuave,
+      whiteSpace: "nowrap",
+      fontWeight: c.noLeidos > 0 ? 800 : 400
+    }
+  }, fechaHoraChat(c.ultimo.created_at))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: C.textoSuave,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap"
+    }
+  }, RUBRO_CHAT[c.tipo] || "", c.desc ? " · " + c.desc : ""), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      gap: 8,
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 15,
+      color: C.texto,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+      fontWeight: c.noLeidos > 0 ? 700 : 400
+    }
+  }, c.ultimo.de_usuario_id === usuario.id ? "Vos: " : "", c.ultimo.texto), c.noLeidos > 0 && /*#__PURE__*/React.createElement("span", {
+    style: {
+      background: C.verde,
+      color: "#fff",
+      borderRadius: 11,
+      minWidth: 22,
+      height: 22,
+      fontSize: 13,
+      fontWeight: 800,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "0 5px",
+      flexShrink: 0
+    }
+  }, c.noLeidos)))))))), actual && /*#__PURE__*/React.createElement(Chat, {
+    key: actual.k,
+    soloPanel: true,
+    pedidoId: actual.pedidoId,
+    tipoPedido: actual.tipo,
+    miUsuario: usuario,
+    otroUsuario: {
+      id: actual.otro
+    },
+    titulo: actual.nombre,
+    onCerrar: () => {
+      setActual(null);
+      cargar();
+    }
+  }));
+}
 // ─── BURBUJA VERDE: "¡Te aceptaron una cotización!" (al entrar, de la más vieja a la más nueva) ───
 const ACEPT_FUENTES = {
   carpinteria: ["presupuestos", "carpinteria_id", "aceptado", "pedidos", "un cliente"],
@@ -4434,7 +4767,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-09.2"));
+  }, "v2026-10-09.3"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -4605,7 +4938,9 @@ function Chat({
   miUsuario,
   otroUsuario,
   titulo,
-  onLeido
+  onLeido,
+  soloPanel,
+  onCerrar
 }) {
   const [msgs, setMsgs] = useState([]);
   const [txt, setTxt] = useState("");
@@ -4613,7 +4948,7 @@ function Chat({
   const [meBloquearon, setMeBloquearon] = useState(false);
   const otroId = otroUsuario?.id;
   const claveChat = `${tipoPedido}:${pedidoId}:${otroId}`;
-  const [abierto, setAbierto] = useState(() => CHATS_ABIERTOS.has(claveChat));
+  const [abierto, setAbierto] = useState(() => !!soloPanel || CHATS_ABIERTOS.has(claveChat));
   const [chatAceptado, setChatAceptado] = useState(false);
   const endRef = useRef(null);
   const vivoChat = useRef(true);
@@ -4640,6 +4975,7 @@ function Chat({
   const cerrarChat = () => {
     CHATS_CERRADOS.add(claveChat);
     setAbierto(false);
+    if (onCerrar) onCerrar();
   };
   // Presupuesto aceptado: el chat se abre solo apenas se entra (salvo que la persona ya lo haya cerrado)
   useEffect(() => {
@@ -4749,7 +5085,7 @@ function Chat({
       alert("No se pudo desbloquear: " + (e.message || ""));
     }
   };
-  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
+  return /*#__PURE__*/React.createElement(React.Fragment, null, !soloPanel && /*#__PURE__*/React.createElement("button", {
     "aria-label": "Abrir chat",
     onClick: abrirChat,
     style: {
@@ -5798,6 +6134,12 @@ function NuevoPedido({
   }, /*#__PURE__*/React.createElement("button", {
     style: {
       ...S.btn("gold"),
+      background: C.verde,
+      color: "#fff",
+      border: "none",
+      background: C.verde,
+      color: "#fff",
+      border: "none",
       width: "100%",
       justifyContent: "center",
       fontSize: 19,
@@ -8048,6 +8390,12 @@ function VistaCarpinteria({
       }, fmtPeso(calc.total)))), /*#__PURE__*/React.createElement("button", {
         style: {
           ...S.btn("gold"),
+      background: C.verde,
+      color: "#fff",
+      border: "none",
+      background: C.verde,
+      color: "#fff",
+      border: "none",
           width: "100%",
           justifyContent: "center",
           fontSize: 19,
@@ -8700,6 +9048,12 @@ function VistaCarpinteria({
   }, "Pasada esa fecha el pedido se marca vencido y ya no se puede cotizar.")), /*#__PURE__*/React.createElement("button", {
     style: {
       ...S.btn("gold"),
+      background: C.verde,
+      color: "#fff",
+      border: "none",
+      background: C.verde,
+      color: "#fff",
+      border: "none",
       width: "100%",
       justifyContent: "center",
       fontSize: 19,
@@ -9237,6 +9591,12 @@ function VistaCarpinteria({
   }), /*#__PURE__*/React.createElement("button", {
     style: {
       ...S.btn("gold"),
+      background: C.verde,
+      color: "#fff",
+      border: "none",
+      background: C.verde,
+      color: "#fff",
+      border: "none",
       width: "100%",
       justifyContent: "center",
       fontSize: 19,
@@ -9813,6 +10173,12 @@ function VistaCarpinteria({
   }), /*#__PURE__*/React.createElement("button", {
     style: {
       ...S.btn("gold"),
+      background: C.verde,
+      color: "#fff",
+      border: "none",
+      background: C.verde,
+      color: "#fff",
+      border: "none",
       width: "100%",
       justifyContent: "center",
       fontSize: 19,
@@ -10851,6 +11217,12 @@ function VistaAserradero({
       }, fmtPeso(calc.total)))), /*#__PURE__*/React.createElement("button", {
         style: {
           ...S.btn("gold"),
+      background: C.verde,
+      color: "#fff",
+      border: "none",
+      background: C.verde,
+      color: "#fff",
+      border: "none",
           width: "100%",
           justifyContent: "center",
           fontSize: 19,
@@ -11977,6 +12349,12 @@ function VistaFlete({
         }, fmtPeso(calc.total)))), /*#__PURE__*/React.createElement("button", {
           style: {
             ...S.btn("gold"),
+      background: C.verde,
+      color: "#fff",
+      border: "none",
+      background: C.verde,
+      color: "#fff",
+      border: "none",
             width: "100%",
             justifyContent: "center",
             fontSize: 19,
@@ -12387,6 +12765,12 @@ function VistaFlete({
   }, "Pasada esa fecha el pedido se marca vencido y ya no se puede cotizar.")), /*#__PURE__*/React.createElement("button", {
     style: {
       ...S.btn("gold"),
+      background: C.verde,
+      color: "#fff",
+      border: "none",
+      background: C.verde,
+      color: "#fff",
+      border: "none",
       width: "100%",
       justifyContent: "center",
       fontSize: 19,
@@ -13346,6 +13730,12 @@ function VistaFerreteria({
       }, fmtPeso(calc.total)))), /*#__PURE__*/React.createElement("button", {
         style: {
           ...S.btn("gold"),
+      background: C.verde,
+      color: "#fff",
+      border: "none",
+      background: C.verde,
+      color: "#fff",
+      border: "none",
           width: "100%",
           justifyContent: "center",
           fontSize: 19,
@@ -14187,6 +14577,12 @@ function VistaPintureria({
       }, fmtPeso(calc.total)))), /*#__PURE__*/React.createElement("button", {
         style: {
           ...S.btn("gold"),
+      background: C.verde,
+      color: "#fff",
+      border: "none",
+      background: C.verde,
+      color: "#fff",
+      border: "none",
           width: "100%",
           justifyContent: "center",
           fontSize: 19,
@@ -20763,6 +21159,8 @@ function App() {
       padding: "8px 12px"
     }
   }, /*#__PURE__*/React.createElement(BurbujasAceptadas, {
+    usuario: usuario
+  }), /*#__PURE__*/React.createElement(BandejaChats, {
     usuario: usuario
   }), pushModal && /*#__PURE__*/React.createElement("div", {
     style: {
