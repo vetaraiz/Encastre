@@ -4767,7 +4767,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-09.3"));
+  }, "v2026-10-09.4"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -6716,15 +6716,7 @@ function VistaCliente({
           paddingTop: 12
         },
         className: "fade"
-      }, /*#__PURE__*/React.createElement("button", {
-        style: {
-          ...S.btn("link"),
-          fontSize: 14,
-          padding: "6px 12px",
-          marginBottom: 8
-        },
-        onClick: () => setSelPresup(null)
-      }, "← Volver a la comparativa"), /*#__PURE__*/React.createElement(DetallePresup, {
+      }, null, /*#__PURE__*/React.createElement(DetallePresup, {
         pr: pr
       }), /*#__PURE__*/React.createElement("div", {
         style: {
@@ -7950,13 +7942,7 @@ function VistaCarpinteria({
     }];
     return /*#__PURE__*/React.createElement("div", {
       className: "fade"
-    }, /*#__PURE__*/React.createElement("button", {
-      style: {
-        ...S.btn("link"),
-        marginBottom: 14
-      },
-      onClick: () => setSel(null)
-    }, "← Volver"), /*#__PURE__*/React.createElement("div", {
+    }, null, /*#__PURE__*/React.createElement("div", {
       style: S.card
     }, /*#__PURE__*/React.createElement(PedidoClienteFormato, {
       cliente: {
@@ -8802,13 +8788,7 @@ function VistaCarpinteria({
     }));
   })()), tab === "aserradero" && subAserr === "pedir" && /*#__PURE__*/React.createElement("div", {
     style: S.card
-  }, /*#__PURE__*/React.createElement("button", {
-    style: {
-      ...S.btn("link"),
-      marginBottom: 14
-    },
-    onClick: () => setSubAserr("mis")
-  }, "← Volver a mis pedidos"), /*#__PURE__*/React.createElement("div", {
+  }, null, /*#__PURE__*/React.createElement("div", {
     style: S.cardTitle
   }, "🌲 Pedir madera al aserradero"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -9404,13 +9384,7 @@ function VistaCarpinteria({
     })));
   }))), tab === "ferreteria" && /*#__PURE__*/React.createElement("div", null, subFerr === "pedir" && /*#__PURE__*/React.createElement("div", {
     style: S.card
-  }, /*#__PURE__*/React.createElement("button", {
-    style: {
-      ...S.btn("link"),
-      marginBottom: 14
-    },
-    onClick: () => setSubFerr("mis")
-  }, "← Volver a mis pedidos"), /*#__PURE__*/React.createElement("div", {
+  }, null, /*#__PURE__*/React.createElement("div", {
     style: S.cardTitle
   }, "🔩 Pedir herrajes a ferretería"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -9986,13 +9960,7 @@ function VistaCarpinteria({
     })));
   })))), tab === "pintureria" && /*#__PURE__*/React.createElement("div", null, subPint === "pedir" && /*#__PURE__*/React.createElement("div", {
     style: S.card
-  }, /*#__PURE__*/React.createElement("button", {
-    style: {
-      ...S.btn("link"),
-      marginBottom: 14
-    },
-    onClick: () => setSubPint("mis")
-  }, "← Volver a mis pedidos"), /*#__PURE__*/React.createElement("div", {
+  }, null, /*#__PURE__*/React.createElement("div", {
     style: S.cardTitle
   }, "🖌️ Pedir pinturas a pinturería"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -10780,13 +10748,7 @@ function VistaAserradero({
   if (sel) {
     return /*#__PURE__*/React.createElement("div", {
       className: "fade"
-    }, /*#__PURE__*/React.createElement("button", {
-      style: {
-        ...S.btn("link"),
-        marginBottom: 14
-      },
-      onClick: () => setSel(null)
-    }, "← Volver"), /*#__PURE__*/React.createElement("div", {
+    }, null, /*#__PURE__*/React.createElement("div", {
       style: S.card
     }, /*#__PURE__*/React.createElement(PedidoFormato, {
       solicitante: carpSel || {},
@@ -11898,13 +11860,7 @@ function VistaFlete({
     if (sel) {
       return /*#__PURE__*/React.createElement("div", {
         className: "fade"
-      }, /*#__PURE__*/React.createElement("button", {
-        style: {
-          ...S.btn("link"),
-          marginBottom: 14
-        },
-        onClick: () => setSel(null)
-      }, "← Volver"), /*#__PURE__*/React.createElement("div", {
+      }, null, /*#__PURE__*/React.createElement("div", {
         style: S.card
       }, /*#__PURE__*/React.createElement(FleteFormato, {
         solicitante: solSel && solSel.nombre ? solSel : {
@@ -12582,13 +12538,7 @@ function VistaFlete({
   // ================= VISTA SOLICITANTE (cualquier tipo que no sea flete) =================
   return /*#__PURE__*/React.createElement("div", null, subFl === "pedir" && /*#__PURE__*/React.createElement("div", {
     style: S.card
-  }, /*#__PURE__*/React.createElement("button", {
-    style: {
-      ...S.btn("link"),
-      marginBottom: 14
-    },
-    onClick: () => setSubFl("mis")
-  }, "← Volver a mis pedidos"), /*#__PURE__*/React.createElement("div", {
+  }, null, /*#__PURE__*/React.createElement("div", {
     style: S.cardTitle
   }, "🚚 Solicitar flete"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -13296,13 +13246,7 @@ function VistaFerreteria({
   if (sel) {
     return /*#__PURE__*/React.createElement("div", {
       className: "fade"
-    }, /*#__PURE__*/React.createElement("button", {
-      style: {
-        ...S.btn("link"),
-        marginBottom: 14
-      },
-      onClick: () => setSel(null)
-    }, "← Volver"), /*#__PURE__*/React.createElement("div", {
+    }, null, /*#__PURE__*/React.createElement("div", {
       style: S.card
     }, /*#__PURE__*/React.createElement(PedidoFormato, {
       solicitante: carpSel || {},
@@ -14143,13 +14087,7 @@ function VistaPintureria({
   if (sel) {
     return /*#__PURE__*/React.createElement("div", {
       className: "fade"
-    }, /*#__PURE__*/React.createElement("button", {
-      style: {
-        ...S.btn("link"),
-        marginBottom: 14
-      },
-      onClick: () => setSel(null)
-    }, "← Volver"), /*#__PURE__*/React.createElement("div", {
+    }, null, /*#__PURE__*/React.createElement("div", {
       style: S.card
     }, /*#__PURE__*/React.createElement(PedidoFormato, {
       solicitante: carpSel || {},
@@ -21522,6 +21460,7 @@ function App() {
     },
     onClick: () => {
       setMenuAbierto(false);
+      if (!window.confirm("¿Desea salir de la aplicación?")) return;
       cerrar();
       setMostrarBienvenida(true);
     }
@@ -21537,14 +21476,22 @@ function App() {
     type: "button",
     style: {
       ...S.btn("link"),
-      background: "transparent"
+      background: "transparent",
+      fontSize: 18,
+      fontWeight: 800,
+      color: C.marron,
+      paddingLeft: 0
     },
     onClick: () => window.history.back()
   }, "← Atrás")), /*#__PURE__*/React.createElement("div", null, idxPantalla < maxIdxPantalla && /*#__PURE__*/React.createElement("button", {
     type: "button",
     style: {
       ...S.btn("link"),
-      background: "transparent"
+      background: "transparent",
+      fontSize: 18,
+      fontWeight: 800,
+      color: C.marron,
+      paddingLeft: 0
     },
     onClick: () => window.history.forward()
   }, "Adelante →"))), enMiCuenta ? /*#__PURE__*/React.createElement(MiCuenta, {
