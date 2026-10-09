@@ -2193,6 +2193,181 @@ function TagMsjNuevo({
 }
 
 // Círculo chico tildable para selección múltiple (listas con archivado en bloque)
+// ─── BURBUJA VERDE: "¡Te aceptaron una cotización!" (al entrar, de la más vieja a la más nueva) ───
+const ACEPT_FUENTES = {
+  carpinteria: ["presupuestos", "carpinteria_id", "aceptado", "pedidos", "un cliente"],
+  aserradero: ["cotizaciones_aserradero", "aserradero_id", "aceptada", "pedidos_aserradero", "una carpintería"],
+  ferreteria: ["cotizaciones_ferreteria", "ferreteria_id", "aceptada", "pedidos_ferreteria", "una carpintería"],
+  pintureria: ["cotizaciones_pintureria", "pintureria_id", "aceptada", "pedidos_pintureria", "una carpintería"],
+  flete: ["cotizaciones_flete", "flete_id", "aceptada", "pedidos_flete", "un pedido de flete"]
+};
+function BurbujasAceptadas({
+  usuario
+}) {
+  const [lista, setLista] = useState([]);
+  const fuente = ACEPT_FUENTES[usuario?.tipo];
+  const clave = "encastre_aceptadas_vistas_" + (usuario?.id || "");
+  const leerVistas = () => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(clave) || "[]"));
+    } catch {
+      return new Set();
+    }
+  };
+  const buscar = useCallback(async () => {
+    if (!fuente || !usuario?.id) return;
+    try {
+      const [tabla, campo, estado, tablaPed] = fuente;
+      const cots = await db.select(tabla, `?${campo}=eq.${usuario.id}&estado=eq.${estado}&select=id,pedido_id,aceptado_at,created_at&order=aceptado_at.asc.nullsfirst&limit=50`);
+      const vistas = leerVistas();
+      const nuevas = (cots || []).filter(c => !vistas.has(c.id));
+      if (!nuevas.length) {
+        setLista([]);
+        return;
+      }
+      let peds = [];
+      try {
+        const ids = [...new Set(nuevas.map(c => c.pedido_id).filter(Boolean))];
+        if (ids.length) peds = await db.select(tablaPed, `?id=in.(${ids.join(",")})`);
+      } catch {}
+      const porId = {};
+      (peds || []).forEach(p => {
+        porId[p.id] = p;
+      });
+      nuevas.sort((a, b) => new Date(a.aceptado_at || a.created_at) - new Date(b.aceptado_at || b.created_at));
+      setLista(nuevas.map(c => {
+        const p = porId[c.pedido_id] || {};
+        const desc = p.descripcion || (p.items && p.items[0] && (p.items[0].descripcion || p.items[0].material)) || p.descripcion_carga || (p.origen ? `${p.origen} → ${p.destino || ""}` : "");
+        return {
+          id: c.id,
+          cuando: c.aceptado_at || c.created_at,
+          desc
+        };
+      }));
+    } catch {}
+  }, [usuario?.id, usuario?.tipo]);
+  useEffect(() => {
+    buscar();
+    const t = setInterval(buscar, 60000);
+    return () => clearInterval(t);
+  }, [buscar]);
+  if (!fuente || lista.length === 0) return null;
+  const marcar = ids => {
+    const v = leerVistas();
+    ids.forEach(id => v.add(id));
+    try {
+      localStorage.setItem(clave, JSON.stringify([...v]));
+    } catch {}
+    setLista(l => l.filter(x => !ids.includes(x.id)));
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      zIndex: 450,
+      background: "#2D243088",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 16
+    }
+  }, /*#__PURE__*/React.createElement("style", null, "@keyframes encastrePop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}@keyframes encastreLatido{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: C.verde,
+      color: "#fff",
+      borderRadius: 24,
+      width: "100%",
+      maxWidth: 420,
+      maxHeight: "85vh",
+      overflowY: "auto",
+      padding: "22px 18px",
+      boxSizing: "border-box",
+      boxShadow: "0 10px 40px #00000055",
+      fontFamily: "'Lato',sans-serif",
+      animation: "encastrePop .5s ease-out",
+      textAlign: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 52,
+      animation: "encastreLatido 1.2s ease-in-out 3"
+    }
+  }, "🎉"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 24,
+      fontWeight: 800,
+      margin: "6px 0 4px"
+    }
+  }, lista.length === 1 ? "¡Te aceptaron una cotización!" : `¡Te aceptaron ${lista.length} cotizaciones!`), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 16,
+      opacity: .95,
+      marginBottom: 14
+    }
+  }, "Entrá al pedido y coordiná por el chat 💬"), lista.map((x, i) => /*#__PURE__*/React.createElement("div", {
+    key: x.id,
+    style: {
+      background: "#ffffff22",
+      border: "1px solid #ffffff55",
+      borderRadius: 14,
+      padding: "10px 12px",
+      marginBottom: 8,
+      textAlign: "left",
+      display: "flex",
+      gap: 10,
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#fff",
+      color: C.verde,
+      borderRadius: "50%",
+      width: 28,
+      height: 28,
+      flexShrink: 0,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontWeight: 800
+    }
+  }, i + 1), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700,
+      fontSize: 16,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap"
+    }
+  }, x.desc || "Tu cotización"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      opacity: .9
+    }
+  }, x.cuando ? "Aceptada " + fechaHoraChat(x.cuando).replace(/^Hoy/, "hoy").replace(/^Ayer/, "ayer") : "")))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      opacity: .9,
+      margin: "4px 0 14px"
+    }
+  }, "En tu lista aparecen con la etiqueta \"✅ Te eligieron\"."), /*#__PURE__*/React.createElement("button", {
+    style: {
+      ...S.btn("ghost"),
+      background: "#fff",
+      color: C.verde,
+      borderColor: "#fff",
+      width: "100%",
+      justifyContent: "center",
+      fontSize: 18,
+      fontWeight: 800
+    },
+    onClick: () => marcar(lista.map(x => x.id))
+  }, "¡Genial! Entendido")));
+}
 // ─── ACCIONES SOBRE UN PEDIDO PROPIO: modificar / cancelar / eliminar ───
 // Los pedidos cancelados o eliminados no se borran de la base (los presupuestos y chats son también de los proveedores).
 const ARCH_MIS_PEDIDOS = {
@@ -3372,7 +3547,8 @@ function AuthScreen({
   tipoInicial,
   ubicacionInicial,
   avisoPedido,
-  onVolverPedido
+  onVolverPedido,
+  onVolverInicio
 }) {
   const [modo, setModo] = useState(modoInicial || "login");
   const [email, setEmail] = useState("");
@@ -3790,7 +3966,17 @@ function AuthScreen({
       padding: 20,
       background: `linear-gradient(160deg,${C.crema} 60%,${C.suave} 100%)`
     }
-  }, avisoPedido && /*#__PURE__*/React.createElement("div", {
+  }, onVolverInicio && !avisoPedido && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    style: {
+      ...S.btn("link"),
+      alignSelf: "flex-start",
+      fontSize: 17,
+      fontWeight: 700,
+      marginBottom: 8
+    },
+    onClick: onVolverInicio
+  }, "← Volver al inicio"), avisoPedido && /*#__PURE__*/React.createElement("div", {
     style: {
       maxWidth: 440,
       width: "100%",
@@ -4248,7 +4434,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-06.7"));
+  }, "v2026-10-09.1"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -4275,8 +4461,121 @@ function fechaHoraChat(iso) {
   });
   return `${fecha} ${hora}`;
 }
+// ─── NAVEGACIÓN ATRÁS / ADELANTE (botón del celu, del navegador y los de la app) ───
+// Cada cambio de pantalla (abrir un pedido, cambiar de solapa, Mi cuenta, etc.) deja un paso en el historial.
+const NAV = {
+  items: [],
+  ptr: 0,
+  aplicando: false
+};
+function navAvisar() {
+  try {
+    window.dispatchEvent(new CustomEvent("encastre:nav"));
+  } catch {}
+}
+function navPush(undo, redo) {
+  if (NAV.aplicando) return;
+  NAV.items.length = NAV.ptr;
+  NAV.items.push({
+    undo,
+    redo
+  });
+  NAV.ptr = NAV.items.length;
+  try {
+    window.history.pushState({
+      encastre: true,
+      nav: NAV.ptr
+    }, "");
+  } catch {}
+  navAvisar();
+}
+function navIr(destino) {
+  destino = Math.max(0, Math.min(destino, NAV.items.length));
+  let efecto = false;
+  NAV.aplicando = true;
+  try {
+    while (NAV.ptr > destino) {
+      const it = NAV.items[--NAV.ptr];
+      try {
+        if (it.undo() !== false) efecto = true;
+      } catch {}
+    }
+    while (NAV.ptr < destino) {
+      const it = NAV.items[NAV.ptr++];
+      try {
+        if (it.redo() !== false) efecto = true;
+      } catch {}
+    }
+  } finally {
+    NAV.aplicando = false;
+  }
+  navAvisar();
+  return efecto;
+}
+function navReset() {
+  NAV.items = [];
+  NAV.ptr = 0;
+  navAvisar();
+}
+const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
+// Igual que useState, pero cada cambio de "qué se está viendo" se puede deshacer con Atrás y rehacer con Adelante
+function useNavState(inicial) {
+  const [v, setV] = useState(inicial);
+  const ref = useRef(v);
+  const vivo = useRef(true);
+  useEffect(() => {
+    vivo.current = true;
+    return () => {
+      vivo.current = false;
+    };
+  }, []);
+  const set = useCallback(nv => {
+    const prev = ref.current;
+    const next = typeof nv === "function" ? nv(prev) : nv;
+    ref.current = next;
+    setV(next);
+    if (navClave(prev) !== navClave(next)) {
+      navPush(() => {
+        if (!vivo.current) return false;
+        ref.current = prev;
+        setV(prev);
+        return true;
+      }, () => {
+        if (!vivo.current) return false;
+        ref.current = next;
+        setV(next);
+        return true;
+      });
+    }
+  }, []);
+  return [v, set];
+}
 // Chats que quedan abiertos aunque la pantalla se vuelva a dibujar, y apertura automática al aceptar
 const CHATS_ABIERTOS = new Set();
+const CHATS_CERRADOS = new Set();
+const CHAT_ACEPTADO = new Map();
+const CHAT_TABLAS = {
+  cliente: ["presupuestos", "carpinteria_id", "aceptado"],
+  aserradero: ["cotizaciones_aserradero", "aserradero_id", "aceptada"],
+  ferreteria: ["cotizaciones_ferreteria", "ferreteria_id", "aceptada"],
+  pintureria: ["cotizaciones_pintureria", "pintureria_id", "aceptada"],
+  flete: ["cotizaciones_flete", "flete_id", "aceptada"]
+};
+// ¿Entre estas dos personas hay una cotización aceptada para este pedido?
+async function esChatAceptado(pedidoId, tipo, a, b) {
+  const t = CHAT_TABLAS[tipo];
+  if (!t || !pedidoId || !a || !b) return false;
+  const k = `${tipo}:${pedidoId}:${[a, b].sort().join(",")}`;
+  if (CHAT_ACEPTADO.get(k)) return true;
+  try {
+    const d = await db.select(t[0], `?pedido_id=eq.${pedidoId}&${t[1]}=in.(${a},${b})&estado=eq.${t[2]}&select=id&limit=1`);
+    const ok = !!(d && d.length);
+    if (ok) CHAT_ACEPTADO.set(k, true);
+    return ok;
+  } catch {
+    return false;
+  }
+}
 async function avisarAceptacionPorChat({
   pedidoId,
   tipoPedido,
@@ -4315,13 +4614,54 @@ function Chat({
   const otroId = otroUsuario?.id;
   const claveChat = `${tipoPedido}:${pedidoId}:${otroId}`;
   const [abierto, setAbierto] = useState(() => CHATS_ABIERTOS.has(claveChat));
+  const [chatAceptado, setChatAceptado] = useState(false);
   const endRef = useRef(null);
+  const vivoChat = useRef(true);
+  useEffect(() => {
+    vivoChat.current = true;
+    return () => {
+      vivoChat.current = false;
+    };
+  }, []);
+  // Abrir con paso en el historial: "atrás" cierra el chat primero
+  const abrirChat = () => {
+    CHATS_CERRADOS.delete(claveChat);
+    setAbierto(true);
+    navPush(() => {
+      if (!vivoChat.current) return false;
+      setAbierto(false);
+      return true;
+    }, () => {
+      if (!vivoChat.current) return false;
+      setAbierto(true);
+      return true;
+    });
+  };
+  const cerrarChat = () => {
+    CHATS_CERRADOS.add(claveChat);
+    setAbierto(false);
+  };
+  // Presupuesto aceptado: el chat se abre solo apenas se entra (salvo que la persona ya lo haya cerrado)
+  useEffect(() => {
+    let off = false;
+    esChatAceptado(pedidoId, tipoPedido, miUsuario?.id, otroId).then(ok => {
+      if (off || !ok) return;
+      setChatAceptado(true);
+      if (!CHATS_CERRADOS.has(claveChat) && !CHATS_ABIERTOS.has(claveChat)) abrirChat();
+    });
+    return () => {
+      off = true;
+    };
+  }, [claveChat]);
   useEffect(() => {
     if (abierto) CHATS_ABIERTOS.add(claveChat);else CHATS_ABIERTOS.delete(claveChat);
   }, [abierto, claveChat]);
   useEffect(() => {
     const h = e => {
-      if (e.detail === claveChat) setAbierto(true);
+      if (e.detail === claveChat) {
+        CHATS_CERRADOS.delete(claveChat);
+        setAbierto(true);
+      }
     };
     window.addEventListener("encastre:abrir-chat", h);
     return () => window.removeEventListener("encastre:abrir-chat", h);
@@ -4411,26 +4751,34 @@ function Chat({
   };
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
     "aria-label": "Abrir chat",
-    onClick: () => setAbierto(true),
+    onClick: abrirChat,
     style: {
       position: "fixed",
       right: 16,
       bottom: 16,
       zIndex: 300,
-      width: 58,
-      height: 58,
-      borderRadius: "50%",
-      background: C.marron,
-      color: C.crema,
-      border: "none",
-      boxShadow: "0 4px 16px #5C2E0A66",
+      minWidth: 62,
+      height: 62,
+      borderRadius: 31,
+      padding: chatAceptado || noLeidos > 0 ? "0 20px" : 0,
+      gap: 8,
+      background: chatAceptado ? C.verde : C.marron,
+      color: chatAceptado ? "#fff" : C.crema,
+      border: `3px solid ${C.crema}`,
+      boxShadow: "0 4px 18px #5C2E0A77",
       cursor: "pointer",
       fontSize: 26,
+      fontWeight: 800,
+      fontFamily: "'Lato',sans-serif",
       display: "flex",
       alignItems: "center",
       justifyContent: "center"
     }
-  }, "💬", noLeidos > 0 && /*#__PURE__*/React.createElement("span", {
+  }, "💬", (chatAceptado || noLeidos > 0) && /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 17
+    }
+  }, chatAceptado ? "Chat" : "Mensaje nuevo"), noLeidos > 0 && /*#__PURE__*/React.createElement("span", {
     style: {
       position: "absolute",
       top: -2,
@@ -4459,7 +4807,7 @@ function Chat({
       alignItems: "flex-end",
       justifyContent: "flex-end"
     },
-    onClick: () => setAbierto(false)
+    onClick: cerrarChat
   }, /*#__PURE__*/React.createElement("div", {
     onClick: e => e.stopPropagation(),
     className: "fade",
@@ -4521,7 +4869,7 @@ function Chat({
     }
   }, "🚫 Bloquear")), /*#__PURE__*/React.createElement("button", {
     "aria-label": "Cerrar chat",
-    onClick: () => setAbierto(false),
+    onClick: cerrarChat,
     style: {
       background: "transparent",
       border: "none",
@@ -5555,7 +5903,7 @@ function VistaCliente({
   notif
 }) {
   const [pedidos, setPedidos] = useState([]);
-  const [vista, setVista] = useState("lista");
+  const [vista, setVista] = useNavState("lista");
   const [borradorCli, setBorradorCli] = useState(null);
   const [editCli, setEditCli] = useState(null);
   const editarPedidoCli = (p, nuevo) => {
@@ -5600,9 +5948,9 @@ function VistaCliente({
     setSel(null);
     setVista("nuevo");
   };
-  const [sel, setSel] = useState(null);
+  const [sel, setSel] = useNavState(null);
   const [presups, setPresups] = useState([]);
-  const [selPresup, setSelPresup] = useState(null);
+  const [selPresup, setSelPresup] = useNavState(null);
   const [filtro, setFiltro] = useState("todos");
   const [archivados, setArchivados] = useState(new Set());
   const [vistaComp, setVistaComp] = useState("lista"); // lista | grilla — cómo ver los presupuestos recibidos
@@ -6577,9 +6925,9 @@ function VistaCarpinteria({
     }
     setArchivandoSel(false);
   };
-  const [tab, setTab] = useState("aserradero");
+  const [tab, setTab] = useNavState("aserradero");
   const [pedidos, setPedidos] = useState([]);
-  const [sel, setSel] = useState(null);
+  const [sel, setSel] = useNavState(null);
   const [presF, setPresF] = useState({
     items: [{
       descripcion: "",
@@ -6612,9 +6960,9 @@ function VistaCarpinteria({
     barrio: usuario.barrio || ""
   });
   const [misPedidosAserr, setMisPedidosAserr] = useState([]);
-  const [subAserr, setSubAserr] = useState("mis");
-  const [subFerr, setSubFerr] = useState("mis");
-  const [subPint, setSubPint] = useState("mis");
+  const [subAserr, setSubAserr] = useNavState("mis");
+  const [subFerr, setSubFerr] = useNavState("mis");
+  const [subPint, setSubPint] = useNavState("mis");
   const [intAs, setIntAs] = useState(false);
   const [intFe, setIntFe] = useState(false);
   const [intPi, setIntPi] = useState(false);
@@ -6651,7 +6999,7 @@ function VistaCarpinteria({
       }
     }, "⚠️ Para enviar te falta completar: ", f.join(", "), ".") : null;
   };
-  const [selAserr, setSelAserr] = useState(null);
+  const [selAserr, setSelAserr] = useNavState(null);
   const [cotizacionesAserr, setCotizacionesAserr] = useState([]);
   const [cotAserrAbierta, setCotAserrAbierta] = useState(null);
   const [aceptandoAserr, setAceptandoAserr] = useState(false);
@@ -6667,7 +7015,7 @@ function VistaCarpinteria({
     barrio: usuario.barrio || ""
   });
   const [misPedidosFerreria, setMisPedidosFerreria] = useState([]);
-  const [selFerr, setSelFerr] = useState(null);
+  const [selFerr, setSelFerr] = useNavState(null);
   const [cotizacionesFerr, setCotizacionesFerr] = useState([]);
   const [pintF, setPintF] = useState({
     items: [{
@@ -6685,7 +7033,7 @@ function VistaCarpinteria({
   const [filtroUbicProv, setFiltroUbicProv] = useState("");
   const [filtroUbicCiu, setFiltroUbicCiu] = useState("");
   const [misPedidosPint, setMisPedidosPint] = useState([]);
-  const [selPint, setSelPint] = useState(null);
+  const [selPint, setSelPint] = useNavState(null);
   const [cotizacionesPint, setCotizacionesPint] = useState([]);
   const cargar = useCallback(async () => {
     try {
@@ -9805,7 +10153,7 @@ function VistaAserradero({
   onIrASuscripcion
 }) {
   const [pedidos, setPedidos] = useState([]);
-  const [sel, setSel] = useState(null);
+  const [sel, setSel] = useNavState(null);
   useEffect(() => {
     const h = () => setSel(null);
     window.addEventListener("encastre-ir-principal", h);
@@ -10765,7 +11113,7 @@ function VistaFlete({
 
   // ---- Lado fletero: recibe pedidos y cotiza ----
   const [pedidos, setPedidos] = useState([]);
-  const [sel, setSel] = useState(null);
+  const [sel, setSel] = useNavState(null);
   useEffect(() => {
     const h = () => setSel(null);
     window.addEventListener("encastre-ir-principal", h);
@@ -10947,7 +11295,7 @@ function VistaFlete({
   };
 
   // ---- Lado solicitante: pide flete y ve cotizaciones ----
-  const [subFl, setSubFl] = useState("mis");
+  const [subFl, setSubFl] = useNavState("mis");
   const [pedF, setPedF] = useState({
     origen: "",
     destino: "",
@@ -10960,7 +11308,7 @@ function VistaFlete({
     barrio: usuario.barrio || ""
   });
   const [misPedidos, setMisPedidos] = useState([]);
-  const [selPedido, setSelPedido] = useState(null);
+  const [selPedido, setSelPedido] = useNavState(null);
   const [cotizacionesFlete, setCotizacionesFlete] = useState([]);
   const [fleteAbierto, setFleteAbierto] = useState(null);
   const [intFl, setIntFl] = useState(false);
@@ -12294,7 +12642,7 @@ function VistaFerreteria({
   onIrASuscripcion
 }) {
   const [pedidos, setPedidos] = useState([]);
-  const [sel, setSel] = useState(null);
+  const [sel, setSel] = useNavState(null);
   useEffect(() => {
     const h = () => setSel(null);
     window.addEventListener("encastre-ir-principal", h);
@@ -13129,7 +13477,7 @@ function VistaPintureria({
   onIrASuscripcion
 }) {
   const [pedidos, setPedidos] = useState([]);
-  const [sel, setSel] = useState(null);
+  const [sel, setSel] = useNavState(null);
   useEffect(() => {
     const h = () => setSel(null);
     window.addEventListener("encastre-ir-principal", h);
@@ -19869,6 +20217,13 @@ function App() {
       return false;
     }
   };
+  const preLoginRef = useRef({});
+  preLoginRef.current = {
+    sesion,
+    mostrarBienvenida,
+    invitado,
+    pedidoPend
+  };
   const badges = useBadges(sesion?.usuario);
 
   // ── Aviso para activar notificaciones push (se pide al primer ingreso; si no las activa, queda un cartel) ──
@@ -19924,6 +20279,14 @@ function App() {
     setMenuAbierto(false);
   };
   const cambiarPantalla = cambios => {
+    const prev = {
+      navTab,
+      cuentaTab,
+      enMiCuenta,
+      enContacto,
+      enPapelera,
+      enManual
+    };
     const desc = {
       navTab,
       cuentaTab,
@@ -19934,16 +20297,22 @@ function App() {
       ...cambios
     };
     aplicarPantalla(desc);
-    const nuevoIdx = idxPantalla + 1;
-    try {
-      window.history.pushState({
-        encastrePantalla: desc,
-        idx: nuevoIdx
-      }, "");
-    } catch {}
-    setIdxPantalla(nuevoIdx);
-    setMaxIdxPantalla(nuevoIdx);
+    navPush(() => {
+      aplicarPantalla(prev);
+      return true;
+    }, () => {
+      aplicarPantalla(desc);
+      return true;
+    });
   };
+  useEffect(() => {
+    const h = () => {
+      setIdxPantalla(NAV.ptr);
+      setMaxIdxPantalla(NAV.items.length);
+    };
+    window.addEventListener("encastre:nav", h);
+    return () => window.removeEventListener("encastre:nav", h);
+  }, []);
   useEffect(() => {
     const usu = sesion?.usuario;
     const GRUPO_PAGA_LUEGO = ["aserradero", "ferreteria", "pintureria", "flete"];
@@ -20053,23 +20422,43 @@ function App() {
     try {
       window.history.pushState({
         encastre: true,
-        idx: 0
+        nav: 0
       }, "");
     } catch {}
     const alVolver = ev => {
       const st = ev.state;
-      if (st && st.encastrePantalla) {
-        aplicarPantalla(st.encastrePantalla);
-        setIdxPantalla(st.idx || 0);
+      // Antes de ingresar: "atrás" vuelve paso a paso hasta la pantalla de bienvenida
+      const pl = preLoginRef.current || {};
+      if (!pl.sesion && (pl.pedidoPend || pl.invitado || !pl.mostrarBienvenida)) {
+        if (pl.pedidoPend) {
+          setBorradorEdit(pl.pedidoPend.borrador);
+          guardarPend(null);
+          setInvitado(true);
+        } else {
+          setInvitado(false);
+          setBorradorEdit(null);
+          setMostrarBienvenida(true);
+        }
+        try {
+          window.history.pushState({
+            encastre: true,
+            nav: 0
+          }, "");
+        } catch {}
         return;
       }
-      if (st && st.encastre) {
-        aplicarPantalla({
-          navTab: "principal"
-        });
-        setIdxPantalla(0);
+      // Un paso para atrás o para adelante dentro de la app
+      if (st && st.encastre && typeof st.nav === "number") {
+        const haciaAtras = st.nav < NAV.ptr;
+        const efecto = navIr(st.nav);
+        // Si ese paso era de una pantalla que ya no está, se saltea y se sigue al anterior/siguiente
+        if (!efecto) {
+          if (haciaAtras && st.nav > 0) window.history.back();else if (!haciaAtras && st.nav < NAV.items.length) window.history.forward();
+        }
         return;
       }
+      // Recién acá (atrás desde la primera pantalla) se pregunta si quiere salir
+      NAV.ptr = 0;
       const salir = window.confirm("¿Desea salir de la aplicación?");
       if (salir) {
         // dejar que el navegador vaya atrás de verdad
@@ -20077,13 +20466,13 @@ function App() {
         window.history.back();
       } else {
         // re-empujar el estado para seguir interceptando
+        navReset();
         try {
           window.history.pushState({
             encastre: true,
-            idx: 0
+            nav: 0
           }, "");
         } catch {}
-        setIdxPantalla(0);
       }
     };
     window.addEventListener("popstate", alVolver);
@@ -20094,6 +20483,7 @@ function App() {
   }, []);
   const handleAuth = async s => {
     db.setSesion(s);
+    navReset();
     // Si venía de armar un pedido sin cuenta, se envía ANTES de entrar, así ya aparece en su lista
     const enviado = pedidoPend ? await enviarPedidoPendiente(s) : false;
     setSesion(s);
@@ -20211,7 +20601,8 @@ function App() {
     }
   });
   if (!sesion) return /*#__PURE__*/React.createElement(AuthScreen, {
-    onAuth: handleAuth
+    onAuth: handleAuth,
+    onVolverInicio: () => setMostrarBienvenida(true)
   });
   const {
     usuario
@@ -20221,6 +20612,7 @@ function App() {
       await db.signOut(sesion?.token);
     } catch {}
     db.limpiarSesion();
+    navReset();
     setSesion(null);
     try {
       localStorage.removeItem("encastre_sesion");
@@ -20275,7 +20667,9 @@ function App() {
       gap: 8,
       padding: "8px 12px"
     }
-  }, pushModal && /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(BurbujasAceptadas, {
+    usuario: usuario
+  }), pushModal && /*#__PURE__*/React.createElement("div", {
     style: {
       position: "fixed",
       inset: 0,
