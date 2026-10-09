@@ -2611,9 +2611,9 @@ function BarraSeleccion({
     }
   }, cant, " seleccionado", cant > 1 ? "s" : ""), /*#__PURE__*/React.createElement("button", {
     style: {
-      ...S.btn("dark"),
+      ...S.btn("ghost"),
       fontSize: 14,
-      padding: "7px 14px"
+      padding: "6px 12px"
     },
     onClick: onArchivar,
     disabled: archivando
@@ -4434,7 +4434,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-09.1"));
+  }, "v2026-10-09.2"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -5791,12 +5791,19 @@ function NuevoPedido({
   }, "⚠️ Para enviar el pedido te falta completar — ", problemas.map(p => `Mueble ${p.i + 1}: ${p.f.join(", ")}`).join(" · "), "."), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
+      flexDirection: "column",
       gap: 10,
       marginTop: intento && !ok ? 10 : 20
     }
   }, /*#__PURE__*/React.createElement("button", {
     style: {
-      ...S.btn("dark"),
+      ...S.btn("gold"),
+      width: "100%",
+      justifyContent: "center",
+      fontSize: 19,
+      fontWeight: 800,
+      padding: "14px 18px",
+      boxShadow: "0 3px 12px #5C2E0A44",
       opacity: guardando ? 0.6 : 1
     },
     disabled: guardando,
@@ -6691,19 +6698,25 @@ function VistaCliente({
       }, "ver ▶"))))));
     })());
   };
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
     style: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 20
+      ...S.btn("gold"),
+      width: "100%",
+      justifyContent: "center",
+      fontSize: 19,
+      fontWeight: 800,
+      padding: "14px 18px",
+      boxShadow: "0 3px 12px #5C2E0A44",
+      marginBottom: 18
+    },
+    onClick: () => setVista("nuevo")
+  }, "➕ Nuevo pedido"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 14
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: S.cardTitle
-  }, "📋 Mis pedidos"), /*#__PURE__*/React.createElement("button", {
-    style: S.btn("dark"),
-    onClick: () => setVista("nuevo")
-  }, "➕ Nuevo pedido")), pedidos.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, "📋 Mis pedidos")), pedidos.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       ...S.card,
       textAlign: "center",
@@ -8034,7 +8047,13 @@ function VistaCarpinteria({
         }
       }, fmtPeso(calc.total)))), /*#__PURE__*/React.createElement("button", {
         style: {
-          ...S.btn("dark"),
+          ...S.btn("gold"),
+          width: "100%",
+          justifyContent: "center",
+          fontSize: 19,
+          fontWeight: 800,
+          padding: "14px 18px",
+          boxShadow: "0 3px 12px #5C2E0A44",
           opacity: enviando || yaEnvio ? 0.6 : 1
         },
         onClick: enviarPresup,
@@ -8680,7 +8699,13 @@ function VistaCarpinteria({
     }
   }, "Pasada esa fecha el pedido se marca vencido y ya no se puede cotizar.")), /*#__PURE__*/React.createElement("button", {
     style: {
-      ...S.btn("dark"),
+      ...S.btn("gold"),
+      width: "100%",
+      justifyContent: "center",
+      fontSize: 19,
+      fontWeight: 800,
+      padding: "14px 18px",
+      boxShadow: "0 3px 12px #5C2E0A44",
       marginTop: 12,
       opacity: enviandoPed ? 0.6 : 1
     },
@@ -8689,11 +8714,18 @@ function VistaCarpinteria({
   }, enviandoPed ? "⟳ Enviando..." : "📤 Enviar a aserraderos")), tab === "aserradero" && subAserr === "mis" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
-      justifyContent: "flex-end",
-      marginBottom: 14
+      marginBottom: 16
     }
   }, /*#__PURE__*/React.createElement("button", {
-    style: S.btn("dark"),
+    style: {
+      ...S.btn("gold"),
+      width: "100%",
+      justifyContent: "center",
+      fontSize: 19,
+      fontWeight: 800,
+      padding: "14px 18px",
+      boxShadow: "0 3px 12px #5C2E0A44"
+    },
     onClick: () => setSubAserr("pedir")
   }, "➕ Nuevo pedido")), misPedidosAserr.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: S.card
@@ -9204,7 +9236,13 @@ function VistaCarpinteria({
     lista: [[ferrF.items.every(it => !it.descripcion.trim() || !nmb(it.cantidad)), "al menos un herraje con cantidad"]]
   }), /*#__PURE__*/React.createElement("button", {
     style: {
-      ...S.btn("dark"),
+      ...S.btn("gold"),
+      width: "100%",
+      justifyContent: "center",
+      fontSize: 19,
+      fontWeight: 800,
+      padding: "14px 18px",
+      boxShadow: "0 3px 12px #5C2E0A44",
       marginTop: 12,
       opacity: enviandoPed ? 0.6 : 1
     },
@@ -9257,11 +9295,18 @@ function VistaCarpinteria({
   }, enviandoPed ? "⟳ Enviando..." : "📤 Enviar a ferreterías")), subFerr === "mis" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
-      justifyContent: "flex-end",
-      marginBottom: 14
+      marginBottom: 16
     }
   }, /*#__PURE__*/React.createElement("button", {
-    style: S.btn("dark"),
+    style: {
+      ...S.btn("gold"),
+      width: "100%",
+      justifyContent: "center",
+      fontSize: 19,
+      fontWeight: 800,
+      padding: "14px 18px",
+      boxShadow: "0 3px 12px #5C2E0A44"
+    },
     onClick: () => setSubFerr("pedir")
   }, "➕ Nuevo pedido")), misPedidosFerreria.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: S.card
@@ -9767,7 +9812,13 @@ function VistaCarpinteria({
     lista: [[pintF.items.every(it => !it.descripcion.trim() || !nmb(it.litros)), "al menos un producto con litros"]]
   }), /*#__PURE__*/React.createElement("button", {
     style: {
-      ...S.btn("dark"),
+      ...S.btn("gold"),
+      width: "100%",
+      justifyContent: "center",
+      fontSize: 19,
+      fontWeight: 800,
+      padding: "14px 18px",
+      boxShadow: "0 3px 12px #5C2E0A44",
       marginTop: 12,
       opacity: enviandoPed ? 0.6 : 1
     },
@@ -9820,11 +9871,18 @@ function VistaCarpinteria({
   }, enviandoPed ? "⟳ Enviando..." : "📤 Enviar a pinturerías")), subPint === "mis" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
-      justifyContent: "flex-end",
-      marginBottom: 14
+      marginBottom: 16
     }
   }, /*#__PURE__*/React.createElement("button", {
-    style: S.btn("dark"),
+    style: {
+      ...S.btn("gold"),
+      width: "100%",
+      justifyContent: "center",
+      fontSize: 19,
+      fontWeight: 800,
+      padding: "14px 18px",
+      boxShadow: "0 3px 12px #5C2E0A44"
+    },
     onClick: () => setSubPint("pedir")
   }, "➕ Nuevo pedido")), misPedidosPint.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: S.card
@@ -10792,7 +10850,13 @@ function VistaAserradero({
         }
       }, fmtPeso(calc.total)))), /*#__PURE__*/React.createElement("button", {
         style: {
-          ...S.btn("dark"),
+          ...S.btn("gold"),
+          width: "100%",
+          justifyContent: "center",
+          fontSize: 19,
+          fontWeight: 800,
+          padding: "14px 18px",
+          boxShadow: "0 3px 12px #5C2E0A44",
           opacity: enviando || yaEnvio ? 0.6 : 1
         },
         onClick: enviarCot,
@@ -11912,7 +11976,13 @@ function VistaFlete({
           }
         }, fmtPeso(calc.total)))), /*#__PURE__*/React.createElement("button", {
           style: {
-            ...S.btn("dark"),
+            ...S.btn("gold"),
+            width: "100%",
+            justifyContent: "center",
+            fontSize: 19,
+            fontWeight: 800,
+            padding: "14px 18px",
+            boxShadow: "0 3px 12px #5C2E0A44",
             opacity: enviando || yaEnvio ? 0.6 : 1
           },
           onClick: enviarCot,
@@ -12316,7 +12386,13 @@ function VistaFlete({
     }
   }, "Pasada esa fecha el pedido se marca vencido y ya no se puede cotizar.")), /*#__PURE__*/React.createElement("button", {
     style: {
-      ...S.btn("dark"),
+      ...S.btn("gold"),
+      width: "100%",
+      justifyContent: "center",
+      fontSize: 19,
+      fontWeight: 800,
+      padding: "14px 18px",
+      boxShadow: "0 3px 12px #5C2E0A44",
       marginTop: 14,
       opacity: enviandoPed ? 0.6 : 1
     },
@@ -12325,11 +12401,18 @@ function VistaFlete({
   }, enviandoPed ? "⟳ Enviando..." : "📤 Solicitar a todos los fletes")), subFl === "mis" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
-      justifyContent: "flex-end",
-      marginBottom: 14
+      marginBottom: 16
     }
   }, /*#__PURE__*/React.createElement("button", {
-    style: S.btn("dark"),
+    style: {
+      ...S.btn("gold"),
+      width: "100%",
+      justifyContent: "center",
+      fontSize: 19,
+      fontWeight: 800,
+      padding: "14px 18px",
+      boxShadow: "0 3px 12px #5C2E0A44"
+    },
     onClick: () => setSubFl("pedir")
   }, "➕ Nuevo pedido")), misPedidos.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: {
@@ -13262,7 +13345,13 @@ function VistaFerreteria({
         }
       }, fmtPeso(calc.total)))), /*#__PURE__*/React.createElement("button", {
         style: {
-          ...S.btn("dark"),
+          ...S.btn("gold"),
+          width: "100%",
+          justifyContent: "center",
+          fontSize: 19,
+          fontWeight: 800,
+          padding: "14px 18px",
+          boxShadow: "0 3px 12px #5C2E0A44",
           opacity: enviando || yaEnvio ? 0.6 : 1
         },
         onClick: enviarCot,
@@ -14097,7 +14186,13 @@ function VistaPintureria({
         }
       }, fmtPeso(calc.total)))), /*#__PURE__*/React.createElement("button", {
         style: {
-          ...S.btn("dark"),
+          ...S.btn("gold"),
+          width: "100%",
+          justifyContent: "center",
+          fontSize: 19,
+          fontWeight: 800,
+          padding: "14px 18px",
+          boxShadow: "0 3px 12px #5C2E0A44",
           opacity: enviando || yaEnvio ? 0.6 : 1
         },
         onClick: enviarCot,
