@@ -4779,7 +4779,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-12.4"));
+  }, "v2026-10-12.6"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -9082,7 +9082,7 @@ function VistaCarpinteria({
       color: C.textoSuave,
       fontStyle: "italic"
     }
-  }, "Todavía no enviaste pedidos de madera. Tocá \"➕ Nuevo pedido\" arriba para hacer el primero.")), misPedidosAserr.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "Todavía no enviaste pedidos a aserraderos. Tocá \"➕ Nuevo pedido\" arriba para hacer el primero.")), misPedidosAserr.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontFamily: "'Lato',sans-serif",
       fontWeight: 700,
@@ -9090,7 +9090,7 @@ function VistaCarpinteria({
       fontSize: 20,
       marginBottom: 12
     }
-  }, "📋 Mis pedidos enviados (", misPedidosAserr.length, ")"), misPedidosAserr.filter(p => p.estado !== "eliminado").map(p => {
+  }, "📋 Mis pedidos a aserraderos (", misPedidosAserr.length, ")"), misPedidosAserr.filter(p => p.estado !== "eliminado").map(p => {
     const abierto = selAserr && selAserr.id === p.id;
     return /*#__PURE__*/React.createElement("div", {
       key: p.id,
@@ -9663,7 +9663,7 @@ function VistaCarpinteria({
       color: C.textoSuave,
       fontStyle: "italic"
     }
-  }, "Todavía no enviaste pedidos de herrajes. Tocá \"➕ Nuevo pedido\" arriba para hacer el primero.")), misPedidosFerreria.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "Todavía no enviaste pedidos a ferreterías. Tocá \"➕ Nuevo pedido\" arriba para hacer el primero.")), misPedidosFerreria.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontFamily: "'Lato',sans-serif",
       fontWeight: 700,
@@ -9671,7 +9671,7 @@ function VistaCarpinteria({
       fontSize: 20,
       marginBottom: 12
     }
-  }, "📋 Mis pedidos de herrajes (", misPedidosFerreria.length, ")"), misPedidosFerreria.filter(p => p.estado !== "eliminado").map(p => {
+  }, "📋 Mis pedidos a ferreterías (", misPedidosFerreria.length, ")"), misPedidosFerreria.filter(p => p.estado !== "eliminado").map(p => {
     const abierto = selFerr && selFerr.id === p.id;
     return /*#__PURE__*/React.createElement("div", {
       key: p.id,
@@ -10239,7 +10239,7 @@ function VistaCarpinteria({
       color: C.textoSuave,
       fontStyle: "italic"
     }
-  }, "Todavía no enviaste pedidos de pinturas. Tocá \"➕ Nuevo pedido\" arriba para hacer el primero.")), misPedidosPint.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "Todavía no enviaste pedidos a pinturerías. Tocá \"➕ Nuevo pedido\" arriba para hacer el primero.")), misPedidosPint.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontFamily: "'Lato',sans-serif",
       fontWeight: 700,
@@ -10247,7 +10247,7 @@ function VistaCarpinteria({
       fontSize: 20,
       marginBottom: 12
     }
-  }, "📋 Mis pedidos de pinturas (", misPedidosPint.length, ")"), misPedidosPint.filter(p => p.estado !== "eliminado").map(p => {
+  }, "📋 Mis pedidos a pinturerías (", misPedidosPint.length, ")"), misPedidosPint.filter(p => p.estado !== "eliminado").map(p => {
     const abierto = selPint && selPint.id === p.id;
     return /*#__PURE__*/React.createElement("div", {
       key: p.id,
@@ -11248,7 +11248,7 @@ function VistaAserradero({
   });
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: S.secTitle
-  }, "Pedidos de carpinterías"), bloqueado && /*#__PURE__*/React.createElement("div", {
+  }, "Pedidos"), bloqueado && /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 14,
       padding: "14px 16px",
@@ -12381,7 +12381,7 @@ function VistaFlete({
     });
     return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
       style: S.secTitle
-    }, "🚚 Pedidos de flete"), bloqueado && /*#__PURE__*/React.createElement("div", {
+    }, "Pedidos"), bloqueado && /*#__PURE__*/React.createElement("div", {
       style: {
         marginBottom: 14,
         padding: "14px 16px",
@@ -13762,7 +13762,7 @@ function VistaFerreteria({
   });
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: S.secTitle
-  }, "Pedidos de herrajes de carpinterías"), bloqueado && /*#__PURE__*/React.createElement("div", {
+  }, "Pedidos"), bloqueado && /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 14,
       padding: "14px 16px",
@@ -14621,7 +14621,7 @@ function VistaPintureria({
   });
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: S.secTitle
-  }, "Pedidos de pinturas de carpinterías"), bloqueado && /*#__PURE__*/React.createElement("div", {
+  }, "Pedidos"), bloqueado && /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 14,
       padding: "14px 16px",
@@ -14877,15 +14877,15 @@ function PantallaBienvenida({
   }, {
     e: "🌲",
     t: "Aserradero",
-    d: "Recibís pedidos de madera de las carpinterías y respondés con tu cotización."
+    d: "Recibís los pedidos de las carpinterías y respondés con tu cotización."
   }, {
     e: "🔩",
     t: "Ferretería",
-    d: "Recibís pedidos de herrajes y materiales, y cotizás de forma simple y rápida."
+    d: "Recibís los pedidos de las carpinterías y respondés con tu cotización."
   }, {
     e: "🖌️",
     t: "Pinturería",
-    d: "Recibís pedidos de pinturas, barnices, lacas y esmaltes de las carpinterías, y respondés con tu cotización."
+    d: "Recibís los pedidos de las carpinterías y respondés con tu cotización."
   }, {
     e: "🚚",
     t: "Flete",
@@ -15852,10 +15852,6 @@ async function presupuestoAPdf(nodo) {
     if (el.style && el.style.overflowX) el.style.overflowX = "visible";
   });
   caja.appendChild(copia);
-  const pie = document.createElement("div");
-  pie.style.cssText = "font-family:Lato,sans-serif;font-size:13px;color:#6B4A3E;text-align:center;padding:14px 0 4px;";
-  pie.textContent = "Hecho con Encastre · La Comunidad de la Madera · encastre.com.ar";
-  caja.appendChild(pie);
   document.body.appendChild(caja);
   try {
     const canvas = await window.html2canvas(caja, {
@@ -15930,7 +15926,7 @@ function AccionesPresupuesto({
   const [menu, setMenu] = useState(false);
   const [aviso, setAviso] = useState("");
   const nombre = nombreArchivoPresup(numero, empresa);
-  const texto = `Presupuesto${numero !== "" && numero != null ? " N° " + numero : ""} de ${empresa || "—"}${cliente ? " para " + cliente : ""}. Total: ${total}${tiempoEntrega ? ". Entrega: " + tiempoEntrega : ""}. Hecho con Encastre: https://encastre.com.ar`;
+  const texto = `Presupuesto${numero !== "" && numero != null ? " N° " + numero : ""} de ${empresa || "—"}${cliente ? " para " + cliente : ""}. Total: ${total}${tiempoEntrega ? ". Entrega: " + tiempoEntrega : ""}. Hecho a través de Encastre: www.encastre.com.ar`;
   const hacerPdf = async () => {
     if (!nodoRef.current) throw new Error("sin nodo");
     return presupuestoAPdf(nodoRef.current);
@@ -16115,14 +16111,77 @@ function PresupuestoFormato({
       color: C.textoSuave
     }
   }, l, ":"), " ", v) : null;
+  const bandaMadera = `${C.terracota} url(${MADERA_CEDRO}) 72% center/cover`;
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     ref: nodoRef,
     className: "presup-doc",
     style: {
+      border: `3px solid ${C.marron}`,
+      borderRadius: 12,
+      overflow: "hidden",
+      background: "#fff",
+      WebkitPrintColorAdjust: "exact",
+      printColorAdjust: "exact"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: bandaMadera,
+      color: "#FFF6EC",
+      textShadow: "0 1px 3px #000000aa",
+      padding: "10px 14px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      flexWrap: "wrap",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("img", {
+    src: LOGO_B64,
+    alt: "",
+    style: {
+      width: 40,
+      height: 40,
+      borderRadius: 6,
+      background: "#fff"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      lineHeight: 1.1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: "'Stardos Stencil',serif",
+      fontSize: 22,
+      fontWeight: 700,
+      letterSpacing: 2
+    }
+  }, "ENCASTRE"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      letterSpacing: 1.5,
+      textTransform: "uppercase",
+      color: C.acentoClaro,
+      fontWeight: 700
+    }
+  }, "La Comunidad de la Madera"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 15,
+      fontWeight: 700,
+      letterSpacing: .3
+    }
+  }, "www.encastre.com.ar")), /*#__PURE__*/React.createElement("div", {
+    style: {
       border: `1px solid ${C.borde}`,
       borderRadius: 10,
       overflow: "hidden",
-      background: "#fff"
+      background: "#fff",
+      margin: 10
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -16355,7 +16414,17 @@ function PresupuestoFormato({
     style: {
       color: C.marron
     }
-  }, tiempoEntrega))), !sinAcciones && /*#__PURE__*/React.createElement(AccionesPresupuesto, {
+  }, tiempoEntrega))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: bandaMadera,
+      color: "#FFF6EC",
+      textShadow: "0 1px 3px #000000aa",
+      padding: "8px 14px",
+      fontSize: 13,
+      textAlign: "center",
+      fontWeight: 700
+    }
+  }, "Presupuesto hecho a través de Encastre · www.encastre.com.ar")), !sinAcciones && /*#__PURE__*/React.createElement(AccionesPresupuesto, {
     nodoRef: nodoRef,
     numero: numero,
     empresa: empresa.nombre,
@@ -16858,7 +16927,7 @@ const FLUJOS = {
         n: 1,
         icon: "📥",
         title: "Mirás los pedidos que te llegan",
-        lines: ["Te llegan los pedidos de madera que hacen las carpinterías.", "Filtros: Para cotizar, Cotizados, Vencidos, Todos.", "Por defecto se abre en «Para cotizar»."]
+        lines: ["Te llegan los pedidos que hacen las carpinterías.", "Filtros: Para cotizar, Cotizados, Vencidos, Todos.", "Por defecto se abre en «Para cotizar»."]
       }, {
         type: "arrow"
       }, {
@@ -16974,7 +17043,7 @@ const FLUJOS = {
         n: 1,
         icon: "📥",
         title: "Mirás los pedidos que te llegan",
-        lines: ["Te llegan los pedidos de herrajes que hacen las carpinterías.", "Filtros: Para cotizar, Cotizados, Vencidos, Todos.", "Por defecto se abre en «Para cotizar»."]
+        lines: ["Te llegan los pedidos que hacen las carpinterías.", "Filtros: Para cotizar, Cotizados, Vencidos, Todos.", "Por defecto se abre en «Para cotizar»."]
       }, {
         type: "arrow"
       }, {
@@ -17090,7 +17159,7 @@ const FLUJOS = {
         n: 1,
         icon: "📥",
         title: "Mirás los pedidos que te llegan",
-        lines: ["Te llegan los pedidos de pintura que hacen las carpinterías.", "Filtros: Para cotizar, Cotizados, Vencidos, Todos.", "Por defecto se abre en «Para cotizar»."]
+        lines: ["Te llegan los pedidos que hacen las carpinterías.", "Filtros: Para cotizar, Cotizados, Vencidos, Todos.", "Por defecto se abre en «Para cotizar»."]
       }, {
         type: "arrow"
       }, {
