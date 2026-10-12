@@ -4779,7 +4779,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-12.3"));
+  }, "v2026-10-12.4"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -8752,21 +8752,22 @@ function VistaCarpinteria({
       }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
         style: {
           fontFamily: "'Lato',sans-serif",
-          fontWeight: 700,
+          fontWeight: 900,
           color: C.marron,
-          fontSize: 21
+          fontSize: 24,
+          lineHeight: 1.15
         }
-      }, p.descripcion, /*#__PURE__*/React.createElement(TagNuevo, {
+      }, p._clienteNombre || "Cliente", /*#__PURE__*/React.createElement(TagNuevo, {
         on: p._nuevo
       }), /*#__PURE__*/React.createElement(TagMsjNuevo, {
         on: p._msjNuevo
-      })), p._clienteNombre && /*#__PURE__*/React.createElement("div", {
+      })), /*#__PURE__*/React.createElement("div", {
         style: {
-          fontSize: 16,
-          color: C.marron,
-          marginTop: 2
+          fontSize: 17,
+          color: C.texto,
+          marginTop: 3
         }
-      }, "👤 ", p._clienteNombre), (p.ciudad || p.provincia) && /*#__PURE__*/React.createElement("div", {
+      }, p.descripcion), (p.ciudad || p.provincia) && /*#__PURE__*/React.createElement("div", {
         style: {
           fontSize: 15,
           color: C.textoSuave,
@@ -10624,6 +10625,16 @@ function VistaAserradero({
   const cargar = useCallback(async () => {
     try {
       const d = await db.select("pedidos_aserradero", "?order=created_at.desc");
+      let mapaNom = {};
+      try {
+        const idsSol = [...new Set(d.map(p => p.carpinteria_id).filter(Boolean))];
+        if (idsSol.length) {
+          const us = await db.select("usuarios", `?id=in.(${idsSol.join(",")})&select=id,nombre`);
+          us.forEach(u => {
+            mapaNom[u.id] = u.nombre;
+          });
+        }
+      } catch {}
       // Sobre cerrado: solo sé si YO ya coticé, nunca si lo hizo otro aserradero.
       let mias = {};
       try {
@@ -10647,6 +10658,7 @@ function VistaAserradero({
       }
       setPedidos(soloVigentes(d.map(p => ({
         ...p,
+        _solicNombre: mapaNom[p.carpinteria_id] || "",
         _miEstado: mias[p.id] ? mias[p.id] === "aceptada" ? "aceptada" : mias[p.id] === "rechazada" ? "rechazada" : "cotizado" : null,
         _nuevo: !vistos.has(p.id),
         _msjNuevo: conMsj.has(p.id)
@@ -11367,15 +11379,22 @@ function VistaAserradero({
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         fontFamily: "'Lato',sans-serif",
-        fontWeight: 700,
+        fontWeight: 900,
         color: C.marron,
-        fontSize: 17
+        fontSize: 24,
+        lineHeight: 1.15
       }
-    }, p.material, /*#__PURE__*/React.createElement(TagNuevo, {
+    }, p._solicNombre || "Carpintería", /*#__PURE__*/React.createElement(TagNuevo, {
       on: p._nuevo
     }), /*#__PURE__*/React.createElement(TagMsjNuevo, {
       on: p._msjNuevo
-    })), (p.ciudad || p.provincia) && /*#__PURE__*/React.createElement("div", {
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 17,
+        color: C.texto,
+        marginTop: 3
+      }
+    }, p.material), (p.ciudad || p.provincia) && /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 15,
         color: C.textoSuave,
@@ -12499,19 +12518,20 @@ function VistaFlete({
     }, /*#__PURE__*/React.createElement("div", {
         style: {
           fontFamily: "'Lato',sans-serif",
-          fontWeight: 700,
+          fontWeight: 900,
           color: C.marron,
-          fontSize: 17
+          fontSize: 24,
+          lineHeight: 1.15
         }
-      }, "👤 ", p._solNombre || "Solicitante", /*#__PURE__*/React.createElement(TagNuevo, {
+      }, p._solNombre || "Solicitante", /*#__PURE__*/React.createElement(TagNuevo, {
         on: p._nuevo
       }), /*#__PURE__*/React.createElement(TagMsjNuevo, {
         on: p._msjNuevo
       })), /*#__PURE__*/React.createElement("div", {
         style: {
-          fontSize: 16,
-          color: C.marron,
-          marginTop: 2
+          fontSize: 17,
+          color: C.texto,
+          marginTop: 3
         }
       }, p.origen, " → ", p.destino), (p.ciudad || p.provincia) && /*#__PURE__*/React.createElement("div", {
         style: {
@@ -13123,6 +13143,16 @@ function VistaFerreteria({
   const cargar = useCallback(async () => {
     try {
       const d = await db.select("pedidos_ferreteria", "?order=created_at.desc");
+      let mapaNom = {};
+      try {
+        const idsSol = [...new Set(d.map(p => p.carpinteria_id).filter(Boolean))];
+        if (idsSol.length) {
+          const us = await db.select("usuarios", `?id=in.(${idsSol.join(",")})&select=id,nombre`);
+          us.forEach(u => {
+            mapaNom[u.id] = u.nombre;
+          });
+        }
+      } catch {}
       let mias = {};
       try {
         const mc = await db.select("cotizaciones_ferreteria", `?ferreteria_id=eq.${usuario.id}&select=pedido_id,estado`);
@@ -13145,6 +13175,7 @@ function VistaFerreteria({
       }
       setPedidos(soloVigentes(d.map(p => ({
         ...p,
+        _solicNombre: mapaNom[p.carpinteria_id] || "",
         _miEstado: mias[p.id] ? mias[p.id] === "aceptada" ? "aceptada" : mias[p.id] === "rechazada" ? "rechazada" : "cotizado" : null,
         _nuevo: !vistos.has(p.id),
         _msjNuevo: conMsj.has(p.id)
@@ -13862,15 +13893,22 @@ function VistaFerreteria({
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         fontFamily: "'Lato',sans-serif",
-        fontWeight: 700,
+        fontWeight: 900,
         color: C.marron,
-        fontSize: 21
+        fontSize: 24,
+        lineHeight: 1.15
       }
-    }, p.descripcion, /*#__PURE__*/React.createElement(TagNuevo, {
+    }, p._solicNombre || "Carpintería", /*#__PURE__*/React.createElement(TagNuevo, {
       on: p._nuevo
     }), /*#__PURE__*/React.createElement(TagMsjNuevo, {
       on: p._msjNuevo
-    })), (p.ciudad || p.provincia) && /*#__PURE__*/React.createElement("div", {
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 17,
+        color: C.texto,
+        marginTop: 3
+      }
+    }, p.descripcion), (p.ciudad || p.provincia) && /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 15,
         color: C.textoSuave,
@@ -13964,6 +14002,16 @@ function VistaPintureria({
   const cargar = useCallback(async () => {
     try {
       const d = await db.select("pedidos_pintureria", "?order=created_at.desc");
+      let mapaNom = {};
+      try {
+        const idsSol = [...new Set(d.map(p => p.carpinteria_id).filter(Boolean))];
+        if (idsSol.length) {
+          const us = await db.select("usuarios", `?id=in.(${idsSol.join(",")})&select=id,nombre`);
+          us.forEach(u => {
+            mapaNom[u.id] = u.nombre;
+          });
+        }
+      } catch {}
       let mias = {};
       try {
         const mc = await db.select("cotizaciones_pintureria", `?pintureria_id=eq.${usuario.id}&select=pedido_id,estado`);
@@ -13986,6 +14034,7 @@ function VistaPintureria({
       }
       setPedidos(soloVigentes(d.map(p => ({
         ...p,
+        _solicNombre: mapaNom[p.carpinteria_id] || "",
         _miEstado: mias[p.id] ? mias[p.id] === "aceptada" ? "aceptada" : mias[p.id] === "rechazada" ? "rechazada" : "cotizado" : null,
         _nuevo: !vistos.has(p.id),
         _msjNuevo: conMsj.has(p.id)
@@ -14703,15 +14752,22 @@ function VistaPintureria({
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         fontFamily: "'Lato',sans-serif",
-        fontWeight: 700,
+        fontWeight: 900,
         color: C.marron,
-        fontSize: 21
+        fontSize: 24,
+        lineHeight: 1.15
       }
-    }, p.descripcion, /*#__PURE__*/React.createElement(TagNuevo, {
+    }, p._solicNombre || "Carpintería", /*#__PURE__*/React.createElement(TagNuevo, {
       on: p._nuevo
     }), /*#__PURE__*/React.createElement(TagMsjNuevo, {
       on: p._msjNuevo
-    })), (p.ciudad || p.provincia) && /*#__PURE__*/React.createElement("div", {
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 17,
+        color: C.texto,
+        marginTop: 3
+      }
+    }, p.descripcion), (p.ciudad || p.provincia) && /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 15,
         color: C.textoSuave,
