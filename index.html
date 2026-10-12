@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Encastre"/>
   <meta name="mobile-web-app-capable" content="yes"/>
-  <meta name="theme-color" content="#5A4A3A"/>
+  <meta name="theme-color" content="#B4532A"/>
   <meta name="description" content="Encastre — La Comunidad de la Madera"/>
   <link rel="manifest" href="/manifest.json"/>
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png"/>
@@ -28,7 +28,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Stardos+Stencil:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    body { background:#F2EAD9; font-size:17px; font-family:'Lato',sans-serif; color:#2D3436; }
+    body { background:#F7EDE2; font-size:17px; font-family:'Lato',sans-serif; color:#2D3436; }
     ::-webkit-scrollbar { width:6px; }
 
     /* TAMAÑOS COHERENTES */
@@ -50,18 +50,18 @@
       font-family: 'Stardos Stencil', serif !important;
       font-size: 22px !important;
       font-weight: 700 !important;
-      color: #F2EAD9 !important;
+      color: #F7EDE2 !important;
       text-transform: uppercase !important;
       letter-spacing: 1px !important;
     }
     .encastre-logo-sub {
       font-size: 12px !important;
-      color: #C4892A !important;
+      color: #F7D58A !important;
       text-transform: uppercase !important;
       letter-spacing: 2px !important;
     }
-    ::-webkit-scrollbar-track { background:#F2EAD9; }
-    ::-webkit-scrollbar-thumb { background:#C4892A66; border-radius:3px; }
+    ::-webkit-scrollbar-track { background:#F7EDE2; }
+    ::-webkit-scrollbar-thumb { background:#E0A52699; border-radius:3px; }
     @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
     @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
     .fade { animation: fadeIn .3s ease; }
@@ -1913,22 +1913,25 @@ async function pedirIA(prompt) {
 
 // ─── PALETA ───────────────────────────────────────────────────────────────────
 const C = {
-  crema: "#F2EAD9",
-  marron: "#5A4A3A",
-  medio: "#8A5A32",
-  acento: "#C4892A",
-  suave: "#E8D9BF",
+  crema: "#F7EDE2",
+  marron: "#7A2638",
+  terracota: "#B4532A",
+  medio: "#B4532A",
+  acento: "#E0A526",
+  acentoOsc: "#9A6A0C",
+  acentoClaro: "#F7D58A",
+  suave: "#F2DFCC",
   texto: "#2D3436",
-  textoSuave: "#6B5A48",
-  borde: "#C4892A33",
-  card: "#FAF7EE",
-  input: "#F5EFDE",
+  textoSuave: "#6B4A3E",
+  borde: "#E0A52655",
+  card: "#FFFBF5",
+  input: "#FBF3EA",
   verde: "#4A7C3F",
   rojo: "#8B2020",
   azul: "#2A5C8B",
   exito: "#4A7C3F",
   error: "#8B2020",
-  fondo: "#F2EAD9"
+  fondo: "#F7EDE2"
 };
 const MATS = [{
   id: "madera_dura",
@@ -2164,7 +2167,7 @@ function TagNuevo({
       fontSize: 12,
       fontWeight: 700,
       color: "#fff",
-      background: "#009966",
+      background: "#4A7C3F",
       borderRadius: 10,
       padding: "2px 8px",
       fontFamily: "'Lato',sans-serif",
@@ -2183,7 +2186,7 @@ function TagMsjNuevo({
       fontSize: 12,
       fontWeight: 700,
       color: "#fff",
-      background: "#009966",
+      background: "#4A7C3F",
       borderRadius: 10,
       padding: "2px 8px",
       fontFamily: "'Lato',sans-serif",
@@ -2976,7 +2979,7 @@ function Badge9({
       padding: "0 5px",
       marginLeft: 7,
       borderRadius: "50%",
-      background: "#009966",
+      background: "#4A7C3F",
       color: "#fff",
       fontSize: 12,
       fontWeight: 700,
@@ -3129,7 +3132,7 @@ const S = {
     color: C.texto
   },
   topbar: {
-    background: C.marron,
+    background: C.terracota,
     padding: "0 20px",
     display: "flex",
     alignItems: "center",
@@ -3151,7 +3154,7 @@ const S = {
   },
   logoSub: {
     fontSize: 17,
-    color: C.acento,
+    color: C.acentoClaro,
     letterSpacing: 3,
     textTransform: "uppercase",
     display: "block",
@@ -3180,7 +3183,7 @@ const S = {
   },
   btn: (v = "gold") => ({
     background: v === "gold" ? C.acento : v === "dark" ? C.marron : v === "red" ? C.rojo : "transparent",
-    color: v === "ghost" || v === "link" ? C.marron : C.crema,
+    color: v === "ghost" || v === "link" ? C.marron : v === "gold" ? "#2D2016" : C.crema,
     border: v === "ghost" ? `2px solid ${C.marron}` : "none",
     borderRadius: v === "link" ? 0 : 10,
     padding: v === "link" ? "4px 2px" : "13px 24px",
@@ -3379,7 +3382,7 @@ function Stars({
 }) {
   return /*#__PURE__*/React.createElement("span", {
     style: {
-      color: C.acento,
+      color: C.acentoOsc,
       fontSize: 16
     }
   }, "★".repeat(Math.round(v)), "☆".repeat(5 - Math.round(v)), /*#__PURE__*/React.createElement("span", {
@@ -4767,7 +4770,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-09.4"));
+  }, "v2026-10-12.1"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -5702,7 +5705,7 @@ function NuevoPedido({
     className: "fade"
   }, /*#__PURE__*/React.createElement("div", {
     style: S.cardTitle
-  }, editarId ? "✏️ Modificar pedido" : "✏️ Nuevo pedido de presupuesto"), /*#__PURE__*/React.createElement("div", {
+  }, editarId ? "✏️ Modificar pedido" : "✏️ Nuevo pedido"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 16,
       color: C.textoSuave,
@@ -6224,7 +6227,7 @@ function TipsSeguridad({
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      color: C.acento,
+      color: C.acentoOsc,
       fontWeight: 700,
       flexShrink: 0
     }
@@ -6906,7 +6909,7 @@ function VistaCliente({
         key: i,
         style: {
           borderTop: `1px solid ${C.borde}`,
-          background: presupSel.has(pr.id) ? C.suave : i === 0 ? "#00996611" : "transparent",
+          background: presupSel.has(pr.id) ? C.suave : i === 0 ? "#4A7C3F14" : "transparent",
           cursor: "pointer"
         },
         onClick: () => abrirCot(pr)
@@ -6928,7 +6931,7 @@ function VistaCliente({
           fontSize: 11,
           fontWeight: 800,
           color: "#fff",
-          background: "#009966",
+          background: "#4A7C3F",
           padding: "1px 6px"
         }
       }, "NUEVO"), pr.estado && pr.estado !== "enviado" && /*#__PURE__*/React.createElement("span", {
@@ -6971,7 +6974,7 @@ function VistaCliente({
         key: i,
         style: {
           border: `1px solid ${presupSel.has(pr.id) ? C.acento : i === 0 ? C.verde : C.borde}`,
-          background: presupSel.has(pr.id) ? C.suave : i === 0 ? "#00996611" : C.card,
+          background: presupSel.has(pr.id) ? C.suave : i === 0 ? "#4A7C3F14" : C.card,
           padding: 14,
           cursor: "pointer"
         },
@@ -7003,7 +7006,7 @@ function VistaCliente({
           fontSize: 11,
           fontWeight: 800,
           color: "#fff",
-          background: "#009966",
+          background: "#4A7C3F",
           padding: "1px 6px"
         }
       }, "NUEVO"), pr.estado && pr.estado !== "enviado" && /*#__PURE__*/React.createElement(Badge, {
@@ -7112,7 +7115,7 @@ function VistaCliente({
           borderColor: C.acento,
           borderWidth: 2
         } : {
-          borderColor: "#8B451399"
+          borderColor: "#7A263866"
         })
       }
     }, /*#__PURE__*/React.createElement("div", {
@@ -8496,7 +8499,7 @@ function VistaCarpinteria({
     n: badges.pedidos || 0
   }))), tab === "pedidos" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: S.secTitle
-  }, "Pedidos de presupuesto de clientes"), false && /*#__PURE__*/React.createElement("div", {
+  }, "Pedidos de clientes"), false && /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 14,
       background: "transparent",
@@ -8682,7 +8685,7 @@ function VistaCarpinteria({
           cursor: bloqueadoClientes ? "not-allowed" : cerradoParaMi ? "default" : "pointer",
           transition: "all .15s",
           opacity: bloqueadoClientes ? 0.75 : cerradoParaMi ? 0.7 : 1,
-          borderColor: marcado ? C.acento : p._nuevo ? "#009966" : "#8B451399",
+          borderColor: marcado ? C.acento : p._nuevo ? "#4A7C3F" : "#7A263866",
           borderWidth: marcado || p._nuevo ? 2 : 1
         },
         onMouseEnter: e => {
@@ -8692,7 +8695,7 @@ function VistaCarpinteria({
           }
         },
         onMouseLeave: e => {
-          e.currentTarget.style.borderColor = marcado ? C.acento : p._nuevo ? "#009966" : C.borde;
+          e.currentTarget.style.borderColor = marcado ? C.acento : p._nuevo ? "#4A7C3F" : C.borde;
           e.currentTarget.style.transform = "none";
         }
       }, /*#__PURE__*/React.createElement("div", {
@@ -9087,7 +9090,7 @@ function VistaCarpinteria({
           borderColor: C.acento,
           borderWidth: 2
         } : {
-          borderColor: "#8B451399"
+          borderColor: "#7A263866"
         })
       }
     }, /*#__PURE__*/React.createElement("div", {
@@ -9115,7 +9118,7 @@ function VistaCarpinteria({
         fontSize: 12,
         fontWeight: 700,
         color: "#fff",
-        background: "#009966",
+        background: "#4A7C3F",
         borderRadius: 10,
         padding: "2px 8px",
         fontFamily: "'Lato',sans-serif",
@@ -9146,7 +9149,7 @@ function VistaCarpinteria({
     }, /*#__PURE__*/React.createElement("span", {
       style: {
         whiteSpace: "nowrap",
-        background: p._cantCotNueva > 0 ? "#009966" : C.suave,
+        background: p._cantCotNueva > 0 ? "#4A7C3F" : C.suave,
         color: p._cantCotNueva > 0 ? "#fff" : C.textoSuave,
         fontSize: 11,
         fontWeight: 700,
@@ -9261,7 +9264,7 @@ function VistaCarpinteria({
           fontSize: 12,
           fontWeight: 700,
           color: "#fff",
-          background: "#009966",
+          background: "#4A7C3F",
           borderRadius: 10,
           padding: "2px 8px",
           fontFamily: "'Lato',sans-serif",
@@ -9668,7 +9671,7 @@ function VistaCarpinteria({
           borderColor: C.acento,
           borderWidth: 2
         } : {
-          borderColor: "#8B451399"
+          borderColor: "#7A263866"
         })
       }
     }, /*#__PURE__*/React.createElement("div", {
@@ -9696,7 +9699,7 @@ function VistaCarpinteria({
         fontSize: 12,
         fontWeight: 700,
         color: "#fff",
-        background: "#009966",
+        background: "#4A7C3F",
         borderRadius: 10,
         padding: "2px 8px",
         fontFamily: "'Lato',sans-serif",
@@ -9722,7 +9725,7 @@ function VistaCarpinteria({
     }, /*#__PURE__*/React.createElement("span", {
       style: {
         whiteSpace: "nowrap",
-        background: p._cantCotNueva > 0 ? "#009966" : C.suave,
+        background: p._cantCotNueva > 0 ? "#4A7C3F" : C.suave,
         color: p._cantCotNueva > 0 ? "#fff" : C.textoSuave,
         fontSize: 11,
         fontWeight: 700,
@@ -9837,7 +9840,7 @@ function VistaCarpinteria({
           fontSize: 12,
           fontWeight: 700,
           color: "#fff",
-          background: "#009966",
+          background: "#4A7C3F",
           borderRadius: 10,
           padding: "2px 8px",
           fontFamily: "'Lato',sans-serif",
@@ -10244,7 +10247,7 @@ function VistaCarpinteria({
           borderColor: C.acento,
           borderWidth: 2
         } : {
-          borderColor: "#8B451399"
+          borderColor: "#7A263866"
         })
       }
     }, /*#__PURE__*/React.createElement("div", {
@@ -10272,7 +10275,7 @@ function VistaCarpinteria({
         fontSize: 12,
         fontWeight: 700,
         color: "#fff",
-        background: "#009966",
+        background: "#4A7C3F",
         borderRadius: 10,
         padding: "2px 8px",
         fontFamily: "'Lato',sans-serif",
@@ -10298,7 +10301,7 @@ function VistaCarpinteria({
     }, /*#__PURE__*/React.createElement("span", {
       style: {
         whiteSpace: "nowrap",
-        background: p._cantCotNueva > 0 ? "#009966" : C.suave,
+        background: p._cantCotNueva > 0 ? "#4A7C3F" : C.suave,
         color: p._cantCotNueva > 0 ? "#fff" : C.textoSuave,
         fontSize: 11,
         fontWeight: 700,
@@ -10413,7 +10416,7 @@ function VistaCarpinteria({
           fontSize: 12,
           fontWeight: 700,
           color: "#fff",
-          background: "#009966",
+          background: "#4A7C3F",
           borderRadius: 10,
           padding: "2px 8px",
           fontFamily: "'Lato',sans-serif",
@@ -11318,7 +11321,7 @@ function VistaAserradero({
         cursor: bloqueado ? "not-allowed" : "pointer",
         opacity: bloqueado ? 0.75 : 1,
         transition: "all .15s",
-        borderColor: p._nuevo ? "#009966" : "#8B451399",
+        borderColor: p._nuevo ? "#4A7C3F" : "#7A263866",
         borderWidth: p._nuevo ? 2 : 1
       },
       onClick: () => {
@@ -11335,7 +11338,7 @@ function VistaAserradero({
         }
       },
       onMouseLeave: e => {
-        e.currentTarget.style.borderColor = p._nuevo ? "#009966" : C.borde;
+        e.currentTarget.style.borderColor = p._nuevo ? "#4A7C3F" : C.borde;
         e.currentTarget.style.transform = "none";
       }
     }, /*#__PURE__*/React.createElement("div", {
@@ -12450,7 +12453,7 @@ function VistaFlete({
           cursor: bloqueado ? "not-allowed" : "pointer",
           opacity: bloqueado ? 0.75 : 1,
           transition: "all .15s",
-          borderColor: p._nuevo ? "#009966" : "#8B451399",
+          borderColor: p._nuevo ? "#4A7C3F" : "#7A263866",
           borderWidth: p._nuevo ? 2 : 1
         },
         onClick: () => {
@@ -12467,7 +12470,7 @@ function VistaFlete({
           }
         },
         onMouseLeave: e => {
-          e.currentTarget.style.borderColor = p._nuevo ? "#009966" : C.borde;
+          e.currentTarget.style.borderColor = p._nuevo ? "#4A7C3F" : C.borde;
           e.currentTarget.style.transform = "none";
         }
       }, /*#__PURE__*/React.createElement("div", {
@@ -12796,7 +12799,7 @@ function VistaFlete({
         fontSize: 12,
         fontWeight: 700,
         color: "#fff",
-        background: "#009966",
+        background: "#4A7C3F",
         borderRadius: 10,
         padding: "2px 8px",
         fontFamily: "'Lato',sans-serif",
@@ -12822,7 +12825,7 @@ function VistaFlete({
     }, /*#__PURE__*/React.createElement("span", {
       style: {
         whiteSpace: "nowrap",
-        background: p._cantCotNueva > 0 ? "#009966" : C.suave,
+        background: p._cantCotNueva > 0 ? "#4A7C3F" : C.suave,
         color: p._cantCotNueva > 0 ? "#fff" : C.textoSuave,
         fontSize: 11,
         fontWeight: 700,
@@ -12931,7 +12934,7 @@ function VistaFlete({
           fontSize: 12,
           fontWeight: 700,
           color: "#fff",
-          background: "#009966",
+          background: "#4A7C3F",
           borderRadius: 10,
           padding: "2px 8px",
           fontFamily: "'Lato',sans-serif",
@@ -13813,7 +13816,7 @@ function VistaFerreteria({
         cursor: bloqueado ? "not-allowed" : "pointer",
         opacity: bloqueado ? 0.75 : 1,
         transition: "all .15s",
-        borderColor: p._nuevo ? "#009966" : "#8B451399",
+        borderColor: p._nuevo ? "#4A7C3F" : "#7A263866",
         borderWidth: p._nuevo ? 2 : 1
       },
       onClick: () => {
@@ -13830,7 +13833,7 @@ function VistaFerreteria({
         }
       },
       onMouseLeave: e => {
-        e.currentTarget.style.borderColor = p._nuevo ? "#009966" : C.borde;
+        e.currentTarget.style.borderColor = p._nuevo ? "#4A7C3F" : C.borde;
         e.currentTarget.style.transform = "none";
       }
     }, /*#__PURE__*/React.createElement("div", {
@@ -14654,7 +14657,7 @@ function VistaPintureria({
         cursor: bloqueado ? "not-allowed" : "pointer",
         opacity: bloqueado ? 0.75 : 1,
         transition: "all .15s",
-        borderColor: p._nuevo ? "#009966" : "#8B451399",
+        borderColor: p._nuevo ? "#4A7C3F" : "#7A263866",
         borderWidth: p._nuevo ? 2 : 1
       },
       onClick: () => {
@@ -14671,7 +14674,7 @@ function VistaPintureria({
         }
       },
       onMouseLeave: e => {
-        e.currentTarget.style.borderColor = p._nuevo ? "#009966" : C.borde;
+        e.currentTarget.style.borderColor = p._nuevo ? "#4A7C3F" : C.borde;
         e.currentTarget.style.transform = "none";
       }
     }, /*#__PURE__*/React.createElement("div", {
@@ -15206,7 +15209,7 @@ function PantallaBienvenida({
       fontFamily: "'Playfair Display',serif",
       fontSize: 20,
       fontWeight: 700,
-      color: C.acento,
+      color: C.acentoOsc,
       marginTop: 8
     }
   }, "Sumate a la comunidad.")), /*#__PURE__*/React.createElement("div", {
@@ -15764,7 +15767,7 @@ function PresupuestoFormato({
   esEmpresa,
   aceptado
 }) {
-  const V = "#009966"; // verde encabezado
+  const V = "#4A7C3F"; // verde encabezado
   const o = opts || {};
   const optsCalc = {
     usarDesc: o.descuento_tipo != null && o.descuento_valor != null,
@@ -16118,7 +16121,7 @@ function FlowStep({
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      color: C.acento,
+      color: C.acentoOsc,
       fontWeight: 700,
       flexShrink: 0
     }
@@ -18693,7 +18696,7 @@ function VistaAdmin({
   })), "STRE"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: C.acento,
+      color: C.acentoClaro,
       textTransform: "uppercase",
       letterSpacing: 1
     }
@@ -19971,40 +19974,48 @@ function AvisoDiasRestantes({
 }
 
 // --- Ubicación (API Georef Argentina) ---
+const PROVINCIAS_AR = ["Buenos Aires", "Catamarca", "Chaco", "Chubut", "Ciudad Autónoma de Buenos Aires", "Córdoba", "Corrientes", "Entre Ríos", "Formosa", "Jujuy", "La Pampa", "La Rioja", "Mendoza", "Misiones", "Neuquén", "Río Negro", "Salta", "San Juan", "San Luis", "Santa Cruz", "Santa Fe", "Santiago del Estero", "Tierra del Fuego, Antártida e Islas del Atlántico Sur", "Tucumán"];
+const BARRIOS_CABA = ["Agronomía", "Almagro", "Balvanera", "Barracas", "Belgrano", "Boca", "Boedo", "Caballito", "Chacarita", "Coghlan", "Colegiales", "Constitución", "Flores", "Floresta", "Liniers", "Mataderos", "Monserrat", "Monte Castro", "Nueva Pompeya", "Nuñez", "Palermo", "Parque Avellaneda", "Parque Chacabuco", "Parque Chas", "Parque Patricios", "Paternal", "Puerto Madero", "Recoleta", "Retiro", "Saavedra", "San Cristóbal", "San Nicolás", "San Telmo", "Vélez Sarsfield", "Versalles", "Villa Crespo", "Villa del Parque", "Villa Devoto", "Villa General Mitre", "Villa Lugano", "Villa Luro", "Villa Ortúzar", "Villa Pueyrredón", "Villa Real", "Villa Riachuelo", "Villa Santa Rita", "Villa Soldati", "Villa Urquiza"];
 const GEOREF_CACHE = {
-  provincias: null,
   localidades: {}
 };
+// Las provincias no cambian: van fijas (no dependen de internet ni de la API)
 async function cargarProvincias() {
-  if (GEOREF_CACHE.provincias) return GEOREF_CACHE.provincias;
-  try {
-    const r = await fetch("https://apis.datos.gob.ar/georef/api/provincias?campos=id,nombre&orden=nombre&max=30");
-    const d = await r.json();
-    GEOREF_CACHE.provincias = (d.provincias || []).map(p => p.nombre);
-  } catch {
-    GEOREF_CACHE.provincias = [];
-  }
-  return GEOREF_CACHE.provincias;
+  return PROVINCIAS_AR;
 }
+// Localidades desde la API Georef, con tiempo límite y un reintento. Si falla devuelve null (no se guarda el fallo).
 async function cargarLocalidades(provinciaNombre) {
   if (!provinciaNombre) return [];
+  if (provinciaNombre === "Ciudad Autónoma de Buenos Aires") return BARRIOS_CABA;
   if (GEOREF_CACHE.localidades[provinciaNombre]) return GEOREF_CACHE.localidades[provinciaNombre];
-  try {
-    const r = await fetch("https://apis.datos.gob.ar/georef/api/localidades?provincia=" + encodeURIComponent(provinciaNombre) + "&campos=nombre&max=5000&orden=nombre");
-    const d = await r.json();
-    const vistos = new Set();
-    const lista = [];
-    (d.localidades || []).forEach(l => {
-      if (!vistos.has(l.nombre)) {
-        vistos.add(l.nombre);
-        lista.push(l.nombre);
+  for (let intento = 0; intento < 2; intento++) {
+    const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const t = ctrl ? setTimeout(() => ctrl.abort(), 9000) : null;
+    try {
+      const r = await fetch("https://apis.datos.gob.ar/georef/api/localidades?provincia=" + encodeURIComponent(provinciaNombre) + "&campos=nombre&max=5000&orden=nombre", ctrl ? {
+        signal: ctrl.signal
+      } : undefined);
+      if (t) clearTimeout(t);
+      if (!r.ok) continue;
+      const d = await r.json();
+      const vistos = new Set();
+      const lista = [];
+      (d.localidades || []).forEach(l => {
+        if (l.nombre && !vistos.has(l.nombre)) {
+          vistos.add(l.nombre);
+          lista.push(l.nombre);
+        }
+      });
+      if (lista.length) {
+        lista.sort((a, b) => a.localeCompare(b, "es"));
+        GEOREF_CACHE.localidades[provinciaNombre] = lista;
+        return lista;
       }
-    });
-    GEOREF_CACHE.localidades[provinciaNombre] = lista;
-  } catch {
-    GEOREF_CACHE.localidades[provinciaNombre] = [];
+    } catch {
+      if (t) clearTimeout(t);
+    }
   }
-  return GEOREF_CACHE.localidades[provinciaNombre];
+  return null;
 }
 const CABA_PROV = "Ciudad Autónoma de Buenos Aires";
 const CABA_LOC = "Ciudad de Buenos Aires";
@@ -20022,6 +20033,7 @@ function SelectorUbicacion({
   const [provincias, setProvincias] = useState([]);
   const [localidades, setLocalidades] = useState([]);
   const [cargando, setCargando] = useState(false);
+  const [falloLoc, setFalloLoc] = useState(false);
   const esCABA = provincia === CABA_PROV;
   const conBarrio = typeof onBarrio === "function";
   useEffect(() => {
@@ -20034,9 +20046,11 @@ function SelectorUbicacion({
     }
     let cancelado = false;
     setCargando(true);
+    setFalloLoc(false);
     cargarLocalidades(provincia).then(l => {
       if (!cancelado) {
-        setLocalidades(l);
+        setLocalidades(l || []);
+        setFalloLoc(l === null);
         setCargando(false);
       }
     });
@@ -20082,7 +20096,12 @@ function SelectorUbicacion({
     disabled: true
   }, /*#__PURE__*/React.createElement("option", {
     value: CABA_LOC
-  }, CABA_LOC)) : /*#__PURE__*/React.createElement("select", {
+  }, CABA_LOC)) : falloLoc ? /*#__PURE__*/React.createElement("input", {
+    style: S.input,
+    value: ciudad || "",
+    onChange: e => onCiudad(e.target.value),
+    placeholder: "Escribí tu localidad"
+  }) : /*#__PURE__*/React.createElement("select", {
     style: S.input,
     value: ciudad,
     onChange: e => onCiudad(e.target.value),
@@ -20956,7 +20975,7 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: C.marron,
+      background: C.terracota,
       color: C.crema,
       padding: "10px 14px",
       display: "flex",
@@ -21074,6 +21093,41 @@ function App() {
       onContinuar: cerrarAvisoDias
     });
   }
+  const barraNav = pos => (idxPantalla > 0 || idxPantalla < maxIdxPantalla) && /*#__PURE__*/React.createElement("div", {
+    style: pos === "abajo" ? {
+      display: "flex",
+      justifyContent: "space-between",
+      marginTop: 28,
+      paddingTop: 12,
+      borderTop: `1px solid ${C.borde}`
+    } : {
+      display: "flex",
+      justifyContent: "space-between",
+      marginBottom: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", null, idxPantalla > 0 && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    style: {
+      ...S.btn("link"),
+      background: "transparent",
+      fontSize: 18,
+      fontWeight: 800,
+      color: C.marron,
+      paddingLeft: 0
+    },
+    onClick: () => window.history.back()
+  }, "← Atrás")), /*#__PURE__*/React.createElement("div", null, idxPantalla < maxIdxPantalla && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    style: {
+      ...S.btn("link"),
+      background: "transparent",
+      fontSize: 18,
+      fontWeight: 800,
+      color: C.marron,
+      paddingLeft: 0
+    },
+    onClick: () => window.history.forward()
+  }, "Adelante →")));
   const EMOJIS = {
     cliente: "🪑",
     carpinteria: "🔨",
@@ -21466,35 +21520,7 @@ function App() {
     }
   }, "Salir"))))))), /*#__PURE__*/React.createElement("div", {
     style: S.main
-  }, (idxPantalla > 0 || idxPantalla < maxIdxPantalla) && /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      justifyContent: "space-between",
-      marginBottom: 10
-    }
-  }, /*#__PURE__*/React.createElement("div", null, idxPantalla > 0 && /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    style: {
-      ...S.btn("link"),
-      background: "transparent",
-      fontSize: 18,
-      fontWeight: 800,
-      color: C.marron,
-      paddingLeft: 0
-    },
-    onClick: () => window.history.back()
-  }, "← Atrás")), /*#__PURE__*/React.createElement("div", null, idxPantalla < maxIdxPantalla && /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    style: {
-      ...S.btn("link"),
-      background: "transparent",
-      fontSize: 18,
-      fontWeight: 800,
-      color: C.marron,
-      paddingLeft: 0
-    },
-    onClick: () => window.history.forward()
-  }, "Adelante →"))), enMiCuenta ? /*#__PURE__*/React.createElement(MiCuenta, {
+  }, barraNav("arriba"), enMiCuenta ? /*#__PURE__*/React.createElement(MiCuenta, {
     usuario: usuario,
     onCerrar: () => window.history.back(),
     onActualizar: actualizarUsuario,
@@ -21566,7 +21592,7 @@ function App() {
   }), navTab === "bolsa" && /*#__PURE__*/React.createElement(VistaBolsaTrabajo, {
     usuario: usuario,
     notif: setNotifMsg
-  }), navTab === "conversor" && /*#__PURE__*/React.createElement(VistaConversor, null))));
+  }), navTab === "conversor" && /*#__PURE__*/React.createElement(VistaConversor, null)), barraNav("abajo")));
 }
 
 // Página legal pública, accesible sin login (para Google Play, motores de búsqueda, etc.): https://encastre.com.ar/?legal=privacidad o ?legal=terminos
