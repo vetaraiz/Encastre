@@ -65,8 +65,8 @@
     body[data-tema="ferreteria"] .encastre-logo-name { color: #1F2429 !important; text-shadow: 0 1px 0 #ffffff99; }
     body[data-tema="ferreteria"] .encastre-logo-sub { color: #2F363D !important; text-shadow: 0 1px 0 #ffffff99; }
     body[data-tema="flete"] .encastre-logo-sub { color: #F2C230 !important; }
-    .slot-chats { display: flex; order: 5; }
-    @media (max-width: 640px) { .slot-chats { position: absolute; top: 0; right: 0; } }
+    .fila-encabezado { padding-right: 70px; }
+    @media (max-width: 480px) { .fila-encabezado { padding-right: 44px; } }
     @media print {
       body.imprimiendo * { visibility: hidden !important; }
       body.imprimiendo [data-imprimir], body.imprimiendo [data-imprimir] * { visibility: visible !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -2229,10 +2229,6 @@ function BandejaChats({
   usuario
 }) {
   const [abierta, setAbierta] = useState(false);
-  const [slotChats, setSlotChats] = useState(null);
-  useEffect(() => {
-    setSlotChats(document.getElementById("slot-chats"));
-  }, []);
   const [convs, setConvs] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [actual, setActual] = useState(null);
@@ -2323,27 +2319,38 @@ function BandejaChats({
     "aria-label": "Abrir mis chats",
     onClick: abrir,
     style: {
+      position: "fixed",
+      right: 0,
+      top: 6,
+      zIndex: 290,
       background: totalNoLeidos > 0 ? C.verde : `#E3BF7E url(${MADERA_PINO}) 75% center/cover`,
       color: totalNoLeidos > 0 ? "#fff" : "#3A2412",
       textShadow: "none",
       border: "none",
-      borderRadius: 10,
-      padding: "5px 10px",
-      minHeight: 38,
-      boxShadow: "0 2px 6px #00000044",
+      borderRadius: "14px 0 0 14px",
+      padding: "10px 6px 10px 7px",
+      minHeight: 0,
+      boxShadow: "-3px 3px 12px #00000055",
       cursor: "pointer",
       display: "flex",
+      flexDirection: "column",
       alignItems: "center",
-      gap: 6,
-      fontSize: 15,
-      fontWeight: 800,
+      gap: 5,
       fontFamily: "'Lato',sans-serif"
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 18
+      fontSize: 20
     }
-  }, "💬"), "Chats", totalNoLeidos > 0 && /*#__PURE__*/React.createElement("span", {
+  }, "💬"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      writingMode: "vertical-rl",
+      transform: "rotate(180deg)",
+      fontSize: 14,
+      fontWeight: 800,
+      letterSpacing: 1
+    }
+  }, "Chats"), totalNoLeidos > 0 && /*#__PURE__*/React.createElement("span", {
     style: {
       background: "#fff",
       color: C.verde,
@@ -2358,7 +2365,7 @@ function BandejaChats({
       padding: "0 4px"
     }
   }, totalNoLeidos > 9 ? "9+" : totalNoLeidos));
-  return /*#__PURE__*/React.createElement(React.Fragment, null, !abierta && slotChats && ReactDOM.createPortal(botonChats, slotChats), abierta && /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/React.createElement(React.Fragment, null, !abierta && botonChats, abierta && /*#__PURE__*/React.createElement("div", {
     style: {
       position: "fixed",
       inset: 0,
@@ -4783,7 +4790,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-12.11"));
+  }, "v2026-10-12.14"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -4930,6 +4937,7 @@ function useNavState(inicial) {
 }
 // Chats que quedan abiertos aunque la pantalla se vuelva a dibujar, y apertura automática al aceptar
 const CHATS_ABIERTOS = new Set();
+const BORRADORES_CHAT = new Map(); // lo escrito y no enviado, por conversación
 const CHATS_CERRADOS = new Set();
 const CHAT_ACEPTADO = new Map();
 const CHAT_TABLAS = {
@@ -4988,11 +4996,15 @@ function Chat({
   onCerrar
 }) {
   const [msgs, setMsgs] = useState([]);
-  const [txt, setTxt] = useState("");
-  const [bloqueoMio, setBloqueoMio] = useState(null);
-  const [meBloquearon, setMeBloquearon] = useState(false);
   const otroId = otroUsuario?.id;
   const claveChat = `${tipoPedido}:${pedidoId}:${otroId}`;
+  const [txt, setTxtBase] = useState(() => BORRADORES_CHAT.get(claveChat) || "");
+  const setTxt = v => {
+    if (v) BORRADORES_CHAT.set(claveChat, v);else BORRADORES_CHAT.delete(claveChat);
+    setTxtBase(v);
+  };
+  const [bloqueoMio, setBloqueoMio] = useState(null);
+  const [meBloquearon, setMeBloquearon] = useState(false);
   const [abierto, setAbierto] = useState(() => !!soloPanel || CHATS_ABIERTOS.has(claveChat));
   const [chatAceptado, setChatAceptado] = useState(false);
   const endRef = useRef(null);
@@ -6791,7 +6803,7 @@ function VistaCliente({
           paddingTop: 12
         },
         className: "fade"
-      }, null, /*#__PURE__*/React.createElement(DetallePresup, {
+      }, null, DetallePresup({
         pr: pr
       }), /*#__PURE__*/React.createElement("div", {
         style: {
@@ -7243,7 +7255,7 @@ function VistaCliente({
         cargar();
         setSel(null);
       }
-    })), /*#__PURE__*/React.createElement(DetallePedido, null)));
+    })), DetallePedido()));
   }), tipsPresup && /*#__PURE__*/React.createElement(TipsSeguridad, {
     onConfirmar: () => aceptar(tipsPresup),
     onCancelar: () => setTipsPresup(null),
@@ -21856,6 +21868,7 @@ function App() {
     "aria-label": "Cerrar aviso",
     onClick: () => setPushBannerOculto(true)
   }, "✕")), /*#__PURE__*/React.createElement("div", {
+    className: "fila-encabezado",
     style: {
       display: "flex",
       alignItems: "center",
@@ -21863,7 +21876,8 @@ function App() {
       width: "100%",
       flexWrap: "wrap",
       rowGap: 6,
-      position: "relative"
+      position: "relative",
+      boxSizing: "border-box"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -21948,10 +21962,7 @@ function App() {
       fontFamily: "'Lato',sans-serif"
     },
     onClick: () => irAPrincipal("bolsa")
-  }, "🧰 Bolsa de trabajo"), /*#__PURE__*/React.createElement("span", {
-    id: "slot-chats",
-    className: "slot-chats"
-  }), /*#__PURE__*/React.createElement("div", {
+  }, "🧰 Bolsa de trabajo"), /*#__PURE__*/React.createElement("div", {
     style: {
       position: "relative"
     }
