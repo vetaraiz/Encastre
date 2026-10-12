@@ -4857,7 +4857,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-12.18"));
+  }, "v2026-10-12.19"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -11768,38 +11768,58 @@ function ModalPedirFlete({
     };
   }, []);
   const volver = () => window.history.back();
+  const [arriba, setArriba] = useState(0);
+  useEffect(() => {
+    const medir = () => {
+      const el = document.querySelector(".encastre-topbar-app");
+      setArriba(el ? Math.max(0, Math.round(el.getBoundingClientRect().bottom)) : 0);
+    };
+    medir();
+    window.addEventListener("resize", medir);
+    window.addEventListener("scroll", medir, true);
+    return () => {
+      window.removeEventListener("resize", medir);
+      window.removeEventListener("scroll", medir, true);
+    };
+  }, []);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       position: "fixed",
-      inset: 0,
-      zIndex: 400,
+      top: arriba,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 99,
       background: C.fondo,
       overflowY: "auto"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      ...S.topbar,
       position: "sticky",
       top: 0,
-      color: C.crema,
-      padding: "10px 14px"
+      zIndex: 2,
+      background: C.suave,
+      borderBottom: `1px solid ${C.borde}`,
+      padding: "8px 14px",
+      display: "flex",
+      alignItems: "center",
+      gap: 12
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontWeight: 800,
-      fontSize: 19
-    }
-  }, inicial === "mis" ? "🚚 Mis fletes" : "🚚 Pedir flete"), /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("button", {
     onClick: volver,
     style: {
       ...S.btn("ghost"),
-      color: C.crema,
-      borderColor: C.crema,
       padding: "6px 12px",
       fontSize: 15,
       minHeight: 40
     }
-  }, "← Volver")), /*#__PURE__*/React.createElement("div", {
+  }, "← Volver"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 800,
+      fontSize: 18,
+      color: C.marron
+    }
+  }, inicial === "mis" ? "🚚 Mis fletes" : "🚚 Pedir flete")), /*#__PURE__*/React.createElement("div", {
     style: {
       maxWidth: 760,
       margin: "0 auto",
@@ -21987,6 +22007,7 @@ function App() {
     inicial: "mis",
     onCerrar: () => setFletesModal(false)
   }), /*#__PURE__*/React.createElement("div", {
+    className: "encastre-topbar-app",
     style: {
       ...S.topbar,
       flexDirection: "column",
@@ -22252,25 +22273,7 @@ function App() {
       textTransform: "uppercase",
       letterSpacing: .5
     }
-  }, usuario.tipo), /*#__PURE__*/React.createElement("button", {
-    style: {
-      display: "block",
-      width: "100%",
-      textAlign: "left",
-      background: "transparent",
-      border: "none",
-      padding: "14px 18px",
-      cursor: "pointer",
-      fontSize: 16,
-      fontWeight: 400,
-      color: C.marron,
-      fontFamily: "'Lato',sans-serif"
-    },
-    onClick: () => cambiarPantalla({
-      enMiCuenta: true,
-      cuentaTab: "privado"
-    })
-  }, "Mi cuenta"), /*#__PURE__*/React.createElement("button", {
+  }, usuario.tipo), !["flete", "trabajador", "admin"].includes(usuario.tipo) && /*#__PURE__*/React.createElement("button", {
     style: {
       display: "block",
       width: "100%",
@@ -22285,10 +22288,11 @@ function App() {
       color: C.marron,
       fontFamily: "'Lato',sans-serif"
     },
-    onClick: () => cambiarPantalla({
-      enManual: true
-    })
-  }, "Manual"), ["carpinteria", "aserradero", "ferreteria", "pintureria", "flete"].includes(usuario.tipo) && /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setMenuAbierto(false);
+      irAPrincipal("flete");
+    }
+  }, "🚚 Mis fletes"), ["carpinteria", "aserradero", "ferreteria", "pintureria", "flete"].includes(usuario.tipo) && /*#__PURE__*/React.createElement("button", {
     style: {
       display: "block",
       width: "100%",
@@ -22307,26 +22311,7 @@ function App() {
       setMenuAbierto(false);
       irAPrincipal("bolsa");
     }
-  }, "🧰 Bolsa de trabajo"), !["flete", "trabajador", "admin"].includes(usuario.tipo) && /*#__PURE__*/React.createElement("button", {
-    style: {
-      display: "block",
-      width: "100%",
-      textAlign: "left",
-      background: "transparent",
-      border: "none",
-      borderTop: `1px solid ${C.borde}`,
-      padding: "14px 18px",
-      cursor: "pointer",
-      fontSize: 16,
-      fontWeight: 400,
-      color: C.marron,
-      fontFamily: "'Lato',sans-serif"
-    },
-    onClick: () => {
-      setMenuAbierto(false);
-      setFletesModal(true);
-    }
-  }, "🚚 Mis fletes"), (usuario.tipo === "cliente" || usuario.tipo === "carpinteria") && /*#__PURE__*/React.createElement("button", {
+  }, "🧰 Bolsa de trabajo"), (usuario.tipo === "cliente" || usuario.tipo === "carpinteria") && /*#__PURE__*/React.createElement("button", {
     style: {
       display: "block",
       width: "100%",
@@ -22342,7 +22327,32 @@ function App() {
       fontFamily: "'Lato',sans-serif"
     },
     onClick: () => irAPrincipal("conversor")
-  }, "Conversor"), usuario.tipo !== "admin" && usuario.tipo !== "cliente" && usuario.tipo !== "trabajador" && /*#__PURE__*/React.createElement("button", {
+  }, "📐 Conversor"), /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": "true",
+    style: {
+      height: 6,
+      background: C.suave
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    style: {
+      display: "block",
+      width: "100%",
+      textAlign: "left",
+      background: "transparent",
+      border: "none",
+      borderTop: `1px solid ${C.borde}`,
+      padding: "14px 18px",
+      cursor: "pointer",
+      fontSize: 16,
+      fontWeight: 400,
+      color: C.marron,
+      fontFamily: "'Lato',sans-serif"
+    },
+    onClick: () => cambiarPantalla({
+      enMiCuenta: true,
+      cuentaTab: "privado"
+    })
+  }, "👤 Mi cuenta"), usuario.tipo !== "admin" && usuario.tipo !== "cliente" && usuario.tipo !== "trabajador" && /*#__PURE__*/React.createElement("button", {
     style: {
       display: "block",
       width: "100%",
@@ -22361,7 +22371,31 @@ function App() {
       enMiCuenta: true,
       cuentaTab: "suscripcion"
     })
-  }, "Suscripción", suscInfo.vencida ? " ⚠️" : ""), /*#__PURE__*/React.createElement("button", {
+  }, "💳 Suscripción", suscInfo.vencida ? " ⚠️" : ""), /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": "true",
+    style: {
+      height: 6,
+      background: C.suave
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    style: {
+      display: "block",
+      width: "100%",
+      textAlign: "left",
+      background: "transparent",
+      border: "none",
+      borderTop: `1px solid ${C.borde}`,
+      padding: "14px 18px",
+      cursor: "pointer",
+      fontSize: 16,
+      fontWeight: 400,
+      color: C.marron,
+      fontFamily: "'Lato',sans-serif"
+    },
+    onClick: () => cambiarPantalla({
+      enManual: true
+    })
+  }, "📖 Manual"), /*#__PURE__*/React.createElement("button", {
     style: {
       display: "block",
       width: "100%",
@@ -22379,7 +22413,13 @@ function App() {
     onClick: () => cambiarPantalla({
       enContacto: true
     })
-  }, "Reportar o comentar"), /*#__PURE__*/React.createElement("button", {
+  }, "💬 Reportar o comentar"), /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": "true",
+    style: {
+      height: 6,
+      background: C.suave
+    }
+  }), /*#__PURE__*/React.createElement("button", {
     style: {
       display: "block",
       width: "100%",
@@ -22397,7 +22437,13 @@ function App() {
     onClick: () => cambiarPantalla({
       enPapelera: true
     })
-  }, "Papelera"), /*#__PURE__*/React.createElement("button", {
+  }, "🗑️ Papelera"), /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": "true",
+    style: {
+      height: 6,
+      background: C.suave
+    }
+  }), /*#__PURE__*/React.createElement("button", {
     style: {
       display: "block",
       width: "100%",
@@ -22420,7 +22466,7 @@ function App() {
       cerrar();
       setMostrarBienvenida(true);
     }
-  }, "Salir"))))))), /*#__PURE__*/React.createElement("div", {
+  }, "🚪 Salir"))))))), /*#__PURE__*/React.createElement("div", {
     style: S.main
   }, barraNav("arriba"), enMiCuenta ? /*#__PURE__*/React.createElement(MiCuenta, {
     usuario: usuario,
@@ -22511,7 +22557,9 @@ function App() {
   }), navTab === "principal" && usuario.tipo === "trabajador" && /*#__PURE__*/React.createElement(VistaBolsaTrabajo, {
     usuario: usuario,
     notif: setNotifMsg
-  }), navTab === "flete" && /*#__PURE__*/React.createElement(VistaFlete, {
+  }), navTab === "flete" && usuario.tipo !== "flete" && /*#__PURE__*/React.createElement("div", {
+    style: S.secTitle
+  }, "🚚 Mis fletes"), navTab === "flete" && /*#__PURE__*/React.createElement(VistaFlete, {
     usuario: usuario,
     notif: setNotifMsg,
     bloqueado: suscInfo.vencida,
