@@ -1686,6 +1686,15 @@ const db = {
     if (!r.ok) throw new Error(await r.text());
     return r.json();
   },
+  async rpc(fn, args) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+      method: "POST",
+      headers: await this.hdr(),
+      body: JSON.stringify(args || {})
+    });
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  },
   async insertMin(t, d) {
     const h = await this.hdr();
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${t}`, {
@@ -2939,18 +2948,62 @@ function SelCirculo({
     }
   }, "✓"));
 }
+// ─── PAUSAR COTIZACIONES (el proveedor frena su precio; quien pidió la ve pausada y no la puede aceptar) ───
+async function selectConPausada(tabla, filtro) {
+  try {
+    return await db.select(tabla, filtro + ",pausada");
+  } catch {
+    return await db.select(tabla, filtro);
+  }
+}
+async function pausarSel(tabla, ids, valor, notif) {
+  if (!ids || ids.length === 0) return;
+  try {
+    const n = await db.rpc("pausar_cotizaciones", {
+      p_tabla: tabla,
+      p_pedidos: ids.map(String),
+      p_valor: valor
+    });
+    const cant = Number(n) || 0;
+    const msj = cant > 0 ? valor ? `⏸️ ${cant === 1 ? "Cotización pausada" : cant + " cotizaciones pausadas"}` : `▶️ ${cant === 1 ? "Cotización reanudada" : cant + " cotizaciones reanudadas"}` : "Solo se pueden pausar o reanudar pedidos a los que ya les mandaste precio y que no estén aceptados.";
+    if (typeof notif === "function") notif(msj);else alert(msj);
+  } catch (e) {
+    alert("No se pudo cambiar: " + (e.message || "revisá tu conexión"));
+  }
+}
+function TagPausada({
+  on
+}) {
+  if (!on) return null;
+  return /*#__PURE__*/React.createElement("span", {
+    style: {
+      marginLeft: 8,
+      fontSize: 13,
+      fontWeight: 800,
+      color: "#fff",
+      background: "#6B6B6B",
+      borderRadius: 8,
+      padding: "2px 8px",
+      verticalAlign: "middle",
+      whiteSpace: "nowrap"
+    }
+  }, "⏸️ Pausada");
+}
 // Barra que aparece arriba de una lista cuando hay 1+ elementos tildados, con la acción de archivar en bloque
 function BarraSeleccion({
   cant,
   onArchivar,
   onCancelar,
-  archivando
+  archivando,
+  onPausar,
+  onReanudar
 }) {
   if (cant === 0) return null;
   return /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
+      flexWrap: "wrap",
       gap: 10,
       marginBottom: 12,
       padding: "10px 14px",
@@ -2971,7 +3024,21 @@ function BarraSeleccion({
     },
     onClick: onArchivar,
     disabled: archivando
-  }, archivando ? "⟳ Archivando..." : "🗑️ Archivar seleccionados"), /*#__PURE__*/React.createElement("button", {
+  }, archivando ? "⟳ Archivando..." : "🗑️ Archivar seleccionados"), onPausar && /*#__PURE__*/React.createElement("button", {
+    style: {
+      ...S.btn("ghost"),
+      fontSize: 14,
+      padding: "6px 12px"
+    },
+    onClick: onPausar
+  }, "⏸️ Pausar cotización"), onReanudar && /*#__PURE__*/React.createElement("button", {
+    style: {
+      ...S.btn("ghost"),
+      fontSize: 14,
+      padding: "6px 12px"
+    },
+    onClick: onReanudar
+  }, "▶️ Reanudar"), /*#__PURE__*/React.createElement("button", {
     style: {
       ...S.btn("ghost"),
       fontSize: 14,
@@ -4790,7 +4857,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-12.16"));
+  }, "v2026-10-12.17"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -6624,7 +6691,19 @@ function VistaCliente({
     tiempoEntrega: pr.tiempo_entrega,
     esEmpresa: false,
     aceptado: pr.estado === "aceptado"
-  }), pr.estado === "enviado" && /*#__PURE__*/React.createElement("div", {
+  }), pr.estado === "enviado" && pr.pausada && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 12,
+      padding: "10px 14px",
+      background: "#EDEDED",
+      color: "#444",
+      border: "1px solid #BDBDBD",
+      borderRadius: 10,
+      textAlign: "center",
+      fontSize: 15,
+      fontWeight: 700
+    }
+  }, "⏸️ Cotización pausada: la carpintería la frenó por ahora. Todavía no se puede aceptar."), pr.estado === "enviado" && !pr.pausada && /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 12
     }
@@ -7497,9 +7576,10 @@ function VistaCarpinteria({
       // Mis presupuestos, para saber cuáles ya coticé (sobre cerrado: solo veo los míos)
       let mios = {};
       try {
-        const mp = await db.select("presupuestos", `?carpinteria_id=eq.${usuario.id}&select=pedido_id,estado`);
+        const mp = await selectConPausada("presupuestos", `?carpinteria_id=eq.${usuario.id}&select=pedido_id,estado`);
         mp.forEach(p => {
           mios[p.pedido_id] = p.estado || "enviado";
+          if (p.pausada) mios["p:" + p.pedido_id] = true;
         });
       } catch {}
       let vistos = new Set();
@@ -7520,6 +7600,7 @@ function VistaCarpinteria({
         _clienteNombre: mapa[p.cliente_id] || "",
         _miEstado: mios[p.id] || null,
         _nuevo: !vistos.has(p.id),
+        _miPausada: !!mios["p:" + p.id],
         _msjNuevo: conMsj.has(p.id)
       }))));
     } catch {}
@@ -8725,7 +8806,17 @@ function VistaCarpinteria({
       cant: seleccionados.size,
       archivando: archivandoSel,
       onArchivar: archivarSeleccionados,
-      onCancelar: () => setSeleccionados(new Set())
+      onCancelar: () => setSeleccionados(new Set()),
+      onPausar: async () => {
+        await pausarSel("presupuestos", [...seleccionados], true, notif);
+        setSeleccionados(new Set());
+        cargar();
+      },
+      onReanudar: async () => {
+        await pausarSel("presupuestos", [...seleccionados], false, notif);
+        setSeleccionados(new Set());
+        cargar();
+      }
     }), lista.map((p, i) => {
       const mat = MATS.find(m => m.id === p.material);
       const vencido = p.fecha_limite && new Date(p.fecha_limite) < new Date();
@@ -8849,6 +8940,8 @@ function VistaCarpinteria({
         on: p._nuevo
       }), /*#__PURE__*/React.createElement(TagMsjNuevo, {
         on: p._msjNuevo
+      }), /*#__PURE__*/React.createElement(TagPausada, {
+        on: p._miPausada
       })), /*#__PURE__*/React.createElement("div", {
         style: {
           fontSize: 17,
@@ -9453,7 +9546,19 @@ function VistaCarpinteria({
           textAlign: "center",
           fontSize: 14
         }
-      }, "Ya elegiste otra cotización para este pedido.") : /*#__PURE__*/React.createElement("button", {
+      }, "Ya elegiste otra cotización para este pedido.") : ct.pausada ? /*#__PURE__*/React.createElement("div", {
+        style: {
+          marginTop: 10,
+          padding: "10px 14px",
+          background: "#EDEDED",
+          color: "#444",
+          border: "1px solid #BDBDBD",
+          borderRadius: 10,
+          textAlign: "center",
+          fontSize: 15,
+          fontWeight: 700
+        }
+      }, "⏸️ Cotización pausada: el proveedor la frenó por ahora. Todavía no se puede aceptar.") : /*#__PURE__*/React.createElement("button", {
         style: {
           ...S.btn("dark"),
           width: "100%",
@@ -10031,7 +10136,19 @@ function VistaCarpinteria({
           textAlign: "center",
           fontSize: 14
         }
-      }, "Ya elegiste otra cotización para este pedido.") : /*#__PURE__*/React.createElement("button", {
+      }, "Ya elegiste otra cotización para este pedido.") : ct.pausada ? /*#__PURE__*/React.createElement("div", {
+        style: {
+          marginTop: 10,
+          padding: "10px 14px",
+          background: "#EDEDED",
+          color: "#444",
+          border: "1px solid #BDBDBD",
+          borderRadius: 10,
+          textAlign: "center",
+          fontSize: 15,
+          fontWeight: 700
+        }
+      }, "⏸️ Cotización pausada: el proveedor la frenó por ahora. Todavía no se puede aceptar.") : /*#__PURE__*/React.createElement("button", {
         style: {
           ...S.btn("dark"),
           width: "100%",
@@ -10614,7 +10731,19 @@ function VistaCarpinteria({
           textAlign: "center",
           fontSize: 14
         }
-      }, "Ya elegiste otra cotización para este pedido.") : /*#__PURE__*/React.createElement("button", {
+      }, "Ya elegiste otra cotización para este pedido.") : ct.pausada ? /*#__PURE__*/React.createElement("div", {
+        style: {
+          marginTop: 10,
+          padding: "10px 14px",
+          background: "#EDEDED",
+          color: "#444",
+          border: "1px solid #BDBDBD",
+          borderRadius: 10,
+          textAlign: "center",
+          fontSize: 15,
+          fontWeight: 700
+        }
+      }, "⏸️ Cotización pausada: el proveedor la frenó por ahora. Todavía no se puede aceptar.") : /*#__PURE__*/React.createElement("button", {
         style: {
           ...S.btn("dark"),
           width: "100%",
@@ -10738,9 +10867,10 @@ function VistaAserradero({
       // Sobre cerrado: solo sé si YO ya coticé, nunca si lo hizo otro aserradero.
       let mias = {};
       try {
-        const mc = await db.select("cotizaciones_aserradero", `?aserradero_id=eq.${usuario.id}&select=pedido_id,estado`);
+        const mc = await selectConPausada("cotizaciones_aserradero", `?aserradero_id=eq.${usuario.id}&select=pedido_id,estado`);
         mc.forEach(c => {
           mias[c.pedido_id] = c.estado || "enviado";
+          if (c.pausada) mias["p:" + c.pedido_id] = true;
         });
       } catch {}
       let vistos = new Set();
@@ -10761,6 +10891,7 @@ function VistaAserradero({
         _solicNombre: mapaNom[p.carpinteria_id] || "",
         _miEstado: mias[p.id] ? mias[p.id] === "aceptada" ? "aceptada" : mias[p.id] === "rechazada" ? "rechazada" : "cotizado" : null,
         _nuevo: !vistos.has(p.id),
+        _miPausada: !!mias["p:" + p.id],
         _msjNuevo: conMsj.has(p.id)
       }))));
     } catch {}
@@ -11404,7 +11535,17 @@ function VistaAserradero({
     cant: arch.seleccionados.size,
     archivando: arch.archivando,
     onArchivar: () => arch.archivarSel(typeof notif === "function" ? notif : null),
-    onCancelar: arch.cancelar
+    onCancelar: arch.cancelar,
+    onPausar: async () => {
+      await pausarSel("cotizaciones_aserradero", [...arch.seleccionados], true, notif);
+      arch.cancelar();
+      cargar();
+    },
+    onReanudar: async () => {
+      await pausarSel("cotizaciones_aserradero", [...arch.seleccionados], false, notif);
+      arch.cancelar();
+      cargar();
+    }
   }), lista.map(p => {
     const et = bloqueado ? {
       t: "🔒 Bloqueado",
@@ -11488,6 +11629,8 @@ function VistaAserradero({
       on: p._nuevo
     }), /*#__PURE__*/React.createElement(TagMsjNuevo, {
       on: p._msjNuevo
+    }), /*#__PURE__*/React.createElement(TagPausada, {
+      on: p._miPausada
     })), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 17,
@@ -11753,9 +11896,10 @@ function VistaFlete({
       const d = await db.select("pedidos_flete", "?order=created_at.desc");
       let mias = {};
       try {
-        const mc = await db.select("cotizaciones_flete", `?flete_id=eq.${usuario.id}&select=pedido_id,estado`);
+        const mc = await selectConPausada("cotizaciones_flete", `?flete_id=eq.${usuario.id}&select=pedido_id,estado`);
         mc.forEach(c => {
           mias[c.pedido_id] = c.estado || "enviado";
+          if (c.pausada) mias["p:" + c.pedido_id] = true;
         });
       } catch {}
       let nombres = {};
@@ -11786,6 +11930,7 @@ function VistaFlete({
         _miEstado: mias[p.id] ? mias[p.id] === "aceptada" ? "aceptada" : mias[p.id] === "rechazada" ? "rechazada" : "cotizado" : null,
         _solNombre: nombres[p.solicitante_id] || "Solicitante",
         _nuevo: !vistos.has(p.id),
+        _miPausada: !!mias["p:" + p.id],
         _msjNuevo: conMsj.has(p.id)
       }))));
     } catch {}
@@ -12621,7 +12766,17 @@ function VistaFlete({
     cant: arch.seleccionados.size,
     archivando: arch.archivando,
     onArchivar: () => arch.archivarSel(typeof notif === "function" ? notif : null),
-    onCancelar: arch.cancelar
+    onCancelar: arch.cancelar,
+    onPausar: async () => {
+      await pausarSel("cotizaciones_flete", [...arch.seleccionados], true, notif);
+      arch.cancelar();
+      cargar();
+    },
+    onReanudar: async () => {
+      await pausarSel("cotizaciones_flete", [...arch.seleccionados], false, notif);
+      arch.cancelar();
+      cargar();
+    }
   }), lista.map(p => {
       const et = bloqueado ? {
         t: "🔒 Bloqueado",
@@ -12705,6 +12860,8 @@ function VistaFlete({
         on: p._nuevo
       }), /*#__PURE__*/React.createElement(TagMsjNuevo, {
         on: p._msjNuevo
+      }), /*#__PURE__*/React.createElement(TagPausada, {
+        on: p._miPausada
       })), /*#__PURE__*/React.createElement("div", {
         style: {
           fontSize: 17,
@@ -13226,7 +13383,19 @@ function VistaFlete({
           textAlign: "center",
           fontSize: 14
         }
-      }, "Ya elegiste otra cotización para este pedido.") : /*#__PURE__*/React.createElement("button", {
+      }, "Ya elegiste otra cotización para este pedido.") : ct.pausada ? /*#__PURE__*/React.createElement("div", {
+        style: {
+          marginTop: 10,
+          padding: "10px 14px",
+          background: "#EDEDED",
+          color: "#444",
+          border: "1px solid #BDBDBD",
+          borderRadius: 10,
+          textAlign: "center",
+          fontSize: 15,
+          fontWeight: 700
+        }
+      }, "⏸️ Cotización pausada: el proveedor la frenó por ahora. Todavía no se puede aceptar.") : /*#__PURE__*/React.createElement("button", {
         style: {
           ...S.btn("dark"),
           width: "100%",
@@ -13334,9 +13503,10 @@ function VistaFerreteria({
       } catch {}
       let mias = {};
       try {
-        const mc = await db.select("cotizaciones_ferreteria", `?ferreteria_id=eq.${usuario.id}&select=pedido_id,estado`);
+        const mc = await selectConPausada("cotizaciones_ferreteria", `?ferreteria_id=eq.${usuario.id}&select=pedido_id,estado`);
         mc.forEach(c => {
           mias[c.pedido_id] = c.estado || "enviado";
+          if (c.pausada) mias["p:" + c.pedido_id] = true;
         });
       } catch {}
       let vistos = new Set();
@@ -13357,6 +13527,7 @@ function VistaFerreteria({
         _solicNombre: mapaNom[p.carpinteria_id] || "",
         _miEstado: mias[p.id] ? mias[p.id] === "aceptada" ? "aceptada" : mias[p.id] === "rechazada" ? "rechazada" : "cotizado" : null,
         _nuevo: !vistos.has(p.id),
+        _miPausada: !!mias["p:" + p.id],
         _msjNuevo: conMsj.has(p.id)
       }))));
     } catch {}
@@ -13997,7 +14168,17 @@ function VistaFerreteria({
     cant: arch.seleccionados.size,
     archivando: arch.archivando,
     onArchivar: () => arch.archivarSel(typeof notif === "function" ? notif : null),
-    onCancelar: arch.cancelar
+    onCancelar: arch.cancelar,
+    onPausar: async () => {
+      await pausarSel("cotizaciones_ferreteria", [...arch.seleccionados], true, notif);
+      arch.cancelar();
+      cargar();
+    },
+    onReanudar: async () => {
+      await pausarSel("cotizaciones_ferreteria", [...arch.seleccionados], false, notif);
+      arch.cancelar();
+      cargar();
+    }
   }), lista.map(p => {
     const et = bloqueado ? {
       t: "🔒 Bloqueado",
@@ -14081,6 +14262,8 @@ function VistaFerreteria({
       on: p._nuevo
     }), /*#__PURE__*/React.createElement(TagMsjNuevo, {
       on: p._msjNuevo
+    }), /*#__PURE__*/React.createElement(TagPausada, {
+      on: p._miPausada
     })), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 17,
@@ -14194,9 +14377,10 @@ function VistaPintureria({
       } catch {}
       let mias = {};
       try {
-        const mc = await db.select("cotizaciones_pintureria", `?pintureria_id=eq.${usuario.id}&select=pedido_id,estado`);
+        const mc = await selectConPausada("cotizaciones_pintureria", `?pintureria_id=eq.${usuario.id}&select=pedido_id,estado`);
         mc.forEach(c => {
           mias[c.pedido_id] = c.estado || "enviado";
+          if (c.pausada) mias["p:" + c.pedido_id] = true;
         });
       } catch {}
       let vistos = new Set();
@@ -14217,6 +14401,7 @@ function VistaPintureria({
         _solicNombre: mapaNom[p.carpinteria_id] || "",
         _miEstado: mias[p.id] ? mias[p.id] === "aceptada" ? "aceptada" : mias[p.id] === "rechazada" ? "rechazada" : "cotizado" : null,
         _nuevo: !vistos.has(p.id),
+        _miPausada: !!mias["p:" + p.id],
         _msjNuevo: conMsj.has(p.id)
       }))));
     } catch {}
@@ -14857,7 +15042,17 @@ function VistaPintureria({
     cant: arch.seleccionados.size,
     archivando: arch.archivando,
     onArchivar: () => arch.archivarSel(typeof notif === "function" ? notif : null),
-    onCancelar: arch.cancelar
+    onCancelar: arch.cancelar,
+    onPausar: async () => {
+      await pausarSel("cotizaciones_pintureria", [...arch.seleccionados], true, notif);
+      arch.cancelar();
+      cargar();
+    },
+    onReanudar: async () => {
+      await pausarSel("cotizaciones_pintureria", [...arch.seleccionados], false, notif);
+      arch.cancelar();
+      cargar();
+    }
   }), lista.map(p => {
     const et = bloqueado ? {
       t: "🔒 Bloqueado",
@@ -14941,6 +15136,8 @@ function VistaPintureria({
       on: p._nuevo
     }), /*#__PURE__*/React.createElement(TagMsjNuevo, {
       on: p._msjNuevo
+    }), /*#__PURE__*/React.createElement(TagPausada, {
+      on: p._miPausada
     })), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 17,
