@@ -3217,7 +3217,69 @@ const fmtPeso = v => "$ " + nmb(v).toLocaleString("es-AR", {
   maximumFractionDigits: 2
 });
 // items: [{descripcion,precio,cantidad}] ; opts: {usarDesc,descTipo,descValor,usarIva,ivaPct}
+// ─── OPCIONES DENTRO DE UN PRESUPUESTO (Opción 1, 2, 3, cada una con su total) ───
+function normalizarOpciones(items) {
+  let prev = 1;
+  const nombres = {};
+  const out = (items || []).map(it => {
+    const n = Number(it.opcion) || prev;
+    prev = n;
+    if (it.opcion_nombre && !nombres[n]) nombres[n] = it.opcion_nombre;
+    return {
+      ...it,
+      opcion: n
+    };
+  });
+  return out.map(it => ({
+    ...it,
+    opcion_nombre: it.opcion_nombre || nombres[it.opcion] || ""
+  }));
+}
+function gruposOpciones(items) {
+  const norm = normalizarOpciones(items);
+  const mapa = {};
+  norm.forEach(it => {
+    if (!mapa[it.opcion]) mapa[it.opcion] = {
+      n: it.opcion,
+      nombre: it.opcion_nombre || "",
+      items: []
+    };
+    mapa[it.opcion].items.push(it);
+  });
+  return Object.values(mapa).sort((a, b) => a.n - b.n);
+}
+function cantOpciones(items) {
+  return gruposOpciones(items || []).length;
+}
+function etiquetaOpcion(n, nombre) {
+  return `Opción ${n}${nombre ? " – " + nombre : ""}`;
+}
+function conOpcion(src, mapped) {
+  if (cantOpciones(src) < 2) return mapped;
+  return mapped.map((m, i) => ({
+    ...m,
+    opcion: src[i].opcion,
+    opcion_nombre: src[i].opcion_nombre || ""
+  }));
+}
 function calcularPresup(items, opts) {
+  const grupos = gruposOpciones(items || []);
+  if (grupos.length > 1) {
+    const opciones = grupos.map(g => ({
+      ...g,
+      calc: calcularPresupSimple(g.items, opts)
+    }));
+    const conValor = opciones.filter(x => x.calc.total > 0);
+    const min = (conValor.length ? conValor : opciones).reduce((a, b) => b.calc.total < a.calc.total ? b : a);
+    return {
+      ...min.calc,
+      multi: true,
+      opciones
+    };
+  }
+  return calcularPresupSimple(items, opts);
+}
+function calcularPresupSimple(items, opts) {
   const filas = (items || []).map(it => ({
     ...it,
     importe: nmb(it.precio) * nmb(it.cantidad)
@@ -4890,7 +4952,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-13.1"));
+  }, "v2026-10-13.2"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -6608,7 +6670,10 @@ function VistaCliente({
       // 1) Aceptar el elegido
       await db.update("presupuestos", {
         estado: "aceptado",
-        aceptado_at: ahora
+        aceptado_at: ahora,
+        ...(pr._opcion ? {
+          opcion_elegida: pr._opcion
+        } : {})
       }, `id=eq.${pr.id}`);
       // 2) Cerrar los demás presupuestos del mismo pedido
       await db.update("presupuestos", {
@@ -6624,11 +6689,12 @@ function VistaCliente({
         tipoPedido: "cliente",
         de: usuario.id,
         para: pr.carpinteria_id,
-        texto: "✅ ¡Acepté tu presupuesto! Coordinemos por acá los detalles, la entrega y el pago."
+        texto: "✅ ¡Acepté tu presupuesto!" + (pr._opcion ? " (" + etiquetaOpcion(pr._opcion, pr._opcionNombre) + ")" : "") + " Coordinemos por acá los detalles, la entrega y el pago."
       });
       setSelPresup(p => p ? {
         ...p,
-        estado: "aceptado"
+        estado: "aceptado",
+        opcion_elegida: pr._opcion || p.opcion_elegida
       } : p);
       setTipsPresup(null);
       cargar();
@@ -6723,7 +6789,8 @@ function VistaCliente({
     fecha: pr.created_at ? new Date(pr.created_at).toLocaleDateString("es-AR") : null,
     tiempoEntrega: pr.tiempo_entrega,
     esEmpresa: false,
-    aceptado: pr.estado === "aceptado"
+    aceptado: pr.estado === "aceptado",
+    opcionElegida: pr.opcion_elegida
   }), pr.estado === "enviado" && pr.pausada && /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 12,
@@ -6740,14 +6807,7 @@ function VistaCliente({
     style: {
       marginTop: 12
     }
-  }, /*#__PURE__*/React.createElement("button", {
-    style: {
-      ...S.btn("dark"),
-      width: "100%",
-      justifyContent: "center"
-    },
-    onClick: () => setTipsPresup(pr)
-  }, "✅ Aceptar presupuesto")), pr.estado === "aceptado" && (() => {
+  }, botonesAceptar(pr, x => setTipsPresup(x), false, "✅ Aceptar presupuesto")), pr.estado === "aceptado" && (() => {
     const t = pr.aceptado_at ? new Date(pr.aceptado_at).getTime() : null;
     const dentroDeHora = t && Date.now() - t < 3600000;
     return /*#__PURE__*/React.createElement("div", {
@@ -7152,7 +7212,7 @@ function VistaCliente({
           whiteSpace: "nowrap",
           color: i === 0 ? C.verde : C.marron
         }
-      }, "$ ", Number(pr.monto).toLocaleString("es-AR"), i === 0 && " ✓"), /*#__PURE__*/React.createElement("td", {
+      }, cantOpciones(pr.items) > 1 ? "desde " : "", "$ ", Number(pr.monto).toLocaleString("es-AR"), i === 0 && " ✓", cantOpciones(pr.items) > 1 ? ` · ${cantOpciones(pr.items)} opciones` : ""), /*#__PURE__*/React.createElement("td", {
         style: {
           padding: "8px 8px 8px 4px",
           textAlign: "right",
@@ -7221,7 +7281,7 @@ function VistaCliente({
           fontSize: 19,
           color: i === 0 ? C.verde : C.marron
         }
-      }, "$ ", Number(pr.monto).toLocaleString("es-AR"), i === 0 && " ✓"), /*#__PURE__*/React.createElement("div", {
+      }, cantOpciones(pr.items) > 1 ? "desde " : "", "$ ", Number(pr.monto).toLocaleString("es-AR"), i === 0 && " ✓", cantOpciones(pr.items) > 1 ? ` · ${cantOpciones(pr.items)} opciones` : ""), /*#__PURE__*/React.createElement("div", {
         style: {
           textAlign: "right",
           marginTop: 8
@@ -7748,7 +7808,10 @@ function VistaCarpinteria({
       const ahora = new Date().toISOString();
       await db.update("cotizaciones_ferreteria", {
         estado: "aceptada",
-        aceptado_at: ahora
+        aceptado_at: ahora,
+        ...(ct._opcion ? {
+          opcion_elegida: ct._opcion
+        } : {})
       }, `id=eq.${ct.id}`);
       await db.update("cotizaciones_ferreteria", {
         estado: "rechazada"
@@ -7762,7 +7825,7 @@ function VistaCarpinteria({
         tipoPedido: "ferreteria",
         de: usuario.id,
         para: ct.ferreteria_id,
-        texto: "✅ ¡Acepté tu cotización! Coordinemos por acá la entrega y el pago."
+        texto: "✅ ¡Acepté tu cotización!" + (ct._opcion ? " (" + etiquetaOpcion(ct._opcion, ct._opcionNombre) + ")" : "") + " Coordinemos por acá la entrega y el pago."
       });
       await abrirPedidoFerr(selFerr);
       cargarMisPedidosFerreria();
@@ -7835,7 +7898,10 @@ function VistaCarpinteria({
       const ahora = new Date().toISOString();
       await db.update("cotizaciones_pintureria", {
         estado: "aceptada",
-        aceptado_at: ahora
+        aceptado_at: ahora,
+        ...(ct._opcion ? {
+          opcion_elegida: ct._opcion
+        } : {})
       }, `id=eq.${ct.id}`);
       await db.update("cotizaciones_pintureria", {
         estado: "rechazada"
@@ -7849,7 +7915,7 @@ function VistaCarpinteria({
         tipoPedido: "pintureria",
         de: usuario.id,
         para: ct.pintureria_id,
-        texto: "✅ ¡Acepté tu cotización! Coordinemos por acá la entrega y el pago."
+        texto: "✅ ¡Acepté tu cotización!" + (ct._opcion ? " (" + etiquetaOpcion(ct._opcion, ct._opcionNombre) + ")" : "") + " Coordinemos por acá la entrega y el pago."
       });
       await abrirPedidoPint(selPint);
       cargarMisPedidosPint();
@@ -7866,7 +7932,7 @@ function VistaCarpinteria({
   }, [cargar, cargarMisPedidosAserr, cargarMisPedidosFerreria, cargarMisPedidosPint]);
   const enviarPresup = async () => {
     if (!sel || enviando || yaEnvio) return;
-    const itemsValidos = (presF.items || []).filter(it => it.descripcion.trim() && nmb(it.precio) > 0 && nmb(it.cantidad) > 0);
+    const itemsValidos = normalizarOpciones(presF.items || []).filter(it => it.descripcion.trim() && nmb(it.precio) > 0 && nmb(it.cantidad) > 0);
     if (itemsValidos.length === 0) {
       alert("Cargá al menos un ítem con descripción, precio y cantidad.");
       return;
@@ -7904,14 +7970,25 @@ function VistaCarpinteria({
       if (presId) {
         for (let i = 0; i < itemsValidos.length; i++) {
           const it = itemsValidos[i];
-          await db.insert("presupuesto_items", {
+          const fila = {
             presupuesto_id: presId,
             descripcion: it.descripcion.trim(),
             precio: nmb(it.precio),
             cantidad: nmb(it.cantidad),
             importe: nmb(it.precio) * nmb(it.cantidad),
             orden: i
-          });
+          };
+          if (cantOpciones(itemsValidos) > 1) {
+            try {
+              await db.insert("presupuesto_items", {
+                ...fila,
+                opcion: it.opcion,
+                opcion_nombre: it.opcion_nombre || ""
+              });
+              continue;
+            } catch {}
+          }
+          await db.insert("presupuesto_items", fila);
         }
       }
       // NO se cambia el estado global del pedido: cada carpintería ve su propio estado.
@@ -8046,7 +8123,10 @@ function VistaCarpinteria({
       const ahora = new Date().toISOString();
       await db.update("cotizaciones_aserradero", {
         estado: "aceptada",
-        aceptado_at: ahora
+        aceptado_at: ahora,
+        ...(ct._opcion ? {
+          opcion_elegida: ct._opcion
+        } : {})
       }, `id=eq.${ct.id}`);
       await db.update("cotizaciones_aserradero", {
         estado: "rechazada"
@@ -8060,7 +8140,7 @@ function VistaCarpinteria({
         tipoPedido: "aserradero",
         de: usuario.id,
         para: ct.aserradero_id,
-        texto: "✅ ¡Acepté tu cotización! Coordinemos por acá la entrega y el pago."
+        texto: "✅ ¡Acepté tu cotización!" + (ct._opcion ? " (" + etiquetaOpcion(ct._opcion, ct._opcionNombre) + ")" : "") + " Coordinemos por acá la entrega y el pago."
       });
       setSelAserr(s => ({
         ...s,
@@ -8267,7 +8347,8 @@ function VistaCarpinteria({
       fecha: miPresupuesto.created_at ? new Date(miPresupuesto.created_at).toLocaleDateString("es-AR") : null,
       tiempoEntrega: miPresupuesto.tiempo_entrega,
       esEmpresa: true,
-      aceptado: miPresupuesto.estado === "aceptado"
+      aceptado: miPresupuesto.estado === "aceptado",
+      opcionElegida: miPresupuesto.opcion_elegida
     }), miPresupuesto.estado === "aceptado" && sel.modo_entrega && /*#__PURE__*/React.createElement("div", {
       style: {
         marginTop: 10,
@@ -8318,7 +8399,7 @@ function VistaCarpinteria({
           color: C.textoSuave,
           marginBottom: 10
         }
-      }, "Agregá un renglón por cada concepto (materiales, herrajes, mano de obra, flete si lo cobrás, etc.)."), presF.items.map((it, i) => {
+      }, "Agregá un renglón por cada concepto (materiales, herrajes, mano de obra, flete si lo cobrás, etc.)."), mapConOpciones(presF, setPresF, (it, i) => {
         const imp = nmb(it.precio) * nmb(it.cantidad);
         return /*#__PURE__*/React.createElement("div", {
           key: i,
@@ -8404,7 +8485,10 @@ function VistaCarpinteria({
           justifyContent: "center",
           marginBottom: 14
         }
-      }, "＋ Agregar renglón"), /*#__PURE__*/React.createElement("div", {
+      }, "＋ Agregar renglón"), /*#__PURE__*/React.createElement(BotonOtraOpcion, {
+        form: presF,
+        setForm: setPresF
+      }), /*#__PURE__*/React.createElement("div", {
         style: {
           marginBottom: 12
         }
@@ -8580,7 +8664,7 @@ function VistaCarpinteria({
           fontSize: 19,
           color: C.marron
         }
-      }, "TOTAL"), /*#__PURE__*/React.createElement("b", {
+      }, calc.multi ? "TOTAL de la opción más económica" : "TOTAL"), /*#__PURE__*/React.createElement("b", {
         style: {
           fontWeight: 800,
           fontSize: 22,
@@ -9539,7 +9623,8 @@ function VistaCarpinteria({
         fecha: ct.created_at ? new Date(ct.created_at).toLocaleDateString("es-AR") : null,
         tiempoEntrega: ct.tiempo_entrega,
         esEmpresa: false,
-        aceptado: ct.estado === "aceptada"
+        aceptado: ct.estado === "aceptada",
+        opcionElegida: ct.opcion_elegida
       })), /*#__PURE__*/React.createElement(EntregaMateriales, {
         ct: ct,
         tabla: "cotizaciones_aserradero",
@@ -9593,19 +9678,7 @@ function VistaCarpinteria({
           fontSize: 15,
           fontWeight: 700
         }
-      }, "⏸️ Cotización pausada: el proveedor la frenó por ahora. Todavía no se puede aceptar.") : /*#__PURE__*/React.createElement("button", {
-        style: {
-          ...S.btn("dark"),
-          width: "100%",
-          justifyContent: "center",
-          marginTop: 10
-        },
-        onClick: e => {
-          e.stopPropagation();
-          aceptarCotAserr(ct);
-        },
-        disabled: aceptandoAserr
-      }, aceptandoAserr ? "⟳ Aceptando..." : "✅ Aceptar esta cotización"), /*#__PURE__*/React.createElement("div", {
+      }, "⏸️ Cotización pausada: el proveedor la frenó por ahora. Todavía no se puede aceptar.") : botonesAceptar(ct, aceptarCotAserr, aceptandoAserr, "✅ Aceptar esta cotización"), /*#__PURE__*/React.createElement("div", {
         style: {
           textAlign: "right",
           marginTop: 10,
@@ -10129,7 +10202,8 @@ function VistaCarpinteria({
         fecha: ct.created_at ? new Date(ct.created_at).toLocaleDateString("es-AR") : null,
         tiempoEntrega: ct.tiempo_entrega,
         esEmpresa: false,
-        aceptado: ct.estado === "aceptada"
+        aceptado: ct.estado === "aceptada",
+        opcionElegida: ct.opcion_elegida
       })), /*#__PURE__*/React.createElement(EntregaMateriales, {
         ct: ct,
         tabla: "cotizaciones_ferreteria",
@@ -10183,19 +10257,7 @@ function VistaCarpinteria({
           fontSize: 15,
           fontWeight: 700
         }
-      }, "⏸️ Cotización pausada: el proveedor la frenó por ahora. Todavía no se puede aceptar.") : /*#__PURE__*/React.createElement("button", {
-        style: {
-          ...S.btn("dark"),
-          width: "100%",
-          justifyContent: "center",
-          marginTop: 10
-        },
-        onClick: e => {
-          e.stopPropagation();
-          aceptarCotFerr(ct);
-        },
-        disabled: aceptandoFerr
-      }, aceptandoFerr ? "⟳ Aceptando..." : "✅ Aceptar esta cotización"), /*#__PURE__*/React.createElement("div", {
+      }, "⏸️ Cotización pausada: el proveedor la frenó por ahora. Todavía no se puede aceptar.") : botonesAceptar(ct, aceptarCotFerr, aceptandoFerr, "✅ Aceptar esta cotización"), /*#__PURE__*/React.createElement("div", {
         style: {
           textAlign: "right",
           marginTop: 10,
@@ -10724,7 +10786,8 @@ function VistaCarpinteria({
         fecha: ct.created_at ? new Date(ct.created_at).toLocaleDateString("es-AR") : null,
         tiempoEntrega: ct.tiempo_entrega,
         esEmpresa: false,
-        aceptado: ct.estado === "aceptada"
+        aceptado: ct.estado === "aceptada",
+        opcionElegida: ct.opcion_elegida
       })), /*#__PURE__*/React.createElement(EntregaMateriales, {
         ct: ct,
         tabla: "cotizaciones_pintureria",
@@ -10778,19 +10841,7 @@ function VistaCarpinteria({
           fontSize: 15,
           fontWeight: 700
         }
-      }, "⏸️ Cotización pausada: el proveedor la frenó por ahora. Todavía no se puede aceptar.") : /*#__PURE__*/React.createElement("button", {
-        style: {
-          ...S.btn("dark"),
-          width: "100%",
-          justifyContent: "center",
-          marginTop: 10
-        },
-        onClick: e => {
-          e.stopPropagation();
-          aceptarCotPint(ct);
-        },
-        disabled: aceptandoPint
-      }, aceptandoPint ? "⟳ Aceptando..." : "✅ Aceptar esta cotización"), /*#__PURE__*/React.createElement("div", {
+      }, "⏸️ Cotización pausada: el proveedor la frenó por ahora. Todavía no se puede aceptar.") : botonesAceptar(ct, aceptarCotPint, aceptandoPint, "✅ Aceptar esta cotización"), /*#__PURE__*/React.createElement("div", {
         style: {
           textAlign: "right",
           marginTop: 10,
@@ -10974,7 +11025,7 @@ function VistaAserradero({
       alert("Este pedido venció: ya no se pueden enviar cotizaciones.");
       return;
     }
-    const itemsValidos = (cotF.items || []).filter(it => it.descripcion.trim() && nmb(it.precio) > 0 && nmb(it.cantidad) > 0);
+    const itemsValidos = normalizarOpciones(cotF.items || []).filter(it => it.descripcion.trim() && nmb(it.precio) > 0 && nmb(it.cantidad) > 0);
     if (itemsValidos.length === 0) {
       alert("Cargá al menos un ítem con descripción, precio y cantidad.");
       return;
@@ -11004,6 +11055,7 @@ function VistaAserradero({
           importe: nmb(it.precio) * nmb(it.cantidad)
         }))
       };
+      datos.presupuesto_items = conOpcion(itemsValidos, datos.presupuesto_items);
       const creado = await db.insert("cotizaciones_aserradero", datos);
       // NO se toca el estado global del pedido: sobre cerrado — cada aserradero ve solo su propio estado.
       notif("¡Cotización enviada!");
@@ -11096,7 +11148,8 @@ function VistaAserradero({
       fecha: miCot.created_at ? new Date(miCot.created_at).toLocaleDateString("es-AR") : null,
       tiempoEntrega: miCot.tiempo_entrega,
       esEmpresa: true,
-      aceptado: miCot.estado === "aceptada"
+      aceptado: miCot.estado === "aceptada",
+      opcionElegida: miCot.opcion_elegida
     }), /*#__PURE__*/React.createElement(EntregaMateriales, {
       ct: miCot,
       tabla: "cotizaciones_aserradero",
@@ -11171,7 +11224,7 @@ function VistaAserradero({
           color: C.textoSuave,
           marginBottom: 10
         }
-      }, "Agregá un renglón por cada concepto (madera, corte, cepillado, flete si lo cobrás, etc.)."), cotF.items.map((it, i) => {
+      }, "Agregá un renglón por cada concepto (madera, corte, cepillado, flete si lo cobrás, etc.)."), mapConOpciones(cotF, setCotF, (it, i) => {
         const imp = nmb(it.precio) * nmb(it.cantidad);
         return /*#__PURE__*/React.createElement("div", {
           key: i,
@@ -11257,7 +11310,10 @@ function VistaAserradero({
           justifyContent: "center",
           marginBottom: 14
         }
-      }, "＋ Agregar renglón"), /*#__PURE__*/React.createElement("div", {
+      }, "＋ Agregar renglón"), /*#__PURE__*/React.createElement(BotonOtraOpcion, {
+        form: cotF,
+        setForm: setCotF
+      }), /*#__PURE__*/React.createElement("div", {
         style: {
           marginBottom: 12
         }
@@ -11460,7 +11516,7 @@ function VistaAserradero({
           fontSize: 19,
           color: C.marron
         }
-      }, "TOTAL"), /*#__PURE__*/React.createElement("b", {
+      }, calc.multi ? "TOTAL de la opción más económica" : "TOTAL"), /*#__PURE__*/React.createElement("b", {
         style: {
           fontWeight: 800,
           fontSize: 22,
@@ -12035,7 +12091,7 @@ function VistaFlete({
       alert("Este pedido venció: ya no se pueden enviar cotizaciones.");
       return;
     }
-    const itemsValidos = (cotF.items || []).filter(it => it.descripcion.trim() && nmb(it.precio) > 0 && ((it.modo || "viaje") === "viaje" || nmb(it.cantidad) > 0));
+    const itemsValidos = normalizarOpciones(cotF.items || []).filter(it => it.descripcion.trim() && nmb(it.precio) > 0 && ((it.modo || "viaje") === "viaje" || nmb(it.cantidad) > 0));
     if (itemsValidos.length === 0) {
       alert("Cargá al menos un ítem con descripción, precio y cantidad.");
       return;
@@ -12069,6 +12125,7 @@ function VistaFlete({
           };
         })
       };
+      datos.presupuesto_items = conOpcion(itemsValidos, datos.presupuesto_items);
       await db.insert("cotizaciones_flete", datos);
       // NO se toca ningún estado global del pedido: sobre cerrado — cada flete ve solo su propio estado.
       notif("¡Cotización enviada!");
@@ -12188,7 +12245,10 @@ function VistaFlete({
       const ahora = new Date().toISOString();
       await db.update("cotizaciones_flete", {
         estado: "aceptada",
-        aceptado_at: ahora
+        aceptado_at: ahora,
+        ...(ct._opcion ? {
+          opcion_elegida: ct._opcion
+        } : {})
       }, `id=eq.${ct.id}`);
       await db.update("cotizaciones_flete", {
         estado: "rechazada"
@@ -12202,7 +12262,7 @@ function VistaFlete({
         tipoPedido: "flete",
         de: usuario.id,
         para: ct.flete_id,
-        texto: "✅ ¡Acepté tu cotización de flete! Coordinemos por acá el día, el horario y el pago."
+        texto: "✅ ¡Acepté tu cotización de flete!" + (ct._opcion ? " (" + etiquetaOpcion(ct._opcion, ct._opcionNombre) + ")" : "") + " Coordinemos por acá el día, el horario y el pago."
       });
       await abrirMiPedido(selPedido);
       cargarMisPedidos();
@@ -12315,7 +12375,8 @@ function VistaFlete({
         fecha: miCot.created_at ? new Date(miCot.created_at).toLocaleDateString("es-AR") : null,
         tiempoEntrega: miCot.tiempo_entrega,
         esEmpresa: true,
-        aceptado: miCot.estado === "aceptada"
+        aceptado: miCot.estado === "aceptada",
+        opcionElegida: miCot.opcion_elegida
       })) : sel.estado === "cancelado" ? /*#__PURE__*/React.createElement("div", {
       style: {
         ...S.card,
@@ -12387,7 +12448,7 @@ function VistaFlete({
             color: C.textoSuave,
             marginBottom: 10
           }
-        }, "Agregá un renglón por cada concepto: flete, ayudante extra, embalaje/empaquetado, etc. Cada renglón puede cobrarse por hora o por viaje."), cotF.items.map((it, i) => {
+        }, "Agregá un renglón por cada concepto: flete, ayudante extra, embalaje/empaquetado, etc. Cada renglón puede cobrarse por hora o por viaje."), mapConOpciones(cotF, setCotF, (it, i) => {
           const modo = it.modo || "viaje";
           const cant = modo === "viaje" ? 1 : nmb(it.cantidad);
           const imp = nmb(it.precio) * cant;
@@ -12508,7 +12569,10 @@ function VistaFlete({
             justifyContent: "center",
             marginBottom: 14
           }
-        }, "＋ Agregar renglón"), /*#__PURE__*/React.createElement("div", {
+        }, "＋ Agregar renglón"), /*#__PURE__*/React.createElement(BotonOtraOpcion, {
+        form: cotF,
+        setForm: setCotF
+      }), /*#__PURE__*/React.createElement("div", {
           style: {
             marginBottom: 12
           }
@@ -12707,7 +12771,7 @@ function VistaFlete({
             fontSize: 19,
             color: C.marron
           }
-        }, "TOTAL"), /*#__PURE__*/React.createElement("b", {
+        }, calc.multi ? "TOTAL de la opción más económica" : "TOTAL"), /*#__PURE__*/React.createElement("b", {
           style: {
             fontWeight: 800,
             fontSize: 22,
@@ -13406,7 +13470,8 @@ function VistaFlete({
         fecha: ct.created_at ? new Date(ct.created_at).toLocaleDateString("es-AR") : null,
         tiempoEntrega: ct.tiempo_entrega,
         esEmpresa: false,
-        aceptado: ct.estado === "aceptada"
+        aceptado: ct.estado === "aceptada",
+        opcionElegida: ct.opcion_elegida
       })), /*#__PURE__*/React.createElement("div", {
         style: {
           marginTop: 10
@@ -13454,19 +13519,7 @@ function VistaFlete({
           fontSize: 15,
           fontWeight: 700
         }
-      }, "⏸️ Cotización pausada: el proveedor la frenó por ahora. Todavía no se puede aceptar.") : /*#__PURE__*/React.createElement("button", {
-        style: {
-          ...S.btn("dark"),
-          width: "100%",
-          justifyContent: "center",
-          marginTop: 10
-        },
-        onClick: e => {
-          e.stopPropagation();
-          aceptarCotFlete(ct);
-        },
-        disabled: aceptandoFlete
-      }, aceptandoFlete ? "⟳ Aceptando..." : "✅ Aceptar esta cotización"), /*#__PURE__*/React.createElement("div", {
+      }, "⏸️ Cotización pausada: el proveedor la frenó por ahora. Todavía no se puede aceptar.") : botonesAceptar(ct, aceptarCotFlete, aceptandoFlete, "✅ Aceptar esta cotización"), /*#__PURE__*/React.createElement("div", {
         style: {
           textAlign: "right",
           marginTop: 10,
@@ -13634,7 +13687,7 @@ function VistaFerreteria({
       alert("Este pedido venció: ya no se pueden enviar cotizaciones.");
       return;
     }
-    const itemsValidos = (cotF.items || []).filter(it => it.descripcion.trim() && nmb(it.precio) > 0 && nmb(it.cantidad) > 0);
+    const itemsValidos = normalizarOpciones(cotF.items || []).filter(it => it.descripcion.trim() && nmb(it.precio) > 0 && nmb(it.cantidad) > 0);
     if (itemsValidos.length === 0) {
       alert("Cargá al menos un ítem con descripción, precio y cantidad.");
       return;
@@ -13664,6 +13717,7 @@ function VistaFerreteria({
           importe: nmb(it.precio) * nmb(it.cantidad)
         }))
       };
+      datos.presupuesto_items = conOpcion(itemsValidos, datos.presupuesto_items);
       await db.insert("cotizaciones_ferreteria", datos);
       // NO se toca el estado global del pedido: sobre cerrado — cada ferretería ve solo su propio estado.
       notif("¡Cotización enviada!");
@@ -13753,7 +13807,8 @@ function VistaFerreteria({
       fecha: miCot.created_at ? new Date(miCot.created_at).toLocaleDateString("es-AR") : null,
       tiempoEntrega: miCot.tiempo_entrega,
       esEmpresa: true,
-      aceptado: miCot.estado === "aceptada"
+      aceptado: miCot.estado === "aceptada",
+      opcionElegida: miCot.opcion_elegida
     }), /*#__PURE__*/React.createElement(EntregaMateriales, {
       ct: miCot,
       tabla: "cotizaciones_ferreteria",
@@ -13828,7 +13883,7 @@ function VistaFerreteria({
           color: C.textoSuave,
           marginBottom: 10
         }
-      }, "Agregá un renglón por cada herraje (bisagras, rieles, manijas, flete si lo cobrás, etc.)."), cotF.items.map((it, i) => {
+      }, "Agregá un renglón por cada herraje (bisagras, rieles, manijas, flete si lo cobrás, etc.)."), mapConOpciones(cotF, setCotF, (it, i) => {
         const imp = nmb(it.precio) * nmb(it.cantidad);
         return /*#__PURE__*/React.createElement("div", {
           key: i,
@@ -13914,7 +13969,10 @@ function VistaFerreteria({
           justifyContent: "center",
           marginBottom: 14
         }
-      }, "＋ Agregar renglón"), /*#__PURE__*/React.createElement("div", {
+      }, "＋ Agregar renglón"), /*#__PURE__*/React.createElement(BotonOtraOpcion, {
+        form: cotF,
+        setForm: setCotF
+      }), /*#__PURE__*/React.createElement("div", {
         style: {
           marginBottom: 12
         }
@@ -14117,7 +14175,7 @@ function VistaFerreteria({
           fontSize: 19,
           color: C.marron
         }
-      }, "TOTAL"), /*#__PURE__*/React.createElement("b", {
+      }, calc.multi ? "TOTAL de la opción más económica" : "TOTAL"), /*#__PURE__*/React.createElement("b", {
         style: {
           fontWeight: 800,
           fontSize: 22,
@@ -14510,7 +14568,7 @@ function VistaPintureria({
       alert("Este pedido venció: ya no se pueden enviar cotizaciones.");
       return;
     }
-    const itemsValidos = (cotF.items || []).filter(it => it.descripcion.trim() && nmb(it.precio) > 0 && nmb(it.cantidad) > 0);
+    const itemsValidos = normalizarOpciones(cotF.items || []).filter(it => it.descripcion.trim() && nmb(it.precio) > 0 && nmb(it.cantidad) > 0);
     if (itemsValidos.length === 0) {
       alert("Cargá al menos un ítem con descripción, precio y cantidad.");
       return;
@@ -14540,6 +14598,7 @@ function VistaPintureria({
           importe: nmb(it.precio) * nmb(it.cantidad)
         }))
       };
+      datos.presupuesto_items = conOpcion(itemsValidos, datos.presupuesto_items);
       await db.insert("cotizaciones_pintureria", datos);
       // NO se toca el estado global del pedido: sobre cerrado — cada pinturería ve solo su propio estado.
       notif("¡Cotización enviada!");
@@ -14629,7 +14688,8 @@ function VistaPintureria({
       fecha: miCot.created_at ? new Date(miCot.created_at).toLocaleDateString("es-AR") : null,
       tiempoEntrega: miCot.tiempo_entrega,
       esEmpresa: true,
-      aceptado: miCot.estado === "aceptada"
+      aceptado: miCot.estado === "aceptada",
+      opcionElegida: miCot.opcion_elegida
     }), /*#__PURE__*/React.createElement(EntregaMateriales, {
       ct: miCot,
       tabla: "cotizaciones_pintureria",
@@ -14704,7 +14764,7 @@ function VistaPintureria({
           color: C.textoSuave,
           marginBottom: 10
         }
-      }, "Agregá un renglón por cada producto (pintura, barniz, mano de obra, flete si lo cobrás, etc.)."), cotF.items.map((it, i) => {
+      }, "Agregá un renglón por cada producto (pintura, barniz, mano de obra, flete si lo cobrás, etc.)."), mapConOpciones(cotF, setCotF, (it, i) => {
         const imp = nmb(it.precio) * nmb(it.cantidad);
         return /*#__PURE__*/React.createElement("div", {
           key: i,
@@ -14790,7 +14850,10 @@ function VistaPintureria({
           justifyContent: "center",
           marginBottom: 14
         }
-      }, "＋ Agregar renglón"), /*#__PURE__*/React.createElement("div", {
+      }, "＋ Agregar renglón"), /*#__PURE__*/React.createElement(BotonOtraOpcion, {
+        form: cotF,
+        setForm: setCotF
+      }), /*#__PURE__*/React.createElement("div", {
         style: {
           marginBottom: 12
         }
@@ -14993,7 +15056,7 @@ function VistaPintureria({
           fontSize: 19,
           color: C.marron
         }
-      }, "TOTAL"), /*#__PURE__*/React.createElement("b", {
+      }, calc.multi ? "TOTAL de la opción más económica" : "TOTAL"), /*#__PURE__*/React.createElement("b", {
         style: {
           fontWeight: 800,
           fontSize: 22,
@@ -16529,6 +16592,185 @@ function AccionesPresupuesto({
     }
   }, aviso));
 }
+function vacioComo(t) {
+  const v = {
+    descripcion: "",
+    precio: "",
+    cantidad: "1"
+  };
+  if (t && "modo" in t) v.modo = "viaje";
+  return v;
+}
+function mapConOpciones(form, setForm, cb) {
+  const items = form.items || [];
+  const norm = normalizarOpciones(items);
+  const multi = cantOpciones(items) > 1;
+  const out = [];
+  norm.forEach((it, i) => {
+    const n = it.opcion;
+    const primero = i === 0 || norm[i - 1].opcion !== n;
+    const ultimo = i === norm.length - 1 || norm[i + 1].opcion !== n;
+    if (multi && primero) {
+      const grupo = norm.filter(x => x.opcion === n);
+      const tot = calcularPresupSimple(grupo, form).total;
+      out.push( /*#__PURE__*/React.createElement("div", {
+        key: "h" + i,
+        style: {
+          marginTop: i === 0 ? 0 : 18,
+          padding: "10px 12px",
+          background: C.suave,
+          border: `2px solid ${C.marron}`,
+          borderRadius: 10,
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: 8
+        }
+      }, /*#__PURE__*/React.createElement("b", {
+        style: {
+          fontSize: 17,
+          color: C.marron
+        }
+      }, "Opción ", n), /*#__PURE__*/React.createElement("input", {
+        value: it.opcion_nombre || "",
+        onChange: e => {
+          const v = e.target.value;
+          setForm(f => {
+            const nn = normalizarOpciones(f.items || []);
+            return {
+              ...f,
+              items: nn.map(x => x.opcion === n ? {
+                ...x,
+                opcion_nombre: v
+              } : x)
+            };
+          });
+        },
+        placeholder: n === 1 ? "Nombre corto, ej: Pino" : "Ej: Roble",
+        style: {
+          ...S.input,
+          flex: "1 1 140px",
+          padding: "8px 10px"
+        }
+      }), /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontWeight: 800,
+          color: C.marron,
+          whiteSpace: "nowrap"
+        }
+      }, "Total: ", fmtPeso(tot)), n > 1 && /*#__PURE__*/React.createElement("button", {
+        type: "button",
+        onClick: () => {
+          if (!window.confirm(`¿Quitar la Opción ${n} con todos sus renglones?`)) return;
+          setForm(f => {
+            const nn = normalizarOpciones(f.items || []).filter(x => x.opcion !== n).map(x => x.opcion > n ? {
+              ...x,
+              opcion: x.opcion - 1
+            } : x);
+            return {
+              ...f,
+              items: nn.length ? nn : [vacioComo((f.items || [])[0])]
+            };
+          });
+        },
+        style: {
+          ...S.btn("ghost"),
+          color: C.error,
+          borderColor: C.error,
+          fontSize: 13,
+          padding: "4px 10px",
+          minHeight: "auto"
+        }
+      }, "Quitar opción")));
+    }
+    out.push(cb(items[i], i));
+    if (multi && ultimo) {
+      out.push( /*#__PURE__*/React.createElement("button", {
+        key: "f" + i,
+        type: "button",
+        onClick: () => setForm(f => {
+          const nn = normalizarOpciones(f.items || []);
+          const nuevo = {
+            ...vacioComo(nn[0]),
+            opcion: n,
+            opcion_nombre: it.opcion_nombre || ""
+          };
+          return {
+            ...f,
+            items: [...nn.slice(0, i + 1), nuevo, ...nn.slice(i + 1)]
+          };
+        }),
+        style: {
+          ...S.btn("ghost"),
+          width: "100%",
+          justifyContent: "center",
+          fontSize: 14,
+          marginTop: 8
+        }
+      }, "＋ Agregar renglón a la Opción ", n));
+    }
+  });
+  return out;
+}
+function BotonOtraOpcion({
+  form,
+  setForm
+}) {
+  const n = cantOpciones(form.items || []);
+  if (n >= 3) return null;
+  return /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setForm(f => {
+      const nn = normalizarOpciones(f.items || []);
+      const k = Math.max(1, ...nn.map(x => x.opcion)) + 1;
+      return {
+        ...f,
+        items: [...nn, {
+          ...vacioComo(nn[0]),
+          opcion: k,
+          opcion_nombre: ""
+        }]
+      };
+    }),
+    style: {
+      ...S.btn("gold"),
+      width: "100%",
+      justifyContent: "center",
+      marginBottom: 6
+    }
+  }, "➕ Agregar otra opción (", n === 1 ? "ej: otra madera u otro diseño" : "Opción " + (n + 1), ")");
+}
+// Botón(es) de aceptar: uno solo, o uno por opción si el presupuesto trae varias
+function botonesAceptar(reg, aceptar, ocupado, etiqueta) {
+  const grupos = gruposOpciones(reg.items || []);
+  const base = {
+    ...S.btn("dark"),
+    width: "100%",
+    justifyContent: "center",
+    marginTop: 10
+  };
+  if (grupos.length < 2) return /*#__PURE__*/React.createElement("button", {
+    style: base,
+    onClick: e => {
+      e.stopPropagation();
+      aceptar(reg);
+    },
+    disabled: ocupado
+  }, ocupado ? "⟳ Aceptando..." : etiqueta);
+  return /*#__PURE__*/React.createElement("div", null, grupos.map(g => /*#__PURE__*/React.createElement("button", {
+    key: g.n,
+    style: base,
+    onClick: e => {
+      e.stopPropagation();
+      aceptar({
+        ...reg,
+        _opcion: g.n,
+        _opcionNombre: g.nombre
+      });
+    },
+    disabled: ocupado
+  }, ocupado ? "⟳ Aceptando..." : `✅ Aceptar ${etiquetaOpcion(g.n, g.nombre)}`)));
+}
 function PresupuestoFormato({
   empresa,
   cliente,
@@ -16539,7 +16781,8 @@ function PresupuestoFormato({
   tiempoEntrega,
   esEmpresa,
   aceptado,
-  sinAcciones
+  sinAcciones,
+  opcionElegida
 }) {
   const nodoRef = useRef(null);
   const V = "#4A7C3F"; // verde encabezado
@@ -16789,7 +17032,10 @@ function PresupuestoFormato({
       color: V,
       marginTop: 4
     }
-  }, "✓ Dirección visible porque aceptaste este presupuesto."))), /*#__PURE__*/React.createElement("div", {
+  }, "✓ Dirección visible porque aceptaste este presupuesto."))), (() => {
+    const bloque = (filas, calc, cab, key) => /*#__PURE__*/React.createElement(React.Fragment, {
+      key: key
+    }, cab, /*#__PURE__*/React.createElement("div", {
     style: {
       overflowX: "auto"
     }
@@ -16892,7 +17138,32 @@ function PresupuestoFormato({
       fontSize: 22,
       color: V
     }
-  }, fmtPeso(calc.total))))), tiempoEntrega && /*#__PURE__*/React.createElement("div", {
+  }, fmtPeso(calc.total))))));
+    const grupos = gruposOpciones(items || []);
+    if (grupos.length < 2) return bloque(filas, calc, null, "u");
+    return grupos.map(g => {
+      const cg = calcularPresupSimple(g.items, optsCalc);
+      const elegida = aceptado && Number(opcionElegida) === g.n;
+      return bloque(cg.filas, cg, /*#__PURE__*/React.createElement("div", {
+        style: {
+          padding: "10px 14px",
+          background: elegida ? "#E3F0DF" : C.suave,
+          borderTop: `2px solid ${elegida ? C.verde : C.borde}`,
+          fontWeight: 800,
+          fontSize: 17,
+          color: C.marron,
+          display: "flex",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 6
+        }
+      }, /*#__PURE__*/React.createElement("span", null, etiquetaOpcion(g.n, g.nombre)), elegida && /*#__PURE__*/React.createElement("span", {
+        style: {
+          color: C.verde
+        }
+      }, "✓ Elegida")), "o" + g.n);
+    });
+  })(), tiempoEntrega && /*#__PURE__*/React.createElement("div", {
     style: {
       padding: "10px 14px",
       borderTop: `1px solid ${C.borde}`,
