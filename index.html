@@ -1950,6 +1950,7 @@ const C = {
   card: "#FFFBF5",
   input: "#FBF3EA",
   verde: "#4A7C3F",
+  elegido: "#1F3A5F",
   rojo: "#8B2020",
   azul: "#2A5C8B",
   exito: "#4A7C3F",
@@ -4952,7 +4953,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-13.3"));
+  }, "v2026-10-13.4"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -7173,7 +7174,8 @@ function VistaCliente({
         key: i,
         style: {
           borderTop: `1px solid ${C.borde}`,
-          background: presupSel.has(pr.id) ? C.suave : pr.estado === "aceptado" ? "#4A7C3F22" : i === 0 ? "#4A7C3F14" : "transparent",
+          background: presupSel.has(pr.id) ? C.suave : pr.estado === "aceptado" ? "#1F3A5F1F" : i === 0 ? "#4A7C3F14" : "transparent",
+          outline: pr.estado === "aceptado" ? `2px solid ${C.elegido}` : "none",
           opacity: pr.estado === "rechazado" ? 0.45 : 1,
           cursor: "pointer"
         },
@@ -7238,7 +7240,7 @@ function VistaCliente({
       }, [...presupsVisibles].sort((a, b) => Number(a.monto) - Number(b.monto)).map((pr, i) => /*#__PURE__*/React.createElement("div", {
         key: i,
         style: {
-          border: pr.estado === "aceptado" ? `2px solid ${C.verde}` : `1px solid ${presupSel.has(pr.id) ? C.acento : i === 0 ? C.verde : C.borde}`,
+          border: pr.estado === "aceptado" ? `3px solid ${C.elegido}` : `1px solid ${presupSel.has(pr.id) ? C.acento : i === 0 ? C.verde : C.borde}`,
           background: presupSel.has(pr.id) ? C.suave : i === 0 ? "#4A7C3F14" : C.card,
           opacity: pr.estado === "rechazado" ? 0.45 : 1,
           padding: 14,
@@ -9535,7 +9537,7 @@ function VistaCarpinteria({
       return /*#__PURE__*/React.createElement("div", {
         key: key,
         style: {
-          border: ct.estado === "aceptada" ? `2px solid ${C.verde}` : `1px solid ${abiertaCot ? C.acento : C.borde}`,
+          border: ct.estado === "aceptada" ? `3px solid ${C.elegido}` : `1px solid ${abiertaCot ? C.acento : C.borde}`,
           borderRadius: 10,
           marginBottom: 10,
           overflow: "hidden",
@@ -9655,9 +9657,9 @@ function VistaCarpinteria({
         style: {
           marginTop: 10,
           padding: "10px 14px",
-          background: C.verde + "18",
-          border: `1px solid ${C.verde}`,
-          color: C.verde,
+          background: C.elegido + "14",
+          border: `2px solid ${C.elegido}`,
+          color: C.elegido,
           fontWeight: 700,
           textAlign: "center"
         }
@@ -10116,7 +10118,7 @@ function VistaCarpinteria({
       return /*#__PURE__*/React.createElement("div", {
         key: key,
         style: {
-          border: ct.estado === "aceptada" ? `2px solid ${C.verde}` : `1px solid ${abiertaCot ? C.acento : C.borde}`,
+          border: ct.estado === "aceptada" ? `3px solid ${C.elegido}` : `1px solid ${abiertaCot ? C.acento : C.borde}`,
           borderRadius: 10,
           marginBottom: 10,
           overflow: "hidden",
@@ -10236,9 +10238,9 @@ function VistaCarpinteria({
         style: {
           marginTop: 10,
           padding: "10px 14px",
-          background: C.verde + "18",
-          border: `1px solid ${C.verde}`,
-          color: C.verde,
+          background: C.elegido + "14",
+          border: `2px solid ${C.elegido}`,
+          color: C.elegido,
           fontWeight: 700,
           textAlign: "center"
         }
@@ -10702,7 +10704,7 @@ function VistaCarpinteria({
       return /*#__PURE__*/React.createElement("div", {
         key: key,
         style: {
-          border: ct.estado === "aceptada" ? `2px solid ${C.verde}` : `1px solid ${abiertaCot ? C.acento : C.borde}`,
+          border: ct.estado === "aceptada" ? `3px solid ${C.elegido}` : `1px solid ${abiertaCot ? C.acento : C.borde}`,
           borderRadius: 10,
           marginBottom: 10,
           overflow: "hidden",
@@ -10822,9 +10824,9 @@ function VistaCarpinteria({
         style: {
           marginTop: 10,
           padding: "10px 14px",
-          background: C.verde + "18",
-          border: `1px solid ${C.verde}`,
-          color: C.verde,
+          background: C.elegido + "14",
+          border: `2px solid ${C.elegido}`,
+          color: C.elegido,
           fontWeight: 700,
           textAlign: "center"
         }
@@ -13388,7 +13390,7 @@ function VistaFlete({
       return /*#__PURE__*/React.createElement("div", {
         key: key,
         style: {
-          border: ct.estado === "aceptada" ? `2px solid ${C.verde}` : `1px solid ${abiertaCot ? C.acento : C.borde}`,
+          border: ct.estado === "aceptada" ? `3px solid ${C.elegido}` : `1px solid ${abiertaCot ? C.acento : C.borde}`,
           borderRadius: 10,
           marginBottom: 10,
           overflow: "hidden",
@@ -13502,9 +13504,9 @@ function VistaFlete({
         style: {
           marginTop: 10,
           padding: "10px 14px",
-          background: C.verde + "18",
-          border: `1px solid ${C.verde}`,
-          color: C.verde,
+          background: C.elegido + "14",
+          border: `2px solid ${C.elegido}`,
+          color: C.elegido,
           fontWeight: 700,
           textAlign: "center"
         }
@@ -17160,8 +17162,8 @@ function PresupuestoFormato({
       return bloque(cg.filas, cg, /*#__PURE__*/React.createElement("div", {
         style: {
           padding: "10px 14px",
-          background: elegida ? "#E3F0DF" : C.suave,
-          borderTop: `2px solid ${elegida ? C.verde : C.borde}`,
+          background: elegida ? "#E2E8F1" : C.suave,
+          borderTop: `3px solid ${elegida ? C.elegido : C.borde}`,
           fontWeight: 800,
           fontSize: 17,
           color: C.marron,
@@ -17172,7 +17174,7 @@ function PresupuestoFormato({
         }
       }, /*#__PURE__*/React.createElement("span", null, etiquetaOpcion(g.n, g.nombre)), elegida && /*#__PURE__*/React.createElement("span", {
         style: {
-          color: C.verde
+          color: C.elegido
         }
       }, "✓ Elegida")), "o" + g.n, aceptado && Number(opcionElegida) > 0 && !elegida);
     });
