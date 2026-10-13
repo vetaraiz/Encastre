@@ -3075,6 +3075,39 @@ function Badge9({
 }
 
 // Fila de "solapas" conectadas y redondeadas arriba (formato unificado de tabs en toda la app)
+// Filtro de estado como lista desplegable (reemplaza las solapas Para cotizar / Cotizados / etc.)
+function FiltroDesplegable({
+  opciones,
+  activo,
+  onChange,
+  cuenta
+}) {
+  return /*#__PURE__*/React.createElement("label", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 14,
+      fontSize: 16,
+      fontWeight: 700,
+      color: C.marron
+    }
+  }, "Mostrar:", /*#__PURE__*/React.createElement("select", {
+    value: activo,
+    onChange: e => onChange(e.target.value),
+    style: {
+      ...S.input,
+      flex: 1,
+      maxWidth: 320,
+      fontWeight: 700,
+      color: C.marron,
+      cursor: "pointer"
+    }
+  }, opciones.map(([id, label]) => /*#__PURE__*/React.createElement("option", {
+    key: id,
+    value: id
+  }, label, cuenta && cuenta[id] != null ? ` (${cuenta[id]})` : ""))));
+}
 function TabsConectadas({
   opciones,
   activo,
@@ -4857,7 +4890,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-12.19"));
+  }, "v2026-10-13.1"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -7259,7 +7292,7 @@ function VistaCliente({
       aceptado: pedidos.filter(p => p.estado === "aceptado").length,
       vencido: pedidos.filter(p => venc(p)).length
     };
-    return /*#__PURE__*/React.createElement(TabsConectadas, {
+    return /*#__PURE__*/React.createElement(FiltroDesplegable, {
       opciones: [["todos", "Todos"], ["abierto", "Abiertos"], ["aceptado", "Aceptados"], ["vencido", "Vencidos"]],
       activo: filtro,
       cuenta: cuenta,
@@ -7550,7 +7583,7 @@ function VistaCarpinteria({
     barrio: usuario.barrio || ""
   });
   const [buscarPedido, setBuscarPedido] = useState("");
-  const [filtroCarp, setFiltroCarp] = useState("cotizar");
+  const [filtroCarp, setFiltroCarp] = useState("todos");
   const [filtroUbicProv, setFiltroUbicProv] = useState("");
   const [filtroUbicCiu, setFiltroUbicCiu] = useState("");
   usePendiente("carp-presupuesto", tab === "pedidos" && sel && !yaEnvio && !miPresupuesto && (presF.items || []).some(it => nmb(it.precio) > 0) ? `el presupuesto para ${sel._clienteNombre || "el cliente"}` : null);
@@ -8763,12 +8796,13 @@ function VistaCarpinteria({
     const cuenta = {
       cotizar: pedidos.filter(p => p.estado !== "aceptado" && !venc(p) && !p._miEstado).length,
       cotizados: pedidos.filter(p => p._miEstado && p.estado !== "aceptado").length,
+      elegidos: pedidos.filter(p => p._miEstado === "aceptado").length,
       cerrados: pedidos.filter(p => p.estado === "aceptado").length,
       vencido: pedidos.filter(p => venc(p) && p.estado !== "aceptado" && !p._miEstado).length,
       todos: pedidos.length
     };
-    return /*#__PURE__*/React.createElement(TabsConectadas, {
-      opciones: [["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["cerrados", "Cerrados"], ["vencido", "Vencidos"], ["todos", "Todos"]],
+    return /*#__PURE__*/React.createElement(FiltroDesplegable, {
+      opciones: [["todos", "Todos"], ["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["elegidos", "Elegidos (me aceptaron)"], ["cerrados", "Cerrados"], ["vencido", "Vencidos"]],
       activo: filtroCarp,
       cuenta: cuenta,
       onChange: setFiltroCarp
@@ -8789,6 +8823,7 @@ function VistaCarpinteria({
       if (filtroCarp === "cotizar") return p.estado !== "aceptado" && !venc(p) && !p._miEstado;
       if (filtroCarp === "cotizados") return p._miEstado && p.estado !== "aceptado";
       if (filtroCarp === "cerrados") return p.estado === "aceptado";
+      if (filtroCarp === "elegidos") return p._miEstado === "aceptado";
       if (filtroCarp === "vencido") return venc(p) && p.estado !== "aceptado" && !p._miEstado;
       return true;
     });
@@ -10810,7 +10845,7 @@ function VistaAserradero({
   const [enviando, setEnviando] = useState(false);
   const [yaEnvio, setYaEnvio] = useState(false);
   usePendiente("cot-VistaAserradero", sel && !yaEnvio && !miCot && (cotF.items || []).some(it => nmb(it.precio) > 0) ? `la cotización para ${sel._solicNombre || "este pedido"}` : null);
-  const [filtro, setFiltro] = useState("cotizar");
+  const [filtro, setFiltro] = useState("todos");
   const [filtroUbicProv, setFiltroUbicProv] = useState("");
   const [filtroUbicCiu, setFiltroUbicCiu] = useState("");
   // Al abrir un pedido para cotizar, precargar los ítems con lo que pidió la carpintería (si no cotizó aún)
@@ -11465,6 +11500,7 @@ function VistaAserradero({
   const cuenta = {
     cotizar: pedidos.filter(p => !p._miEstado && !estaVencido(p)).length,
     cotizados: pedidos.filter(p => p._miEstado).length,
+    elegidos: pedidos.filter(p => p._miEstado === "aceptada").length,
     vencido: pedidos.filter(p => estaVencido(p) && !p._miEstado).length,
     todos: pedidos.length
   };
@@ -11474,6 +11510,7 @@ function VistaAserradero({
     if (filtroUbicCiu && p.ciudad !== filtroUbicCiu) return false;
     if (filtro === "cotizar") return !p._miEstado && !estaVencido(p);
     if (filtro === "cotizados") return !!p._miEstado;
+    if (filtro === "elegidos") return p._miEstado === "aceptada";
     if (filtro === "vencido") return estaVencido(p) && !p._miEstado;
     return true;
   });
@@ -11504,8 +11541,8 @@ function VistaAserradero({
       fontSize: 15
     },
     onClick: onIrASuscripcion
-  }, "💳 Activar suscripción")), /*#__PURE__*/React.createElement(TabsConectadas, {
-    opciones: [["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["vencido", "Vencidos"], ["todos", "Todos"]],
+  }, "💳 Activar suscripción")), /*#__PURE__*/React.createElement(FiltroDesplegable, {
+    opciones: [["todos", "Todos"], ["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["elegidos", "Elegidos (me aceptaron)"], ["vencido", "Vencidos"]],
     activo: filtro,
     cuenta: cuenta,
     onChange: setFiltro
@@ -11906,7 +11943,7 @@ function VistaFlete({
   const [enviando, setEnviando] = useState(false);
   const [yaEnvio, setYaEnvio] = useState(false);
   usePendiente("cot-VistaFlete", sel && !yaEnvio && !miCot && (cotF.items || []).some(it => nmb(it.precio) > 0) ? `la cotización para ${sel._solNombre || "este pedido"}` : null);
-  const [filtro, setFiltro] = useState("cotizar");
+  const [filtro, setFiltro] = useState("todos");
   const [filtroUbicProv, setFiltroUbicProv] = useState("");
   const [filtroUbicCiu, setFiltroUbicCiu] = useState("");
   const arch = useArchivoLista(usuario, "pedido_flete");
@@ -12710,6 +12747,7 @@ function VistaFlete({
     const cuenta = {
       cotizar: pedidos.filter(p => !p._miEstado && !estaVencido(p)).length,
       cotizados: pedidos.filter(p => p._miEstado).length,
+      elegidos: pedidos.filter(p => p._miEstado === "aceptada").length,
       vencido: pedidos.filter(p => estaVencido(p) && !p._miEstado).length,
       todos: pedidos.length
     };
@@ -12719,6 +12757,7 @@ function VistaFlete({
       if (filtroUbicCiu && p.ciudad !== filtroUbicCiu) return false;
       if (filtro === "cotizar") return !p._miEstado && !estaVencido(p);
       if (filtro === "cotizados") return !!p._miEstado;
+      if (filtro === "elegidos") return p._miEstado === "aceptada";
       if (filtro === "vencido") return estaVencido(p) && !p._miEstado;
       return true;
     });
@@ -12749,8 +12788,8 @@ function VistaFlete({
         fontSize: 15
       },
       onClick: onIrASuscripcion
-    }, "💳 Activar suscripción")), /*#__PURE__*/React.createElement(TabsConectadas, {
-      opciones: [["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["vencido", "Vencidos"], ["todos", "Todos"]],
+    }, "💳 Activar suscripción")), /*#__PURE__*/React.createElement(FiltroDesplegable, {
+      opciones: [["todos", "Todos"], ["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["elegidos", "Elegidos (me aceptaron)"], ["vencido", "Vencidos"]],
       activo: filtro,
       cuenta: cuenta,
       onChange: setFiltro
@@ -13482,7 +13521,7 @@ function VistaFerreteria({
   const [enviando, setEnviando] = useState(false);
   const [yaEnvio, setYaEnvio] = useState(false);
   usePendiente("cot-VistaFerreteria", sel && !yaEnvio && !miCot && (cotF.items || []).some(it => nmb(it.precio) > 0) ? `la cotización para ${sel._solicNombre || "este pedido"}` : null);
-  const [filtro, setFiltro] = useState("cotizar");
+  const [filtro, setFiltro] = useState("todos");
   const [filtroUbicProv, setFiltroUbicProv] = useState("");
   const [filtroUbicCiu, setFiltroUbicCiu] = useState("");
   // Precargar la cotización con los herrajes que pidió la carpintería (si no cotizó aún)
@@ -14118,6 +14157,7 @@ function VistaFerreteria({
   const cuenta = {
     cotizar: pedidos.filter(p => !p._miEstado && !estaVencido(p)).length,
     cotizados: pedidos.filter(p => p._miEstado).length,
+    elegidos: pedidos.filter(p => p._miEstado === "aceptada").length,
     vencido: pedidos.filter(p => estaVencido(p) && !p._miEstado).length,
     todos: pedidos.length
   };
@@ -14127,6 +14167,7 @@ function VistaFerreteria({
     if (filtroUbicCiu && p.ciudad !== filtroUbicCiu) return false;
     if (filtro === "cotizar") return !p._miEstado && !estaVencido(p);
     if (filtro === "cotizados") return !!p._miEstado;
+    if (filtro === "elegidos") return p._miEstado === "aceptada";
     if (filtro === "vencido") return estaVencido(p) && !p._miEstado;
     return true;
   });
@@ -14157,8 +14198,8 @@ function VistaFerreteria({
       fontSize: 15
     },
     onClick: onIrASuscripcion
-  }, "💳 Activar suscripción")), /*#__PURE__*/React.createElement(TabsConectadas, {
-    opciones: [["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["vencido", "Vencidos"], ["todos", "Todos"]],
+  }, "💳 Activar suscripción")), /*#__PURE__*/React.createElement(FiltroDesplegable, {
+    opciones: [["todos", "Todos"], ["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["elegidos", "Elegidos (me aceptaron)"], ["vencido", "Vencidos"]],
     activo: filtro,
     cuenta: cuenta,
     onChange: setFiltro
@@ -14356,7 +14397,7 @@ function VistaPintureria({
   const [enviando, setEnviando] = useState(false);
   const [yaEnvio, setYaEnvio] = useState(false);
   usePendiente("cot-VistaPintureria", sel && !yaEnvio && !miCot && (cotF.items || []).some(it => nmb(it.precio) > 0) ? `la cotización para ${sel._solicNombre || "este pedido"}` : null);
-  const [filtro, setFiltro] = useState("cotizar");
+  const [filtro, setFiltro] = useState("todos");
   const [filtroUbicProv, setFiltroUbicProv] = useState("");
   const [filtroUbicCiu, setFiltroUbicCiu] = useState("");
   // Precargar la cotización con las pinturas que pidió la carpintería (si no cotizó aún)
@@ -14992,6 +15033,7 @@ function VistaPintureria({
   const cuenta = {
     cotizar: pedidos.filter(p => !p._miEstado && !estaVencido(p)).length,
     cotizados: pedidos.filter(p => p._miEstado).length,
+    elegidos: pedidos.filter(p => p._miEstado === "aceptada").length,
     vencido: pedidos.filter(p => estaVencido(p) && !p._miEstado).length,
     todos: pedidos.length
   };
@@ -15001,6 +15043,7 @@ function VistaPintureria({
     if (filtroUbicCiu && p.ciudad !== filtroUbicCiu) return false;
     if (filtro === "cotizar") return !p._miEstado && !estaVencido(p);
     if (filtro === "cotizados") return !!p._miEstado;
+    if (filtro === "elegidos") return p._miEstado === "aceptada";
     if (filtro === "vencido") return estaVencido(p) && !p._miEstado;
     return true;
   });
@@ -15031,8 +15074,8 @@ function VistaPintureria({
       fontSize: 15
     },
     onClick: onIrASuscripcion
-  }, "💳 Activar suscripción")), /*#__PURE__*/React.createElement(TabsConectadas, {
-    opciones: [["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["vencido", "Vencidos"], ["todos", "Todos"]],
+  }, "💳 Activar suscripción")), /*#__PURE__*/React.createElement(FiltroDesplegable, {
+    opciones: [["todos", "Todos"], ["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["elegidos", "Elegidos (me aceptaron)"], ["vencido", "Vencidos"]],
     activo: filtro,
     cuenta: cuenta,
     onChange: setFiltro
