@@ -1950,7 +1950,7 @@ const C = {
   card: "#FFFBF5",
   input: "#FBF3EA",
   verde: "#4A7C3F",
-  elegido: "#1F3A5F",
+  elegido: "#7E3A22",
   rojo: "#8B2020",
   azul: "#2A5C8B",
   exito: "#4A7C3F",
@@ -2014,11 +2014,11 @@ const MADERAS_A = ["Roble", "Cedro", "Pino", "Quebracho", "Algarrobo", "Lapacho"
 const EC = {
   pendiente: C.acento,
   presupuestado: C.azul,
-  aceptado: C.verde,
+  aceptado: "#7E3A22",
   cerrado: "#8A7A6A",
   rechazado: "#8A7A6A",
   enviada: C.acento,
-  aceptada: C.verde,
+  aceptada: "#7E3A22",
   rechazada: "#8A7A6A",
   en_produccion: "#7A4A8B",
   finalizado: C.textoSuave,
@@ -2066,11 +2066,11 @@ const DISPONIBILIDAD_LABEL = {
 const EL = {
   pendiente: "Pendiente",
   presupuestado: "Presupuestado",
-  aceptado: "Aceptado",
+  aceptado: "Seleccionado · falta concretar",
   cerrado: "No seleccionado",
   rechazado: "No seleccionado",
   enviada: "Enviada",
-  aceptada: "Aceptada",
+  aceptada: "Seleccionada · falta concretar",
   rechazada: "No seleccionada",
   en_produccion: "En producción",
   finalizado: "Finalizado",
@@ -3491,6 +3491,38 @@ const S = {
 };
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
+// Sello de "elegido": madera (decidido) + "falta concretar" (todavía en marcha)
+function SelloSeleccionado({
+  falta,
+  compacto
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: `#7E3A22 url(${MADERA_CEDRO}) 72% center/cover`,
+      color: "#FFF6EC",
+      textShadow: "0 1px 2px #000000aa",
+      borderRadius: compacto ? 8 : 10,
+      padding: compacto ? "5px 10px" : "10px 14px",
+      marginTop: compacto ? 0 : 10,
+      display: compacto ? "inline-flex" : "flex",
+      flexDirection: compacto ? "row" : "column",
+      alignItems: compacto ? "center" : "flex-start",
+      gap: compacto ? 6 : 2,
+      fontFamily: "'Lato',sans-serif"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 900,
+      letterSpacing: 1.5,
+      fontSize: compacto ? 12 : 15
+    }
+  }, "★ SELECCIONADO"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: compacto ? 12 : 14,
+      opacity: .95
+    }
+  }, compacto ? "· falta concretar" : `Falta concretar ${falta || "la compra"}: coordiná la entrega y el pago por el chat.`));
+}
 function Badge({
   e
 }) {
@@ -4953,7 +4985,7 @@ function AuthScreen({
       fontSize: 13,
       color: "#B8A99A"
     }
-  }, "v2026-10-13.4"));
+  }, "v2026-10-13.5"));
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
@@ -7247,7 +7279,13 @@ function VistaCliente({
           cursor: "pointer"
         },
         onClick: () => abrirCot(pr)
-      }, /*#__PURE__*/React.createElement("div", {
+      }, pr.estado === "aceptado" && /*#__PURE__*/React.createElement("div", {
+        style: {
+          marginBottom: 8
+        }
+      }, /*#__PURE__*/React.createElement(SelloSeleccionado, {
+        compacto: true
+      })), /*#__PURE__*/React.createElement("div", {
         style: {
           display: "flex",
           justifyContent: "space-between",
@@ -9653,17 +9691,9 @@ function VistaCarpinteria({
         titulo: "Chat con " + (ct.aserraderoNombre || "aserradero")
       })), /*#__PURE__*/React.createElement(TrabajosGallery, {
         trabajos: ct.aserraderoTrabajos
-      }), ct.estado === "aceptada" ? /*#__PURE__*/React.createElement("div", {
-        style: {
-          marginTop: 10,
-          padding: "10px 14px",
-          background: C.elegido + "14",
-          border: `2px solid ${C.elegido}`,
-          color: C.elegido,
-          fontWeight: 700,
-          textAlign: "center"
-        }
-      }, "✅ Aceptaste esta cotización") : ct.estado === "rechazada" ? /*#__PURE__*/React.createElement("div", {
+      }), ct.estado === "aceptada" ? /*#__PURE__*/React.createElement(SelloSeleccionado, {
+        falta: "la compra"
+      }) : ct.estado === "rechazada" ? /*#__PURE__*/React.createElement("div", {
         style: {
           marginTop: 10,
           padding: "10px 14px",
@@ -10234,17 +10264,9 @@ function VistaCarpinteria({
         titulo: "Chat con " + (ct.ferrNombre || "ferretería")
       })), /*#__PURE__*/React.createElement(TrabajosGallery, {
         trabajos: ct.ferrTrabajos
-      }), ct.estado === "aceptada" ? /*#__PURE__*/React.createElement("div", {
-        style: {
-          marginTop: 10,
-          padding: "10px 14px",
-          background: C.elegido + "14",
-          border: `2px solid ${C.elegido}`,
-          color: C.elegido,
-          fontWeight: 700,
-          textAlign: "center"
-        }
-      }, "✅ Aceptaste esta cotización") : ct.estado === "rechazada" ? /*#__PURE__*/React.createElement("div", {
+      }), ct.estado === "aceptada" ? /*#__PURE__*/React.createElement(SelloSeleccionado, {
+        falta: "la compra"
+      }) : ct.estado === "rechazada" ? /*#__PURE__*/React.createElement("div", {
         style: {
           marginTop: 10,
           padding: "10px 14px",
@@ -10820,17 +10842,9 @@ function VistaCarpinteria({
         titulo: "Chat con " + (ct.pintNombre || "pinturería")
       })), /*#__PURE__*/React.createElement(TrabajosGallery, {
         trabajos: ct.pintTrabajos
-      }), ct.estado === "aceptada" ? /*#__PURE__*/React.createElement("div", {
-        style: {
-          marginTop: 10,
-          padding: "10px 14px",
-          background: C.elegido + "14",
-          border: `2px solid ${C.elegido}`,
-          color: C.elegido,
-          fontWeight: 700,
-          textAlign: "center"
-        }
-      }, "✅ Aceptaste esta cotización") : ct.estado === "rechazada" ? /*#__PURE__*/React.createElement("div", {
+      }), ct.estado === "aceptada" ? /*#__PURE__*/React.createElement(SelloSeleccionado, {
+        falta: "la compra"
+      }) : ct.estado === "rechazada" ? /*#__PURE__*/React.createElement("div", {
         style: {
           marginTop: 10,
           padding: "10px 14px",
@@ -13500,17 +13514,9 @@ function VistaFlete({
         titulo: "Chat con " + (ct.fleteNombre || "flete")
       })), /*#__PURE__*/React.createElement(TrabajosGallery, {
         trabajos: ct.fleteTrabajos
-      }), ct.estado === "aceptada" ? /*#__PURE__*/React.createElement("div", {
-        style: {
-          marginTop: 10,
-          padding: "10px 14px",
-          background: C.elegido + "14",
-          border: `2px solid ${C.elegido}`,
-          color: C.elegido,
-          fontWeight: 700,
-          textAlign: "center"
-        }
-      }, "✅ Aceptaste esta cotización") : ct.estado === "rechazada" ? /*#__PURE__*/React.createElement("div", {
+      }), ct.estado === "aceptada" ? /*#__PURE__*/React.createElement(SelloSeleccionado, {
+        falta: "el viaje"
+      }) : ct.estado === "rechazada" ? /*#__PURE__*/React.createElement("div", {
         style: {
           marginTop: 10,
           padding: "10px 14px",
@@ -17162,7 +17168,7 @@ function PresupuestoFormato({
       return bloque(cg.filas, cg, /*#__PURE__*/React.createElement("div", {
         style: {
           padding: "10px 14px",
-          background: elegida ? "#E2E8F1" : C.suave,
+          background: elegida ? "#F3E6D8" : C.suave,
           borderTop: `3px solid ${elegida ? C.elegido : C.borde}`,
           fontWeight: 800,
           fontSize: 17,
@@ -17172,11 +17178,9 @@ function PresupuestoFormato({
           flexWrap: "wrap",
           gap: 6
         }
-      }, /*#__PURE__*/React.createElement("span", null, etiquetaOpcion(g.n, g.nombre)), elegida && /*#__PURE__*/React.createElement("span", {
-        style: {
-          color: C.elegido
-        }
-      }, "✓ Elegida")), "o" + g.n, aceptado && Number(opcionElegida) > 0 && !elegida);
+      }, /*#__PURE__*/React.createElement("span", null, etiquetaOpcion(g.n, g.nombre)), elegida && /*#__PURE__*/React.createElement(SelloSeleccionado, {
+        compacto: true
+      })), "o" + g.n, aceptado && Number(opcionElegida) > 0 && !elegida);
     });
   })(), tiempoEntrega && /*#__PURE__*/React.createElement("div", {
     style: {
