@@ -5087,7 +5087,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-15.1";
+const VERSION_APP = "v2026-10-16.1";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -5361,51 +5361,43 @@ function Chat({
     "aria-label": "Abrir chat",
     onClick: abrirChat,
     style: {
-      position: "fixed",
-      right: 16,
-      bottom: 16,
-      zIndex: 300,
-      minWidth: 62,
-      height: 62,
-      borderRadius: 31,
-      padding: chatAceptado || noLeidos > 0 ? "0 20px" : 0,
-      gap: 8,
-      background: chatAceptado ? C.verde : `#E3BF7E url(${MADERA_PINO}) 75% center/cover`,
-      color: chatAceptado ? "#fff" : "#3A2412",
-      border: `3px solid ${C.crema}`,
-      boxShadow: "0 4px 18px #5C2E0A77",
+      width: "100%",
+      minHeight: 48,
+      marginTop: 10,
+      padding: "10px 16px",
+      borderRadius: 12,
+      gap: 10,
+      background: noLeidos > 0 ? C.verde : `#E3BF7E url(${MADERA_PINO}) 75% center/cover`,
+      color: noLeidos > 0 ? "#fff" : "#3A2412",
+      border: "none",
+      boxShadow: "0 2px 8px #5C2E0A33",
       cursor: "pointer",
-      fontSize: 26,
+      fontSize: 17,
       fontWeight: 800,
       fontFamily: "'Lato',sans-serif",
       display: "flex",
       alignItems: "center",
       justifyContent: "center"
     }
-  }, "💬", (chatAceptado || noLeidos > 0) && /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 17
+      fontSize: 22
     }
-  }, chatAceptado ? "Chat" : "Mensaje nuevo"), noLeidos > 0 && /*#__PURE__*/React.createElement("span", {
+  }, "💬"), titulo || "Abrir chat", noLeidos > 0 && /*#__PURE__*/React.createElement("span", {
     style: {
-      position: "absolute",
-      top: -2,
-      right: -2,
-      background: "#C0392B",
-      color: "#fff",
-      borderRadius: "50%",
-      minWidth: 20,
-      height: 20,
-      fontSize: 12,
+      background: "#fff",
+      color: C.verde,
+      borderRadius: 11,
+      minWidth: 22,
+      height: 22,
+      fontSize: 13,
       fontWeight: 800,
-      display: "flex",
+      display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      padding: "0 4px",
-      fontFamily: "'Lato',sans-serif",
-      border: `2px solid ${C.crema}`
+      padding: "0 6px"
     }
-  }, noLeidos > 9 ? "9+" : noLeidos)), abierto && /*#__PURE__*/React.createElement("div", {
+  }, noLeidos > 9 ? "9+" : noLeidos, " nuevo", noLeidos > 1 ? "s" : "")), abierto && /*#__PURE__*/React.createElement("div", {
     style: {
       position: "fixed",
       inset: 0,
