@@ -5087,7 +5087,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-16.1";
+const VERSION_APP = "v2026-10-17.1";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -7498,6 +7498,76 @@ function VistaCliente({
 }
 
 // ─── VISTA CARPINTERÍA ────────────────────────────────────────────────────────
+// Presupuesto automático: se abre presupuestador.html (mismo sitio) en una capa encima del pedido.
+// Cuando la carpintería toca "Cargar", el presupuestador avisa por postMessage y se cargan los renglones.
+function CapaPresupuestador({
+  pedidoId,
+  onCerrar,
+  onCargar
+}) {
+  useEffect(() => {
+    const alMensaje = ev => {
+      if (ev.origin !== window.location.origin) return;
+      const d = ev.data;
+      if (!d || d.tipo !== "encastre-presupuesto" || d.pedidoId !== pedidoId) return;
+      if (d.accion === "cargar") onCargar(d);
+      if (d.accion === "cerrar") onCerrar();
+    };
+    window.addEventListener("message", alMensaje);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("message", alMensaje);
+      document.body.style.overflow = prev;
+    };
+  }, [pedidoId, onCargar, onCerrar]);
+  const capa = /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      zIndex: 9000,
+      background: C.crema,
+      display: "flex",
+      flexDirection: "column"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10,
+      padding: "10px 14px",
+      paddingTop: "calc(10px + env(safe-area-inset-top, 0px))",
+      background: C.marron,
+      color: C.crema,
+      fontWeight: 700,
+      fontSize: 16
+    }
+  }, /*#__PURE__*/React.createElement("span", null, "\uD83E\uDDEE Presupuesto autom\u00E1tico"), /*#__PURE__*/React.createElement("button", {
+    onClick: onCerrar,
+    style: {
+      background: "transparent",
+      color: C.crema,
+      border: `1px solid ${C.crema}`,
+      borderRadius: 8,
+      padding: "6px 14px",
+      fontSize: 15,
+      fontWeight: 700,
+      cursor: "pointer"
+    }
+  }, "\u2715 Cerrar")), /*#__PURE__*/React.createElement("iframe", {
+    src: `/presupuestador.html?pedido=${encodeURIComponent(pedidoId)}&v=${encodeURIComponent(VERSION_APP)}`,
+    title: "Presupuesto autom\u00E1tico",
+    style: {
+      flex: 1,
+      width: "100%",
+      border: 0,
+      background: C.crema
+    }
+  }));
+  // Se dibuja directo en <body> para que ningún contenedor la recorte
+  return ReactDOM.createPortal ? ReactDOM.createPortal(capa, document.body) : capa;
+}
 function VistaCarpinteria({
   usuario,
   notif,
@@ -7596,6 +7666,8 @@ function VistaCarpinteria({
   const [tab, setTab] = useNavState("aserradero");
   const [pedidos, setPedidos] = useState([]);
   const [sel, setSel] = useNavState(null);
+  const [calcAbierto, setCalcAbierto] = useState(false);
+  const calcRef = useRef(null);
   const [presF, setPresF] = useState({
     items: [{
       descripcion: "",
@@ -8044,6 +8116,17 @@ function VistaCarpinteria({
           }
           await db.insert("presupuesto_items", fila);
         }
+        // Desglose interno del presupuesto automático (solo lo ve esta carpintería)
+        if (calcRef.current && calcRef.current.pedidoId === sel.id && calcRef.current.calculo) {
+          try {
+            await db.insertMin("presupuesto_calculos", {
+              presupuesto_id: presId,
+              carpinteria_id: usuario.id,
+              calculo: calcRef.current.calculo
+            });
+          } catch {}
+          calcRef.current = null;
+        }
       }
       // NO se cambia el estado global del pedido: cada carpintería ve su propio estado.
       // (El pedido solo pasa a "aceptado" cuando el cliente elige, desde su vista.)
@@ -8083,6 +8166,34 @@ function VistaCarpinteria({
     }
     setEnviando(false);
   };
+  const cerrarCalc = useCallback(() => setCalcAbierto(false), []);
+  const cargarDesdeCalc = useCallback(d => {
+    if (!sel || d.pedidoId !== sel.id) return;
+    calcRef.current = {
+      pedidoId: sel.id,
+      calculo: d.calculo || null
+    };
+    const mueble = (d.mueble || "").trim();
+    setPresF(f => {
+      // se sacan los renglones sin precio que eran del mismo mueble (o vacíos) y se suman los del cálculo
+      const quedan = (f.items || []).filter(it => {
+        const sinPrecio = String(it.precio ?? "").trim() === "";
+        const desc = (it.descripcion || "").trim();
+        return !(sinPrecio && (!desc || !mueble || desc === mueble));
+      });
+      const nuevos = (d.items || []).map(it => ({
+        descripcion: String(it.descripcion || ""),
+        precio: String(Math.round(Number(it.precio) || 0)),
+        cantidad: "1"
+      }));
+      return {
+        ...f,
+        items: [...quedan, ...nuevos].length ? [...quedan, ...nuevos] : f.items
+      };
+    });
+    setCalcAbierto(false);
+    notif("Borrador cargado. Revisalo antes de enviar.");
+  }, [sel, notif]);
   const construirItemsDesdeMuebles = p => {
     const muebles = p.items && p.items.length > 0 ? p.items : [{
       descripcion: p.descripcion || ""
@@ -8094,6 +8205,8 @@ function VistaCarpinteria({
     }));
   };
   const abrirPedidoCliente = async p => {
+    calcRef.current = null;
+    setCalcAbierto(false);
     setSel(p);
     setYaEnvio(false);
     setMiPresupuesto(null);
@@ -8453,7 +8566,26 @@ function VistaCarpinteria({
           color: C.textoSuave,
           marginBottom: 10
         }
-      }, "Agregá un renglón por cada concepto (materiales, herrajes, mano de obra, flete si lo cobrás, etc.)."), mapConOpciones(presF, setPresF, (it, i) => {
+      }, "Agregá un renglón por cada concepto (materiales, herrajes, mano de obra, flete si lo cobrás, etc.)."), /*#__PURE__*/React.createElement("button", {
+        onClick: () => setCalcAbierto(true),
+        style: {
+          ...S.btn("ghost"),
+          width: "100%",
+          justifyContent: "center",
+          marginBottom: 6
+        }
+      }, "\uD83E\uDDEE Armar presupuesto autom\u00E1tico"), /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: 13,
+          color: C.textoSuave,
+          marginBottom: 12,
+          textAlign: "center"
+        }
+      }, "Arma un borrador con materiales, horas y precio a partir del pedido. Lo revis\u00E1s y lo cargás ac\u00E1."), calcAbierto && /*#__PURE__*/React.createElement(CapaPresupuestador, {
+        pedidoId: sel.id,
+        onCerrar: cerrarCalc,
+        onCargar: cargarDesdeCalc
+      }), mapConOpciones(presF, setPresF, (it, i) => {
         const imp = nmb(it.precio) * nmb(it.cantidad);
         return /*#__PURE__*/React.createElement("div", {
           key: i,
