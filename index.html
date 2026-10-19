@@ -4197,6 +4197,9 @@ function AuthScreen({
         }
         captchaWidgetId.current = window.turnstile.render("#cf-turnstile-widget", {
           sitekey: CAPTCHA_SITE_KEY,
+          // Solo se muestra si Cloudflare necesita que la persona toque algo (así no aparece "Operación exitosa" en el medio del formulario)
+          appearance: "interaction-only",
+          language: "es",
           callback: token => setCaptchaToken(token),
           "expired-callback": () => setCaptchaToken(""),
           "error-callback": () => setCaptchaToken("")
@@ -4276,6 +4279,26 @@ function AuthScreen({
     label: "Trabajador/a",
     desc: "Busco changas o empleo (oficial, medio oficial, ayudante)"
   }];
+  // Si la persona toca Entrar / Crear cuenta antes de que termine la verificación de seguridad,
+  // se espera el resultado y se envía sola apenas llega.
+  const esperaCaptchaRef = useRef(false);
+  const [esperandoCaptcha, setEsperandoCaptcha] = useState(false);
+  const esperarCaptcha = () => {
+    esperaCaptchaRef.current = true;
+    setEsperandoCaptcha(true);
+    setCargando(false);
+  };
+  useEffect(() => {
+    if (captchaToken && esperaCaptchaRef.current) {
+      esperaCaptchaRef.current = false;
+      setEsperandoCaptcha(false);
+      submit();
+    }
+  }, [captchaToken]);
+  useEffect(() => {
+    esperaCaptchaRef.current = false;
+    setEsperandoCaptcha(false);
+  }, [modo]);
   const submit = async () => {
     setErr("");
     setOk("");
@@ -4340,6 +4363,10 @@ function AuthScreen({
             }
           }
         } catch {}
+        if (!captchaToken) {
+          esperarCaptcha();
+          return;
+        }
         const signUpRes = await db.signUp(email.trim().toLowerCase(), pass, captchaToken);
         if (!signUpRes._httpOk) {
           const rawMsg = (signUpRes.msg || signUpRes.error_description || signUpRes.message || (typeof signUpRes.error === "string" ? signUpRes.error : signUpRes.error?.message) || "").toString();
@@ -4446,12 +4473,22 @@ function AuthScreen({
         setOk("¡Cuenta creada! Ahora iniciá sesión.");
         setModo("login");
       } else {
+        if (!email.trim() || !pass) {
+          setErr("Escribí tu email y tu contraseña.");
+          setCargando(false);
+          return;
+        }
+        if (!captchaToken) {
+          esperarCaptcha();
+          return;
+        }
         const signInRes = await db.signIn(email.trim().toLowerCase(), pass, captchaToken);
         const access_token = signInRes.access_token;
         const error = signInRes.error;
         if (error || !access_token) {
           resetCaptcha();
-          setErr("Email o contraseña incorrectos");
+          const rawIn = JSON.stringify(signInRes || {}).toLowerCase();
+          setErr(rawIn.includes("captcha") ? "La verificación de seguridad no se completó. Tocá «Entrar» de nuevo." : rawIn.includes("not confirmed") ? "Todavía no confirmaste tu email. Buscá el mail de Encastre (fijate en spam) y tocá el enlace." : "Email o contraseña incorrectos");
           setCargando(false);
           return;
         }
@@ -4914,14 +4951,7 @@ function AuthScreen({
       color: C.rojo,
       marginTop: 4
     }
-  }, "Las contraseñas no coinciden.")), /*#__PURE__*/React.createElement("div", {
-    id: "cf-turnstile-widget",
-    style: {
-      marginBottom: 16,
-      display: "flex",
-      justifyContent: "center"
-    }
-  }), modo === "registro" && /*#__PURE__*/React.createElement("label", {
+  }, "Las contraseñas no coinciden.")), modo === "registro" && /*#__PURE__*/React.createElement("label", {
     style: {
       display: "flex",
       alignItems: "flex-start",
@@ -5000,8 +5030,22 @@ function AuthScreen({
       padding: "11px"
     },
     onClick: submit,
-    disabled: cargando
-  }, cargando ? "⟳ Procesando..." : modo === "login" ? "Entrar →" : "Crear cuenta →"), modo === "login" && /*#__PURE__*/React.createElement("div", {
+    disabled: cargando || esperandoCaptcha
+  }, cargando ? "⟳ Procesando..." : esperandoCaptcha ? "⟳ Verificando..." : modo === "login" ? "Entrar →" : "Crear cuenta →"), esperandoCaptcha && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 15,
+      color: C.textoSuave,
+      textAlign: "center",
+      marginTop: 10
+    }
+  }, "Un segundo: estamos comprobando que no seas un robot. Si abajo aparece un recuadro, tocalo."), /*#__PURE__*/React.createElement("div", {
+    id: "cf-turnstile-widget",
+    style: {
+      marginTop: 12,
+      display: "flex",
+      justifyContent: "center"
+    }
+  }), modo === "login" && /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       marginTop: 12
@@ -5151,7 +5195,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-19.1";
+const VERSION_APP = "v2026-10-19.3";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -9073,7 +9117,14 @@ function VistaCarpinteria({
         padding: "10px 12px",
         whiteSpace: "nowrap"
       },
-      onClick: () => tab !== id && confirmarSalida() && setTab(id)
+      onClick: () => {
+        if (tab === id || !confirmarSalida()) return;
+        // Al entrar a un rubro se arranca siempre en la lista de pedidos, no en un formulario que quedó abierto
+        if (id === "aserradero" && subAserr !== "mis") setSubAserr("mis");
+        if (id === "ferreteria" && subFerr !== "mis") setSubFerr("mis");
+        if (id === "pintureria" && subPint !== "mis") setSubPint("mis");
+        setTab(id);
+      }
     }, /*#__PURE__*/React.createElement("span", {
       style: {
         overflow: "hidden",
@@ -9392,7 +9443,21 @@ function VistaCarpinteria({
     }));
   })()), tab === "aserradero" && subAserr === "pedir" && /*#__PURE__*/React.createElement("div", {
     style: S.card
-  }, null, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    style: {
+      ...S.btn("link"),
+      marginBottom: 10
+    },
+    onClick: () => {
+      if (!confirmarSalida()) return;
+      setEditPed(e => ({
+        ...e,
+        pedidos_aserradero: null
+      }));
+      setSubAserr("mis");
+    }
+  }, "← Volver a mis pedidos"), /*#__PURE__*/React.createElement("div", {
     style: S.cardTitle
   }, "🌲 Pedir madera al aserradero"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -9990,7 +10055,21 @@ function VistaCarpinteria({
     })));
   }))), tab === "ferreteria" && /*#__PURE__*/React.createElement("div", null, subFerr === "pedir" && /*#__PURE__*/React.createElement("div", {
     style: S.card
-  }, null, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    style: {
+      ...S.btn("link"),
+      marginBottom: 10
+    },
+    onClick: () => {
+      if (!confirmarSalida()) return;
+      setEditPed(e => ({
+        ...e,
+        pedidos_ferreteria: null
+      }));
+      setSubFerr("mis");
+    }
+  }, "← Volver a mis pedidos"), /*#__PURE__*/React.createElement("div", {
     style: S.cardTitle
   }, "🔩 Pedir herrajes a ferretería"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -10573,7 +10652,21 @@ function VistaCarpinteria({
     onIrASuscripcion: onIrASuscripcion
   }), tab === "pintureria" && /*#__PURE__*/React.createElement("div", null, subPint === "pedir" && /*#__PURE__*/React.createElement("div", {
     style: S.card
-  }, null, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    style: {
+      ...S.btn("link"),
+      marginBottom: 10
+    },
+    onClick: () => {
+      if (!confirmarSalida()) return;
+      setEditPed(e => ({
+        ...e,
+        pedidos_pintureria: null
+      }));
+      setSubPint("mis");
+    }
+  }, "← Volver a mis pedidos"), /*#__PURE__*/React.createElement("div", {
     style: S.cardTitle
   }, "🖌️ Pedir pinturas a pinturería"), /*#__PURE__*/React.createElement("div", {
     style: {
