@@ -8,899 +8,322 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Stardos+Stencil:wght@400;700&family=Lato:wght@400;700;900&display=swap">
 <style>
-/* Layout: una columna de "hojas de taller" apiladas en el orden del método (qué → material → diseño → despiece → materiales → mano de obra → resultado) */
+/* Versión sencilla: tres hojas (el mueble, la madera, el presupuesto) y números redondos */
 :root{
   --bg:#F4ECE1; --paper:#FFFBF5; --ink:#3A2412; --muted:#7A6654; --line:#DCCBB6;
-  --wood:#7E3A22; --green:#4A7C3F; --green-soft:#E3EEDD; --warn:#9A5B00; --warn-soft:#FBEBD0;
-  --input:#FFFFFF;
-  --f-display:"Stardos Stencil", "Arial Narrow", Impact, sans-serif;
-  --f-body:"Lato", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --wood:#7E3A22; --green:#4A7C3F; --green-soft:#E3EEDD; --warn:#9A5B00; --warn-soft:#FBEBD0; --input:#FFFFFF;
+  --f-display:"Stardos Stencil","Arial Narrow",Impact,sans-serif;
+  --f-body:"Lato",system-ui,-apple-system,"Segoe UI",sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#1E1611; --paper:#2A201A; --ink:#F1E6D8; --muted:#B9A794; --line:#4A3B30;
-  --wood:#D98B63; --green:#8CC17C; --green-soft:#24331F; --warn:#F0B35A; --warn-soft:#3A2B14;
-  --input:#1E1611; color-scheme:dark}}
+  --wood:#D98B63; --green:#8CC17C; --green-soft:#24331F; --warn:#F0B35A; --warn-soft:#3A2B14; --input:#1E1611; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#1E1611; --paper:#2A201A; --ink:#F1E6D8; --muted:#B9A794; --line:#4A3B30;
-  --wood:#D98B63; --green:#8CC17C; --green-soft:#24331F; --warn:#F0B35A; --warn-soft:#3A2B14;
-  --input:#1E1611; color-scheme:dark}
+  --wood:#D98B63; --green:#8CC17C; --green-soft:#24331F; --warn:#F0B35A; --warn-soft:#3A2B14; --input:#1E1611; color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;margin:0}
-.wrap{max-width:1040px;margin:0 auto;padding-block:20px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
-header h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,5vw,40px);margin:0;color:var(--wood);letter-spacing:.02em;text-wrap:balance}
-header p{margin:4px 0 0;color:var(--muted);max-width:65ch}
-.aviso{background:var(--warn-soft);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:14px}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.45;margin:0}
+.wrap{max-width:760px;margin:0 auto;padding-block:16px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
+.aviso{background:var(--warn-soft);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:15px}
 .aviso b{color:var(--warn)}
 section.hoja{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
-.hoja h2{font-family:var(--f-display);font-size:22px;margin:0;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.hoja h2 .paso{font-family:var(--f-body);font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--green)}
-.hoja h3{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:6px 0 0}
-.nota{font-size:14px;color:var(--muted);margin:0;max-width:75ch}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
-label.campo{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:700}
-input,select,textarea{font:inherit;color:var(--ink);background:var(--input);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%;min-width:0}
-textarea{min-height:64px;resize:vertical}
-input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--green);outline-offset:1px}
+.hoja h2{font-family:var(--f-display);font-size:24px;margin:0;color:var(--wood)}
+.nota{font-size:14px;color:var(--muted);margin:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+label.campo{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted);font-weight:700}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--input);border:1px solid var(--line);border-radius:6px;padding:9px 10px;width:100%;min-width:0}
+textarea{min-height:70px;resize:vertical;font-size:15px}
 input[type=number]{font-variant-numeric:tabular-nums}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--green);outline-offset:1px}
 .checks{display:flex;flex-wrap:wrap;gap:8px 18px}
-.checks label{display:flex;align-items:center;gap:6px;font-size:15px}
-.checks input{width:auto}
-.tabla{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
-table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
-th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--paper)}
-td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
-tr:last-child td{border-bottom:0}
-td.num,th.num{text-align:right;white-space:nowrap}
-td input{padding:6px 8px}
-td input.n{width:90px;text-align:right}
-td input.n-s{width:70px;text-align:right}
-td input.txt{min-width:170px}
-td input[type=checkbox]{width:18px;height:18px}
-td select{min-width:120px}
-.btn{font:inherit;font-weight:700;font-size:14px;border-radius:6px;padding:8px 14px;border:1px solid var(--green);background:transparent;color:var(--green);cursor:pointer}
-.btn:hover{background:var(--green-soft)}
+.checks label{display:flex;align-items:center;gap:8px;font-size:16px}
+.checks input{width:20px;height:20px}
+.btn{font:inherit;font-weight:700;font-size:16px;border-radius:8px;padding:11px 18px;border:2px solid var(--green);background:transparent;color:var(--green);cursor:pointer}
 .btn.lleno{background:var(--green);color:var(--paper)}
-.btn.lleno:hover{filter:brightness(1.08)}
 .btn:disabled{opacity:.5;cursor:wait}
-.fila-btn{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.ej{font:inherit;font-size:13px;border:1px dashed var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer}
-.ej:hover{border-color:var(--green);color:var(--green)}
-.estado{font-size:14px;color:var(--muted)}
+.fila-btn{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.estado{font-size:15px;color:var(--muted)}
 .estado.ok{color:var(--green)}
 .estado.err{color:var(--warn)}
-.x{border:0;background:transparent;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px}
-.x:hover{color:var(--wood)}
-.resumen{display:flex;flex-wrap:wrap;gap:8px}
-.chip{background:var(--green-soft);color:var(--ink);border-radius:999px;padding:5px 12px;font-size:14px}
-.chip b{font-variant-numeric:tabular-nums}
-.chip.warn{background:var(--warn-soft)}
-.familias{display:flex;gap:8px;flex-wrap:wrap}
-.familias label{border:1px solid var(--line);border-radius:8px;padding:10px 14px;display:flex;gap:8px;align-items:center;cursor:pointer;flex:1 1 200px}
-.familias label:has(input:checked){border-color:var(--green);background:var(--green-soft)}
-.familias input{width:auto}
-.familias small{display:block;color:var(--muted);font-size:13px}
-.dos{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media (max-width:720px){.dos{grid-template-columns:1fr}}
-.cuenta{border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0}
-.cuenta .t{font-size:12px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
-.fila{display:flex;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums}
-.fila.sub{color:var(--muted);font-size:14px}
-.fila.total{border-top:2px solid var(--ink);padding-top:8px;margin-top:4px;font-weight:900;font-size:20px}
-.fila.total span:last-child{color:var(--wood)}
-.mult{font-family:var(--f-display);font-size:34px;color:var(--green);line-height:1}
+.tipos{display:flex;gap:8px;flex-wrap:wrap}
+.tipos label{border:1px solid var(--line);border-radius:8px;padding:10px 14px;display:flex;gap:8px;align-items:center;cursor:pointer;flex:1 1 140px;font-weight:700}
+.tipos label:has(input:checked){border-color:var(--green);background:var(--green-soft)}
+.tipos input{width:auto}
+.renglon{display:grid;grid-template-columns:1fr 150px;gap:6px 12px;align-items:center;padding:12px 0;border-bottom:1px dashed var(--line)}
+.renglon .nom{font-weight:700;font-size:17px}
+.renglon .det{grid-column:1/-1;font-size:14px;color:var(--muted)}
+.renglon input.monto{text-align:right;font-weight:700;font-size:17px}
+.mini{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.mini input{width:84px;padding:4px 6px;font-size:14px;text-align:right}
+.total{display:flex;justify-content:space-between;align-items:baseline;padding-top:12px;border-top:2px solid var(--ink)}
+.total span:first-child{font-weight:900;font-size:20px}
+.total span:last-child{font-family:var(--f-display);font-size:34px;color:var(--wood)}
 .oculto{display:none!important}
+@media (max-width:480px){.renglon{grid-template-columns:1fr 120px}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>Presupuesto automático</h1>
-    <p>La app arma un primer borrador con las piezas, los materiales, las horas y el precio. Revisalo: todo número se puede cambiar. Al final lo cargás en "Tu presupuesto".</p>
-  </header>
   <div class="aviso oculto" id="avisoSesion"></div>
 
-  <!-- 1. QUÉ -->
+  <!-- 1. EL MUEBLE -->
   <section class="hoja">
-    <h2><span class="paso">Paso 1</span>¿Qué querés hacer?</h2>
-    <label class="campo">Contalo como se lo dirías a otra carpintera
-      <textarea id="texto">Guardado para el cole, 170 de alto por 230 de ancho y 30 de fondo, en MDF blanco. Un sector con 2 puertas y 4 estantes, y otro con 25 casilleros. Zócalo con patas escondidas, se amura y lleva candado.</textarea>
-    </label>
+    <h2>1 · El mueble</h2>
     <label class="campo oculto" id="campoMueble">Mueble del pedido<select id="mueble"></select></label>
+    <label class="campo">Lo que pidió el cliente (o escribilo vos)
+      <textarea id="texto">Guardado de 170 de alto por 230 de ancho y 30 de fondo, en MDF blanco. 2 puertas con 4 estantes y 25 casilleros. Se amura.</textarea>
+    </label>
     <div class="fila-btn">
       <button class="btn lleno" id="btnInterpretar">Armar presupuesto</button>
       <span class="estado" id="estadoIA"></span>
     </div>
-    <div class="fila-btn" id="ejemplos">
-      <span class="nota">Probá con:</span>
-      <button class="ej" data-ej="Mesa de comedor para 6 personas en paraíso, tapa maciza, terminación barniz">Mesa para 6 en paraíso</button>
-      <button class="ej" data-ej="Estante de pared de 120 cm en pino, 25 cm de profundidad, con aceite">Estante de pared en pino</button>
-      <button class="ej" data-ej="Bajo mesada de 80 cm en melamina blanca con 2 puertas y un cajón">Bajo mesada en melamina</button>
-      <button class="ej" data-ej="Cómoda de 4 cajones en pino, 100 de ancho, barnizada">Cómoda en pino</button>
+    <div class="tipos">
+      <label><input type="radio" name="tipo" value="caja"> Mueble con puertas o cajones</label>
+      <label><input type="radio" name="tipo" value="mesa"> Mesa o escritorio</label>
+      <label><input type="radio" name="tipo" value="estante"> Estante o tapa</label>
+    </div>
+    <div class="grid">
+      <label class="campo" id="lAlto">Alto (cm)<input id="alto" type="number"></label>
+      <label class="campo" id="lAncho">Ancho (cm)<input id="ancho" type="number"></label>
+      <label class="campo" id="lProf">Profundidad (cm)<input id="prof" type="number"></label>
+      <label class="campo sCaja">Puertas<input id="puertas" type="number"></label>
+      <label class="campo sCaja">Cajones<input id="cajones" type="number"></label>
+      <label class="campo sCaja">Estantes<input id="estantes" type="number"></label>
+      <label class="campo sCaja">Casilleros<input id="casilleros" type="number"></label>
+    </div>
+    <div class="checks">
+      <label><input type="checkbox" id="instala"> Se instala en el lugar</label>
+      <label><input type="checkbox" id="termina"> Lleva terminación (barniz, laca, aceite)</label>
     </div>
   </section>
 
-  <!-- 2. MATERIAL -->
+  <!-- 2. LA MADERA -->
   <section class="hoja">
-    <h2><span class="paso">Paso 2</span>Madera y precio</h2>
+    <h2>2 · La madera</h2>
     <div class="grid">
       <label class="campo">Material<select id="material"></select></label>
-      <label class="campo">Espesor (mm)<input id="espesor" type="number"></label>
-      <label class="campo">Precio que conseguís<input id="precioMadera" type="number"></label>
-      <label class="campo">Por
+      <label class="campo">La comprás por
         <select id="unidad">
-          <option value="placa">Placa / tablero</option>
-          <option value="m2">Metro cuadrado</option>
+          <option value="placa">Placa</option>
           <option value="pie">Pie</option>
-          <option value="pieza">Pieza (tabla, listón, tirante)</option>
-          <option value="ml">Metro lineal</option>
+          <option value="pieza">Pieza (tabla o tirante)</option>
         </select>
       </label>
-      <label class="campo" id="campoPlaca">Medida de la placa (mm)<input id="placaMedida" type="text"></label>
-      <label class="campo" id="campoSeccion">Sección (pulgadas)<select id="seccion"></select></label>
-      <label class="campo" id="campoLargo">Largo de la pieza<select id="largo"></select></label>
-      <label class="campo">Desperdicio (%)<input id="merma" type="number"></label>
+      <label class="campo" id="lSeccion">Sección<select id="seccion"></select></label>
+      <label class="campo" id="lLargo">Largo<select id="largo"></select></label>
+      <label class="campo">Precio ($)<input id="precio" type="number"></label>
     </div>
     <p class="nota" id="notaMadera"></p>
-    <div class="fila-btn" id="refMadera"></div>
-    <h3>Madera por parte</h3>
-    <p class="nota">Si una parte sale de otra madera (patas de tirante, tapa de tablero, frentes de otro color), elegila acá. Lo demás usa la madera de arriba.</p>
-    <div class="tabla"><table id="tPartes"></table></div>
   </section>
 
-  <!-- 3. DISEÑO -->
+  <!-- 3. EL PRESUPUESTO -->
   <section class="hoja">
-    <h2><span class="paso">Paso 3</span>Cómo se construye</h2>
-    <div class="familias">
-      <label><input type="radio" name="familia" value="caja"><span>Caja<small>Guardado, alacena, bajo mesada, placard, biblioteca, cómoda</small></span></label>
-      <label><input type="radio" name="familia" value="armazon"><span>Armazón<small>Mesa, escritorio, banco: patas, faldones y tapa</small></span></label>
-      <label><input type="radio" name="familia" value="tablero"><span>Tablero suelto<small>Estante de pared, tapa, mesada</small></span></label>
-    </div>
-    <div class="grid">
-      <label class="campo" id="lblAlto">Alto (mm)<input id="alto" type="number"></label>
-      <label class="campo" id="lblAncho">Ancho (mm)<input id="ancho" type="number"></label>
-      <label class="campo" id="lblProf">Profundidad (mm)<input id="prof" type="number"></label>
-    </div>
-    <div id="diseno"></div>
-    <h3>Terminación</h3>
-    <div class="grid">
-      <label class="campo">Tipo
-        <select id="termTipo">
-          <option value="ninguna">Ninguna (melamina o crudo)</option>
-          <option value="aceite">Aceite</option>
-          <option value="barniz">Barniz</option>
-          <option value="laca">Laca o poliuretano</option>
-          <option value="tinte">Tinte y barniz</option>
-        </select>
-      </label>
-      <label class="campo">Manos<input id="termManos" type="number" value="3"></label>
-    </div>
-  </section>
-
-  <!-- 4. DESPIECE -->
-  <section class="hoja">
-    <h2><span class="paso">Paso 4</span>Despiece</h2>
-    <p class="nota">Lo arma la app con las medidas. Revisalo: si una pieza no va, poné cantidad 0 en el diseño o corregí en materiales.</p>
-    <div class="tabla"><table id="tDespiece"></table></div>
-    <div class="resumen" id="resDespiece"></div>
-    <div class="aviso oculto" id="avisoGrosor"></div>
-  </section>
-
-  <!-- 5. MATERIALES -->
-  <section class="hoja">
-    <h2><span class="paso">Paso 5</span>Materiales</h2>
-    <p class="nota">"Se compra" es cómo viene (bolsa de 500, caja de 10). "Usa" es lo que lleva este mueble: al presupuesto va solo eso. "Entero" cobra el paquete completo. "Lo tengo" es lo que ya está en el taller: se cobra igual, pero no se compra. Los renglones con precio en $0 necesitan tu precio.</p>
-    <div class="tabla"><table id="tMat"></table></div>
-    <div><button class="btn" id="addMat">+ Agregar renglón</button></div>
-    <div class="grid">
-      <label class="campo">Insumos menores (% de materiales)<input id="insumos" type="number" value="5"></label>
-    </div>
-    <p class="nota">Insumos menores cubre cola vinílica, lijas y discos, que no conviene contar uno por uno.</p>
-  </section>
-
-  <!-- 6. MANO DE OBRA -->
-  <section class="hoja">
-    <h2><span class="paso">Paso 6</span>Mano de obra</h2>
-    <div class="familias">
-      <label><input type="radio" name="metodo" value="horas" checked><span>Por días y horas<small>Tiempo por componente × valor hora, más gastos del taller y ganancia</small></span></label>
-      <label><input type="radio" name="metodo" value="mult"><span>Multiplicador fijo<small>Materiales × un número. La mano de obra va adentro</small></span></label>
-    </div>
-    <div id="bloqueHoras">
-      <h3>Tiempo por componente</h3>
-      <p class="nota">Tiempos aproximados. Los de caja están calibrados con tu guardado (unas 24 horas de taller). La instalación en el lugar va aparte y el cliente la ve en su propio renglón. Los de armazón, tablero y terminación son una primera estimación para corregir. Cada carpintera los ajusta y la app aprende su ritmo.</p>
-      <div class="tabla"><table id="tT"></table></div>
-      <div class="grid" style="margin-top:12px">
-        <label class="campo">Nivel de terminación
-          <select id="nivel"><option value="1">Simple (×1)</option><option value="1.2">Media (×1,2)</option><option value="1.5">Fina (×1,5)</option></select>
-        </label>
-        <label class="campo">Ajuste por material<input id="fMat" type="number" step="0.05" value="1"></label>
-      </div>
-      <p class="nota" id="sugHoras"></p>
-      <h3>Quién lo hace</h3>
-      <div class="tabla"><table id="tMO"></table></div>
-      <div style="margin-top:10px"><button class="btn" id="addMO">+ Sumar persona</button></div>
-      <div class="grid" style="margin-top:12px">
-        <label class="campo">Gastos del taller (%)<input id="gastos" type="number" value="10"></label>
-        <label class="campo">Ganancia (%)<input id="ganancia" type="number" value="20"></label>
-      </div>
-      <p class="nota">Valores hora del convenio CCT 335/75, escala julio 2026. Gastos del taller cubre luz, alquiler, desgaste de herramientas y viajes.</p>
-    </div>
-    <div id="bloqueMult" class="oculto">
-      <div class="grid"><label class="campo">Multiplicador<input id="multFijo" type="number" step="0.05" value="2"></label></div>
-    </div>
-  </section>
-
-  <!-- 7. RESULTADO -->
-  <section class="hoja">
-    <h2><span class="paso">Resultado</span>Borrador del presupuesto</h2>
-    <div class="dos">
-      <div class="cuenta" id="vistaCliente"></div>
-      <div class="cuenta" id="vistaInterna"></div>
-    </div>
+    <h2>3 · El presupuesto</h2>
+    <p class="nota">Números redondos y orientativos. Cambiá cualquier monto.</p>
+    <div id="renglones"></div>
+    <div class="total"><span>Total</span><span id="total">$0</span></div>
     <div class="fila-btn">
       <button class="btn lleno" id="btnCargar">Cargar en "Tu presupuesto"</button>
       <span class="estado" id="estadoCargar"></span>
     </div>
-    <p class="nota">Se cargan los subtotales por rubro, como los ve el cliente. El detalle de materiales y horas queda guardado solo para vos cuando envíes el presupuesto.</p>
   </section>
 </div>
 
 <script>
 (function(){
 const $=id=>document.getElementById(id);
-const fmt=n=>"$"+Math.round(n||0).toLocaleString("es-AR");
 const num=v=>{const x=parseFloat(String(v??"").replace(",","."));return isFinite(x)?x:0};
-const f1=n=>(Math.round(n*10)/10).toLocaleString("es-AR");
-let uid=1;
-const PIE_M3=0.00235974; // 1 pie tablar = 1 pie² × 1 pulgada
-// Medida real (mm) de cada pulgada nominal, seca y cepillada (INTI, TVM-2017)
-const NOM={"1":20,"1.5":30,"2":40,"3":65,"4":90,"5":115,"6":140,"7":165,"8":185,"10":235,"12":285};
-const real=n=>NOM[String(n)]||Math.round(n*25.4*0.8);
-const SECCIONES=["1x1","1x2","1x3","1x4","1x6","1x8","1x10","1x12","1.5x6","2x2","2x3","2x4","2x5","2x6","3x3","3x6","4x4"];
-const SEC_PATA=["2x2","2x3","3x3","4x4"];
-const LARGOS=[2.44,3.05,3.66,4.25,4.85,5.45,6];
-const PIES_LARGO={2.44:8,3.05:10,3.66:12,4.25:14,4.85:16,5.45:18,6:20};
-const secDims=sec=>String(sec).split("x").map(Number);
+const fmt=n=>"$"+Math.round(n||0).toLocaleString("es-AR");
+const mil=n=>Math.ceil((n||0)/1000)*1000;           // renglones: a miles, para arriba
+const cincoMil=n=>Math.ceil((n||0)/5000)*5000;      // total: a $5.000, para arriba
 const coma=v=>String(v).replace(".",",");
-const piesPieza=(sec,L)=>{const [a,b]=secDims(sec);return a*b*(PIES_LARGO[L]||L/0.3048)/12};
-const volPiezaReal=(sec,L)=>{const [a,b]=secDims(sec);return real(a)/1000*real(b)/1000*L};
-// Precios de referencia: solo se muestran como sugerencia, nunca se suman solos
-const REF_FUENTE="Maderera Topic, oct-2026";
-const REF_PINO_PIEZA={"1x1|3.05":3750,"1x2|3.05":5000,"1x6|3.05":11000,"1x8|3.05":15100,"2x2|3.05":7700,"2x4|3.05":15000,"2x4|3.66":18000,
-  "2x6|3.05":22500,"2x6|3.66":27000,"2x6|4.25":31500,"2x6|4.85":42880,"2x6|5.45":48240,"3x6|3.05":34800,"3x6|3.66":41760,"3x6|4.25":48720,"3x6|4.85":68400,"3x6|5.45":76950};
-const refPieza=(sec,L)=>{const v=REF_PINO_PIEZA[sec+"|"+L];return v?{precio:v,txt:`${REF_FUENTE}: pino cepillado ${sec.replace("x","×")} de ${coma(L)} m`}:null};
 
-/* ---------- catálogos ---------- */
+/* ---------- datos fijos ---------- */
 const MATS=[
-  {id:"mdf_mel",nombre:"MDF melamina blanco",tipo:"placa",esp:18,placa:[2600,1830],precio:99331,cortes:true,canto:true,term:"ninguna",merma:18},
-  {id:"agl_mel",nombre:"Aglomerado melamina",tipo:"placa",esp:18,placa:[2600,1830],precio:0,cortes:true,canto:true,term:"ninguna",merma:18},
-  {id:"agl_crudo",nombre:"Aglomerado crudo",tipo:"placa",esp:18,placa:[2600,1830],precio:0,cortes:true,canto:false,term:"laca",merma:18},
-  {id:"mdf_crudo",nombre:"MDF crudo",tipo:"placa",esp:18,placa:[2600,1830],precio:0,cortes:true,canto:false,term:"laca",merma:18},
-  {id:"fenolico",nombre:"Fenólico",tipo:"placa",esp:18,placa:[2440,1220],precio:0,cortes:false,canto:false,term:"barniz",merma:18},
-  {id:"pino_tab",nombre:"Tablero de pino",tipo:"placa",esp:20,placa:[3000,1200],precio:85000,cortes:false,canto:false,term:"barniz",merma:18},
-  {id:"pino",nombre:"Pino macizo",tipo:"macizo",esp:22,precio:0,term:"barniz",merma:30},
-  {id:"eucalipto",nombre:"Eucalipto",tipo:"macizo",esp:22,precio:0,term:"barniz",merma:30},
-  {id:"paraiso",nombre:"Paraíso",tipo:"macizo",esp:22,precio:0,term:"barniz",merma:30},
-  {id:"kiri",nombre:"Kiri",tipo:"macizo",esp:22,precio:0,term:"aceite",merma:30},
-  {id:"cedro",nombre:"Cedro",tipo:"macizo",esp:22,precio:0,term:"barniz",merma:30},
-  {id:"guatambu",nombre:"Guatambú",tipo:"macizo",esp:22,precio:0,term:"barniz",merma:30},
-  {id:"roble",nombre:"Roble",tipo:"macizo",esp:22,precio:0,term:"aceite",merma:35},
-  {id:"nogal",nombre:"Nogal",tipo:"macizo",esp:22,precio:0,term:"aceite",merma:60},
-  {id:"dura",nombre:"Madera dura",tipo:"macizo",esp:22,precio:0,term:"aceite",merma:35},
-  {id:"semidura",nombre:"Madera semidura",tipo:"macizo",esp:22,precio:0,term:"barniz",merma:30},
-  {id:"blanda",nombre:"Madera blanda",tipo:"macizo",esp:22,precio:0,term:"barniz",merma:30}
+  {id:"mdf_mel",nombre:"MDF melamina blanco 18 mm",tipo:"placa",esp:18,placa:[2600,1830],precio:99331,servicio:true},
+  {id:"agl_mel",nombre:"Aglomerado melamina 18 mm",tipo:"placa",esp:18,placa:[2600,1830],servicio:true},
+  {id:"mdf_crudo",nombre:"MDF crudo 18 mm",tipo:"placa",esp:18,placa:[2600,1830]},
+  {id:"agl_crudo",nombre:"Aglomerado crudo 18 mm",tipo:"placa",esp:18,placa:[2600,1830]},
+  {id:"fenolico",nombre:"Fenólico 18 mm",tipo:"placa",esp:18,placa:[2440,1220]},
+  {id:"pino_tab",nombre:"Tablero de pino 20 mm",tipo:"placa",esp:20,placa:[3000,1200],precio:85000},
+  {id:"pino",nombre:"Pino",tipo:"macizo",esp:22},
+  {id:"eucalipto",nombre:"Eucalipto",tipo:"macizo",esp:22},
+  {id:"paraiso",nombre:"Paraíso",tipo:"macizo",esp:22},
+  {id:"kiri",nombre:"Kiri",tipo:"macizo",esp:22},
+  {id:"cedro",nombre:"Cedro",tipo:"macizo",esp:22},
+  {id:"roble",nombre:"Roble",tipo:"macizo",esp:22},
+  {id:"dura",nombre:"Madera dura",tipo:"macizo",esp:22},
+  {id:"semidura",nombre:"Madera semidura",tipo:"macizo",esp:22},
+  {id:"blanda",nombre:"Madera blanda",tipo:"macizo",esp:22}
 ];
-const ESCALA=[
-  {cat:"Promedio convenio",v:7100},{cat:"Oficial Múltiple",v:8261.50},{cat:"Oficial Especializado",v:7464.28},
-  {cat:"Oficial General",v:6940.48},{cat:"Medio Oficial",v:6343.43},{cat:"Ayudante",v:6100.67}
+const NOM={"1":20,"1.5":30,"2":40,"3":65,"4":90,"6":140,"8":185,"10":235,"12":285}; // medida real (INTI)
+const real=n=>NOM[String(n)]||Math.round(n*25.4*0.8);
+const SECCIONES=["1x4","1x6","1x8","1x10","1x12","1.5x6","2x2","2x3","2x4","2x6","3x3","3x6"];
+const LARGOS=[2.44,3.05,3.66,4.25,4.85,5.45];
+const PIE_M3=0.00235974;
+const OESTE={corte:1292,canto:395};       // precios del proveedor de placas (Oeste Maderas)
+const HERR={bisagra:2200,manija:1800};    // precios reales por unidad (caja de 10)
+const REF_TOPIC={"1x6|3.05":11000,"1x8|3.05":15100,"2x2|3.05":7700,"2x4|3.05":15000,"2x6|3.05":22500,"3x6|3.05":34800};
+
+/* ---------- memoria por carpintería (solo en este dispositivo) ---------- */
+const MEM_KEY="encastre_pres_simple";
+let MEM={};try{MEM=JSON.parse(localStorage.getItem(MEM_KEY)||"{}")}catch(e){}
+const guardarMem=()=>{try{localStorage.setItem(MEM_KEY,JSON.stringify(MEM))}catch(e){}};
+const precioKey=()=>`${S.material}|${S.unidad}|${S.unidad==="pieza"?S.seccion+"|"+S.largo:""}`;
+
+/* ---------- estado ---------- */
+const S={tipo:"caja",alto:170,ancho:230,prof:30,puertas:2,cajones:0,estantes:4,casilleros:25,instala:true,termina:false,
+  material:"mdf_mel",unidad:"placa",seccion:"1x6",largo:3.05,precio:99331,
+  valorHora:MEM.valorHora||7100,ganancia:MEM.ganancia??30,horasDia:MEM.horasDia||3.5,
+  herr:{bisagra:MEM.bisagra??HERR.bisagra,manija:MEM.manija??HERR.manija,corredera:MEM.corredera??0},
+  litro:MEM.litro??0, montos:{}};
+const matSel=()=>MATS.find(m=>m.id===S.material)||MATS[0];
+
+/* ---------- cálculo ---------- */
+function calcular(){
+  const m=matSel(),macizo=m.tipo==="macizo";
+  const e=S.unidad==="pieza"?real(S.seccion.split("x")[0]):m.esp;
+  const H=S.alto*10,W=S.ancho*10,D=S.prof*10;
+  let area=0,vol=0,piezas=0,canto=0,horas=0,horasInst=0,termM2=0;
+  const herr={bisagras:0,manijas:0,correderas:0,soportes:0},det=[];
+  const pieza=(cant,a,b,esp,lados)=>{if(cant<=0||a<=0||b<=0)return;const ar=cant*a*b/1e6;area+=ar;vol+=ar*esp/1000;piezas+=cant;canto+=lados===4?cant*2*(a+b)/1000:lados===1?cant*Math.max(a,b)/1000:0;termM2+=ar*1.5};
+  if(S.tipo==="caja"){
+    const zoc=H>=800?70:0,Hc=H-zoc,Hl=Hc-2*e;
+    const mods=Math.max(1,Math.ceil(S.puertas/2)+(S.cajones>0&&S.puertas>0?0:0));
+    const cas=Math.max(0,S.casilleros),modCas=cas>0?1:0;
+    const totMods=mods+modCas;
+    pieza(totMods+1,D,Hl,e,1);                 // laterales y divisores
+    pieza(2,D,W,e,1);                          // tapa y piso
+    const wMod=(W-(totMods+1)*e)/totMods;
+    pieza(S.estantes,D-20,wMod,e,1);
+    let divs=0,hors=0;
+    if(cas){const f=Math.max(1,Math.round(Math.sqrt(cas))),c=Math.ceil(cas/f);hors=f-1;divs=(c-1)*f;pieza(hors,D,wMod,e,1);pieza(divs,D,(Hl-(f-1)*e)/f,e,1)}
+    if(S.puertas>0){const ph=Hc-S.cajones*180;pieza(S.puertas,(wMod*mods+2*e)/S.puertas,ph,e,4);herr.bisagras=S.puertas*(ph<=1000?2:ph<=1700?3:4)}
+    if(S.cajones>0){pieza(S.cajones,177,wMod+2*e,e,4);pieza(4*S.cajones,140,Math.max(D-60,wMod-30),e,1);herr.correderas=S.cajones}
+    herr.manijas=S.puertas+S.cajones;
+    if(zoc)pieza(1,zoc,W,e,4);
+    const fondo=W*Hc/1e6;
+    horas=3+3*totMods+0.45*(S.estantes+hors)+0.25*divs+1.5*S.puertas+2*S.cajones+(zoc?1.5:0)+1;
+    horasInst=S.instala?2:0;
+    det.fondo=fondo;
+  } else if(S.tipo==="mesa"){
+    const et=macizo?30:e,sp=65,L=W,A=D;
+    pieza(1,A,L,et,macizo?0:4);
+    const pv=4*sp*sp*(H-et)/1e9;vol+=pv;piezas+=4;            // patas
+    pieza(2,100,L-2*40-2*sp+50,e,0);pieza(2,100,A-2*40-2*sp+50,e,0);
+    horas=2+4+4+2.5*(L*A/1e6)+2;
+    horasInst=S.instala?1:0;
+  } else {
+    const L=W,A=D;pieza(1,A,L,e,4);
+    herr.soportes=Math.max(2,Math.ceil(L/800)+1);
+    horas=1+2*(L*A/1e6);
+    horasInst=S.instala?0.3*herr.soportes:0;
+  }
+  if(macizo)horas*=1.2;
+  if(S.termina)horas+=0.4*termM2*1.5;
+  // madera a comprar
+  let usa=0,uTxt="";
+  if(S.unidad==="placa"){const pl=m.placa||[2600,1830];usa=Math.ceil(area/(pl[0]*pl[1]/1e6*0.82));uTxt=usa===1?"placa":"placas"}
+  else if(S.unidad==="pie"){usa=Math.ceil(vol/PIE_M3*1.3);uTxt="pies"}
+  else{const [a,b]=S.seccion.split("x").map(Number);usa=Math.ceil(vol*1.3/(real(a)/1000*real(b)/1000*S.largo));uTxt=usa===1?"pieza":"piezas"}
+  let madera=usa*num(S.precio);
+  let extraMadera="";
+  if(m.servicio&&S.unidad==="placa"){const cortes=Math.ceil(piezas*1.33),cm=Math.ceil(canto);madera+=cortes*OESTE.corte+cm*OESTE.canto;extraMadera=` + cortes y canto (${cortes} cortes, ${cm} m)`}
+  if(S.tipo==="caja"&&det.fondo){madera+=Math.ceil(det.fondo/(2.6*1.8*0.9))*53000;extraMadera+=" + fondo de chapadur"}
+  madera*=1.05; // cola, lijas y tornillería menor
+  const herrajes=herr.bisagras*S.herr.bisagra+herr.manijas*S.herr.manija+herr.correderas*S.herr.corredera;
+  const litros=S.termina?Math.ceil(termM2*3/10):0;
+  const terminacion=litros*num(S.litro);
+  const g=1+num(S.ganancia)/100;
+  return {usa,uTxt,extraMadera,madera,herr,herrajes,litros,terminacion,termM2,
+    horas:Math.round(horas*2)/2,horasInst:Math.round(horasInst*2)/2,
+    mo:Math.round(horas*2)/2*num(S.valorHora)*g,inst:Math.round(horasInst*2)/2*num(S.valorHora)*g};
+}
+
+/* ---------- pantalla ---------- */
+let C=null;
+const RENGLONES=[
+  {k:"madera",nom:"Madera"},
+  {k:"herrajes",nom:"Herrajes"},
+  {k:"terminacion",nom:"Terminación"},
+  {k:"mo",nom:"Mano de obra"},
+  {k:"inst",nom:"Instalación en el lugar"}
 ];
-const PRECIOS={
-  corte:{nombre:"Corte (desplazamiento de sierra)",cant:1,precio:1292,rubro:"Madera"},
-  cantoServ:{nombre:"Pegado de canto PVC (metro)",cant:1,precio:395,rubro:"Madera"},
-  chapadur:{nombre:"Chapadur blanco 2600×1800 (fondos)",cant:1,precio:53000,rubro:"Madera"},
-  bisagras:{nombre:"Bisagras cierre suave",cant:10,precio:22000,rubro:"Herrajes"},
-  manijas:{nombre:"Manijas",cant:10,precio:18000,rubro:"Herrajes"},
-  correderas:{nombre:"Correderas (par) — cargá precio",cant:1,precio:0,rubro:"Herrajes"},
-  candado:{nombre:"Candado",cant:1,precio:11000,rubro:"Herrajes"},
-  pasador:{nombre:"Pasador porta candado",cant:1,precio:7000,rubro:"Herrajes"},
-  escuadras:{nombre:"Escuadras para amurar",cant:5,precio:4500,rubro:"Herrajes"},
-  tarugos:{nombre:"Tarugos de madera",cant:500,precio:18000,rubro:"Herrajes"},
-  tornillos:{nombre:"Tornillos (cargá precio)",cant:100,precio:0,rubro:"Herrajes"},
-  tapaTornillo:{nombre:"Tapa tornillo melamina blanco",cant:200,precio:3800,rubro:"Herrajes"},
-  fijadores:{nombre:"Fijadores de tapa — cargá precio",cant:1,precio:0,rubro:"Herrajes"},
-  soportes:{nombre:"Soportes o ménsulas — cargá precio",cant:1,precio:0,rubro:"Herrajes"},
-  maderaPatas:{nombre:"Tirante para patas (pieza)",cant:1,precio:0,rubro:"Madera"},
-  termProd:{nombre:"Producto de terminación (litro) — cargá precio",cant:1,precio:0,rubro:"Terminación"},
-  tinte:{nombre:"Tinte (litro) — cargá precio",cant:1,precio:0,rubro:"Terminación"},
-  rollo:{nombre:"Rollo poliuretánico para embalar (metros)",cant:50,precio:21700,rubro:"Embalaje"}
-};
-const COMPS={
-  caja:[
-    {key:"gestion",nombre:"Despiece, pedido y coordinación con el proveedor",h:3},
-    {key:"caja",nombre:"Estructura de caja (por módulo)",h:3},
-    {key:"estante",nombre:"Estantes",h:0.45},
-    {key:"divisor",nombre:"Divisores de casilleros",h:0.25},
-    {key:"puerta",nombre:"Puertas (bisagras, manija y ajuste)",h:1.5},
-    {key:"cajon",nombre:"Cajones con correderas",h:2},
-    {key:"zocalo",nombre:"Zócalo y patas",h:1.5},
-    {key:"fondo",nombre:"Fondo",h:1},
-    {key:"term",nombre:"Lijado y terminación (m²)",h:0.4},
-    {key:"embalaje",nombre:"Embalaje",h:1},
-    {key:"instal",nombre:"Amurado",h:2,inst:true}],
-  armazon:[
-    {key:"gestion",nombre:"Despiece, compra y preparación de la madera",h:2},
-    {key:"pata",nombre:"Patas (cepillar, escuadrar, cajas)",h:1},
-    {key:"faldon",nombre:"Faldones (espigas y ranura)",h:1},
-    {key:"refuerzo",nombre:"Travesaños de refuerzo",h:0.75},
-    {key:"tapa",nombre:"Tapa (por m²; maciza incluye encolado)",h:2.5},
-    {key:"estanteInf",nombre:"Estante inferior",h:1.5},
-    {key:"armado",nombre:"Armado, encolado y ajuste",h:2},
-    {key:"term",nombre:"Lijado y terminación (m²)",h:0.4},
-    {key:"embalaje",nombre:"Embalaje",h:1}],
-  tablero:[
-    {key:"gestion",nombre:"Despiece y compra",h:1},
-    {key:"tablero",nombre:"Tablero (por m²: cortar, cepillar, cantos)",h:2},
-    {key:"soporte",nombre:"Soportes en la pared (por soporte)",h:0.3,inst:true},
-    {key:"term",nombre:"Lijado y terminación (m²)",h:0.4},
-    {key:"embalaje",nombre:"Embalaje",h:0.5}]
-};
-
-/* ---------- estado del pedido ---------- */
-const P={
-  familia:"caja",material:"mdf_mel",espesor:18,precio:99331,unidad:"placa",placa:[2600,1830],merma:18,seccion:"1x6",largo:3.05,
-  alto:1700,ancho:2300,prof:300,
-  caja:{zocalo:70,patas:6,secPata:"3x3",largoPata:2.44,tapaPiso:true,fondo:true,amurado:true,candado:true,anclaje:"ambos",
-    modulos:[{ancho:934,estantes:4,puertas:2,cajones:0,filas:0,cols:0},{ancho:0,estantes:0,puertas:0,cajones:0,filas:5,cols:5}]},
-  arm:{patas:4,seccion:65,espTapa:30,faldon:100,refuerzos:0,estanteInf:false,anclaje:"espiga"},
-  tab:{soportes:0},
-  term:{tipo:"ninguna",manos:3},
-  partes:{}
-};
-let mat=[],mo=[],comp=[],compFam=null,D={},ULT=null;
-
-/* ---------- paso 2: material ---------- */
-$("material").innerHTML='<optgroup label="Placas">'+MATS.filter(m=>m.tipo==="placa").map(m=>`<option value="${m.id}">${m.nombre}</option>`).join("")+
-  '</optgroup><optgroup label="Madera maciza">'+MATS.filter(m=>m.tipo==="macizo").map(m=>`<option value="${m.id}">${m.nombre}</option>`).join("")+'</optgroup>';
-const matSel=()=>MATS.find(m=>m.id===P.material)||MATS[0];
-function aplicarMaterialDefaults(){
+function visibles(){
+  return RENGLONES.filter(r=>r.k==="madera"||r.k==="mo"||(r.k==="herrajes"&&(S.tipo!=="mesa"))||(r.k==="terminacion"&&S.termina)||(r.k==="inst"&&S.instala));
+}
+function sugerido(k){return mil(C[k]||0)}
+function monto(k){return S.montos[k]!=null?S.montos[k]:sugerido(k)}
+function detalle(k){
   const m=matSel();
-  P.espesor=m.esp;P.precio=m.precio;P.merma=m.merma;P.unidad=m.tipo==="placa"?"placa":"pie";
-  if(m.placa)P.placa=m.placa.slice();
-  P.term.tipo=m.term;P.term.manos=m.term==="aceite"?2:3;
-}
-$("seccion").innerHTML=SECCIONES.map(x=>`<option value="${x}">${x.replace("x"," × ")}" (${real(secDims(x)[0])} × ${real(secDims(x)[1])} mm)</option>`).join("");
-$("largo").innerHTML=LARGOS.map(x=>`<option value="${x}">${coma(x)} m (${PIES_LARGO[x]} pies)</option>`).join("");
-function refMadera(){return refStock(stockPrincipal())}
-function refStock(P){
-  const m=MATS.find(x=>x.id===P.material)||MATS[0];
-  if(m.id==="pino"){
-    if(P.unidad==="pieza")return refPieza(P.seccion,P.largo);
-    if(P.unidad==="pie")return {precio:2200,txt:`${REF_FUENTE}: pino cepillado, por pie (sale de la tabla 1×6 y el tirante 2×4)`};
+  if(k==="madera")return `${C.usa} ${C.uTxt} de ${m.nombre}${S.precio?` × ${fmt(S.precio)}`:""}${C.extraMadera}. Incluye cola, lijas y tornillería.`+(num(S.precio)?"":` <b style="color:var(--warn)">Cargá el precio de la madera en el paso 2.</b>`);
+  if(k==="herrajes"){
+    const h=C.herr,p=[];
+    if(h.bisagras)p.push(`${h.bisagras} bisagras × <span class="mini">$<input data-h="bisagra" type="number" value="${S.herr.bisagra}"></span>`);
+    if(h.manijas)p.push(`${h.manijas} manijas × <span class="mini">$<input data-h="manija" type="number" value="${S.herr.manija}"></span>`);
+    if(h.correderas)p.push(`${h.correderas} pares de correderas × <span class="mini">$<input data-h="corredera" type="number" value="${S.herr.corredera}"></span>`);
+    if(h.soportes)p.push(`${h.soportes} soportes (poné el monto a la derecha)`);
+    return p.length?p.join(" · "):"Sumá lo que lleve.";
   }
-  if(m.id==="pino_tab"){const t={20:[113187,77000],30:[172216,115500],40:[237930,158400]}[P.espesor];
-    if(t&&P.unidad==="placa")return {precio:t[0],txt:`${REF_FUENTE}: tablero de pino ${P.espesor} mm 1200×3000`};
-    if(t&&P.unidad==="m2")return {precio:t[1],txt:`${REF_FUENTE}: tablero de pino ${P.espesor} mm cortado a medida, por m²`};}
-  return null;
+  if(k==="terminacion")return `Unos ${C.litros} ${C.litros===1?"litro":"litros"} para ${coma(C.termM2.toFixed(1))} m² a 3 manos × <span class="mini">$<input data-l="1" type="number" value="${S.litro}"></span> el litro.`;
+  if(k==="mo")return `${coma(C.horas)} horas (unos ${coma(Math.ceil(C.horas/S.horasDia))} días de <span class="mini"><input data-c="horasDia" type="number" step="0.5" value="${S.horasDia}"></span> h) × <span class="mini">$<input data-c="valorHora" type="number" value="${S.valorHora}"></span> la hora + <span class="mini"><input data-c="ganancia" type="number" value="${S.ganancia}"></span> % de ganancia y gastos del taller.`;
+  if(k==="inst")return `${coma(C.horasInst)} horas en el lugar, al mismo valor.`;
+  return "";
 }
-function precioPorPie(){
-  const pr=num(P.precio);if(!pr)return 0;
-  if(P.unidad==="pie")return pr;
-  if(P.unidad==="pieza")return pr/piesPieza(P.seccion,P.largo);
-  if(P.unidad==="ml"){const [a,b]=secDims(P.seccion);return pr/(a*b*3.28084/12)}
-  if(P.unidad==="m2")return pr/(10.7639*Math.max(0.5,Math.round(P.espesor/20*2)/2));
-  if(P.unidad==="placa")return pr/(P.placa[0]*P.placa[1]/1e6*10.7639*Math.max(0.5,Math.round(P.espesor/20*2)/2));
-  return 0;
+function pintarPresupuesto(){
+  C=calcular();
+  $("estadoCargar").textContent="";
+  const vis=visibles();
+  $("renglones").innerHTML=vis.map(r=>`<div class="renglon" data-k="${r.k}"><span class="nom">${r.nom}</span><input class="monto" type="number" step="1000" value="${monto(r.k)}" aria-label="Monto ${r.nom}"><span class="det">${detalle(r.k)}</span></div>`).join("");
+  pintarTotal();
 }
-function pintarPaso2(){
+function totalRedondo(){const vis=visibles();const s=vis.reduce((a,r)=>a+monto(r.k),0);return {s,t:cincoMil(s),vis}}
+function pintarTotal(){$("total").textContent=fmt(totalRedondo().t)}
+$("renglones").addEventListener("input",ev=>{
+  const t=ev.target,row=t.closest(".renglon");
+  if(t.classList.contains("monto")){S.montos[row.dataset.k]=num(t.value);pintarTotal();return}
+});
+$("renglones").addEventListener("change",ev=>{
+  const t=ev.target,row=t.closest(".renglon");if(!row)return;
+  if(t.dataset.h){S.herr[t.dataset.h]=num(t.value);MEM[t.dataset.h]=S.herr[t.dataset.h];delete S.montos.herrajes}
+  else if(t.dataset.l){S.litro=num(t.value);MEM.litro=S.litro;delete S.montos.terminacion}
+  else if(t.dataset.c){S[t.dataset.c]=num(t.value);MEM[t.dataset.c]=S[t.dataset.c];delete S.montos.mo;delete S.montos.inst}
+  else return;
+  guardarMem();pintarPresupuesto();
+});
+
+function pintarMueble(){
+  document.querySelectorAll('input[name="tipo"]').forEach(r=>r.checked=r.value===S.tipo);
+  ["alto","ancho","prof","puertas","cajones","estantes","casilleros"].forEach(k=>$(k).value=S[k]);
+  $("instala").checked=S.instala;$("termina").checked=S.termina;
+  document.querySelectorAll(".sCaja").forEach(x=>x.classList.toggle("oculto",S.tipo!=="caja"));
+  $("lAlto").classList.toggle("oculto",S.tipo==="estante");
+  $("lAncho").firstChild.textContent=S.tipo==="mesa"?"Largo (cm)":"Ancho (cm)";
+  $("lProf").firstChild.textContent=S.tipo==="mesa"?"Ancho (cm)":"Profundidad (cm)";
+}
+function pintarMadera(){
   const m=matSel();
-  $("material").value=P.material;$("espesor").value=P.espesor;$("precioMadera").value=P.precio;$("unidad").value=P.unidad;
-  $("placaMedida").value=P.placa.join(" × ");$("merma").value=P.merma;
-  $("campoPlaca").classList.toggle("oculto",P.unidad!=="placa");
-  $("seccion").value=P.seccion;$("largo").value=String(P.largo);
-  $("campoSeccion").classList.toggle("oculto",!(P.unidad==="pieza"||P.unidad==="ml"));
-  $("campoLargo").classList.toggle("oculto",P.unidad!=="pieza");
-  const ref=refMadera(),ppp=precioPorPie();
-  $("refMadera").innerHTML=(!num(P.precio)&&ref?`<span class="nota">Referencia: ${ref.txt}, ${fmt(ref.precio)}. Es orientativa: confirmá con tu proveedor.</span><button class="btn" id="usarRef">Usar referencia</button>`:"")+
-    (ppp&&m.tipo==="macizo"&&P.unidad!=="pie"?`<span class="nota">Tu precio equivale a ${fmt(ppp)} por pie.</span>`:"");
-  $("termTipo").value=P.term.tipo;$("termManos").value=P.term.manos;
-  const falta=!num(P.precio);
-  $("notaMadera").innerHTML=(falta?'<b style="color:var(--warn)">Cargá el precio de la madera para que el presupuesto tenga sentido.</b> ':"")+
-    (m.tipo==="macizo"?"En madera maciza el desperdicio sugerido es 30 % (nogal hasta 60 %). Las patas y la tapa se calculan con su propio grosor.":"En placas el desperdicio sugerido es 18 %, como en tu despiece de Oeste. Si el proveedor corta y cantea, esos renglones aparecen en materiales.");
+  $("material").value=S.material;$("unidad").value=S.unidad;$("seccion").value=S.seccion;$("largo").value=String(S.largo);$("precio").value=S.precio||"";
+  $("lSeccion").classList.toggle("oculto",S.unidad!=="pieza");$("lLargo").classList.toggle("oculto",S.unidad!=="pieza");
+  const ref=m.id==="pino"&&S.unidad==="pieza"?REF_TOPIC[S.seccion+"|"+S.largo]:m.id==="pino"&&S.unidad==="pie"?2200:0;
+  $("notaMadera").innerHTML=(m.tipo==="placa"&&S.unidad==="placa"?`Placa de ${(m.placa||[]).join(" × ")} mm. `:"")+
+    (ref?`Referencia Maderera Topic (oct-2026): ${fmt(ref)}${S.unidad==="pie"?" el pie":" la pieza"}. `:"")+
+    (num(S.precio)?"":"<b style=\"color:var(--warn)\">Falta el precio.</b>");
 }
-function leerPaso2(){
-  P.espesor=num($("espesor").value)||18;P.precio=num($("precioMadera").value);P.unidad=$("unidad").value;
-  const pm=$("placaMedida").value.match(/(\d+)\D+(\d+)/);if(pm)P.placa=[+pm[1],+pm[2]];
-  P.merma=Math.min(80,Math.max(0,num($("merma").value)));
-  P.seccion=$("seccion").value;P.largo=num($("largo").value);
-  P.term.tipo=$("termTipo").value;P.term.manos=Math.max(0,Math.round(num($("termManos").value)));
-}
-$("material").addEventListener("change",()=>{P.material=$("material").value;aplicarMaterialDefaults();
-  $("fMat").value=matSel().tipo==="macizo"?1.2:1;pintarPaso2();recalcular()});
-$("refMadera").addEventListener("click",ev=>{if(ev.target.id!=="usarRef")return;const r=refMadera();if(r){P.precio=r.precio;pintarPaso2();recalcular()}});
-["espesor","precioMadera","unidad","placaMedida","seccion","largo","merma","termTipo","termManos"].forEach(id=>$(id).addEventListener("change",()=>{leerPaso2();if(["espesor","unidad","placaMedida","seccion","largo"].includes(id)){P.precio=0}pintarPaso2();recalcular()}));
+function todo(){pintarMueble();pintarMadera();pintarPresupuesto()}
 
-/* ---------- paso 3: diseño por familia ---------- */
-function pintarDiseno(){
-  document.querySelectorAll('input[name="familia"]').forEach(r=>r.checked=r.value===P.familia);
-  $("alto").value=P.alto;$("ancho").value=P.ancho;$("prof").value=P.prof;
-  $("lblAncho").firstChild.textContent=P.familia==="armazon"?"Largo (mm)":"Ancho (mm)";
-  $("lblProf").firstChild.textContent=P.familia==="armazon"?"Ancho de la tapa (mm)":"Profundidad (mm)";
-  $("lblAlto").firstChild.textContent=P.familia==="tablero"?"Alto (no se usa)":"Alto (mm)";
-  let h="";
-  if(P.familia==="caja"){
-    const c=P.caja;
-    h+=`<h3>Módulos (de izquierda a derecha)</h3><p class="nota">Cada módulo es un sector entre dos laterales. Ancho vacío o 0 = se reparte lo que sobra. Si un módulo tiene filas y columnas de casilleros, los estantes no se usan.</p>
-    <div class="tabla"><table><thead><tr><th>#</th><th class="num">Ancho interior</th><th class="num">Estantes</th><th class="num">Puertas</th><th class="num">Cajones</th><th class="num">Filas casill.</th><th class="num">Col. casill.</th><th></th></tr></thead><tbody>`+
-    c.modulos.map((m,i)=>`<tr><td>${i+1}</td>${["ancho","estantes","puertas","cajones","filas","cols"].map(f=>`<td class="num"><input class="n-s" type="number" data-mod="${i}" data-f="${f}" value="${m[f]||0}" aria-label="${f} módulo ${i+1}"></td>`).join("")}<td>${c.modulos.length>1?`<button class="x" data-delmod="${i}" aria-label="Quitar módulo">×</button>`:""}</td></tr>`).join("")+
-    `</tbody></table></div><div><button class="btn" id="addMod">+ Agregar módulo</button></div>
-    <div class="grid">
-      <label class="campo">Alto del zócalo (mm)<input data-c="zocalo" type="number" value="${c.zocalo}"></label>
-      <label class="campo">Patas escondidas<input data-c="patas" type="number" value="${c.patas}"></label>
-      <label class="campo">Anclaje<select data-c="anclaje"><option value="ambos"${c.anclaje==="ambos"?" selected":""}>Tarugos y tornillos</option><option value="tarugos"${c.anclaje==="tarugos"?" selected":""}>Solo tarugos</option><option value="tornillos"${c.anclaje==="tornillos"?" selected":""}>Solo tornillos</option></select></label>
-    </div>
-    <div class="checks">
-      <label><input type="checkbox" data-c="tapaPiso"${c.tapaPiso?" checked":""}> Tapa y piso enteros</label>
-      <label><input type="checkbox" data-c="fondo"${c.fondo?" checked":""}> Fondo de chapadur</label>
-      <label><input type="checkbox" data-c="amurado"${c.amurado?" checked":""}> Se amura en el lugar (instalación)</label>
-      <label><input type="checkbox" data-c="candado"${c.candado?" checked":""}> Lleva candado</label>
-    </div>`;
-  } else if(P.familia==="armazon"){
-    const a=P.arm;
-    h+=`<div class="grid">
-      <label class="campo">Patas<input data-a="patas" type="number" value="${a.patas}"></label>
-      <label class="campo">Sección de pata (mm reales; 3" = 65)<input data-a="seccion" type="number" value="${a.seccion}"></label>
-      <label class="campo">Espesor de la tapa (mm)<input data-a="espTapa" type="number" value="${a.espTapa}"></label>
-      <label class="campo">Alto del faldón (mm)<input data-a="faldon" type="number" value="${a.faldon}"></label>
-      <label class="campo">Travesaños de refuerzo<input data-a="refuerzos" type="number" value="${a.refuerzos}"></label>
-      <label class="campo">Unión patas y faldones<select data-a="anclaje"><option value="espiga"${a.anclaje==="espiga"?" selected":""}>Caja y espiga</option><option value="tarugos"${a.anclaje==="tarugos"?" selected":""}>Tarugos</option><option value="tornillos"${a.anclaje==="tornillos"?" selected":""}>Tornillos y escuadras</option></select></label>
-    </div>
-    <div class="checks"><label><input type="checkbox" data-a="estanteInf"${a.estanteInf?" checked":""}> Estante inferior</label></div>
-    <p class="nota">Medidas de referencia: mesa de comedor 70 cm de alto y 60 cm por persona (para 6: 150 × 100); escritorio 70 a 75 cm; mesa ratona 30 a 60 cm.</p>`;
-  } else {
-    h+=`<div class="grid"><label class="campo">Soportes o ménsulas (0 = automático)<input data-t="soportes" type="number" value="${P.tab.soportes}"></label></div>`;
-  }
-  $("diseno").innerHTML=h;
-}
-$("diseno").addEventListener("change",ev=>{
-  const t=ev.target,val=t.type==="checkbox"?t.checked:(t.tagName==="SELECT"?t.value:num(t.value));
-  if(t.dataset.mod!==undefined){P.caja.modulos[+t.dataset.mod][t.dataset.f]=Math.max(0,Math.round(val));}
-  else if(t.dataset.c)P.caja[t.dataset.c]=val;
-  else if(t.dataset.a)P.arm[t.dataset.a]=val;
-  else if(t.dataset.t)P.tab[t.dataset.t]=val;
-  recalcular();
-});
-$("diseno").addEventListener("click",ev=>{
-  if(ev.target.id==="addMod"){P.caja.modulos.push({ancho:0,estantes:2,puertas:0,cajones:0,filas:0,cols:0});pintarDiseno();recalcular()}
-  const d=ev.target.dataset.delmod;if(d!==undefined){P.caja.modulos.splice(+d,1);pintarDiseno();recalcular()}
-});
-document.querySelectorAll('input[name="familia"]').forEach(r=>r.addEventListener("change",()=>{P.familia=r.value;pintarDiseno();recalcular()}));
-["alto","ancho","prof"].forEach(id=>$(id).addEventListener("change",()=>{P[id]=num($(id).value);recalcular()}));
+$("material").innerHTML=MATS.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join("");
+$("seccion").innerHTML=SECCIONES.map(s=>{const [a,b]=s.split("x");return `<option value="${s}">${a} × ${b}" (${real(a)} × ${real(b)} mm)</option>`}).join("");
+$("largo").innerHTML=LARGOS.map(l=>`<option value="${l}">${coma(l)} m</option>`).join("");
+function precioRecordado(){const k=precioKey();const m=matSel();return MEM["p|"+k]??(S.unidad==="placa"?m.precio||0:0)}
+["alto","ancho","prof","puertas","cajones","estantes","casilleros"].forEach(k=>$(k).addEventListener("change",()=>{S[k]=Math.max(0,num($(k).value));S.montos={};pintarPresupuesto()}));
+$("instala").addEventListener("change",()=>{S.instala=$("instala").checked;pintarPresupuesto()});
+$("termina").addEventListener("change",()=>{S.termina=$("termina").checked;delete S.montos.mo;pintarPresupuesto()});
+document.querySelectorAll('input[name="tipo"]').forEach(r=>r.addEventListener("change",()=>{S.tipo=r.value;S.montos={};pintarMueble();pintarPresupuesto()}));
+$("material").addEventListener("change",()=>{S.material=$("material").value;S.unidad=matSel().tipo==="placa"?"placa":"pie";S.precio=precioRecordado();S.montos={};pintarMadera();pintarPresupuesto()});
+["unidad","seccion","largo"].forEach(k=>$(k).addEventListener("change",()=>{S[k]=k==="largo"?num($(k).value):$(k).value;S.precio=precioRecordado();delete S.montos.madera;pintarMadera();pintarPresupuesto()}));
+$("precio").addEventListener("change",()=>{S.precio=num($("precio").value);MEM["p|"+precioKey()]=S.precio;guardarMem();delete S.montos.madera;pintarMadera();pintarPresupuesto()});
 
-/* ---------- madera por parte ---------- */
-const GRUPOS={cuerpo:"Cuerpo (laterales, tapa, piso, estantes, zócalo)",frentes:"Puertas y frentes de cajón",cajones:"Cajones por dentro",patas:"Patas",tapa:"Tapa",faldones:"Faldones y travesaños",estante:"Estante inferior",tablero:"Tablero"};
-const GRUPO_DE={est:"cuerpo",hor:"cuerpo",div:"cuerpo",zoc:"cuerpo",pta:"frentes",fre:"frentes",caj:"cajones",pataCaja:"patas",tapa:"tapa",pata:"patas",fal:"faldones",ref:"faldones",estA:"estante",tab:"tablero"};
-const corto=g=>GRUPOS[g].split(" (")[0].toLowerCase();
-const stockPrincipal=()=>({principal:true,material:P.material,unidad:P.unidad,seccion:P.seccion,largo:P.largo,espesor:P.espesor,precio:P.precio,merma:P.merma,placa:P.placa});
-function parteDefault(g){
-  const base={propia:true,sigue:true,material:"pino",unidad:"pieza",seccion:"3x3",espesor:65,precio:0,merma:10,placa:[2600,1830]};
-  if(g==="patas"&&P.familia==="caja")return {...base,largo:2.44};
-  if(g==="patas"&&P.familia==="armazon")return {...base,largo:3.05};
-  return null;
-}
-function parte(g){const k=P.familia+"."+g;if(!P.partes[k])P.partes[k]=parteDefault(g)||{propia:false};return P.partes[k]}
-const stockDe=g=>{if(!g)return stockPrincipal();const o=parte(g);if(!o.propia)return stockPrincipal();return o.sigue?{...o,material:matSel().tipo==="macizo"?P.material:"pino"}:o};
-const matDe=st=>MATS.find(m=>m.id===st.material)||MATS[0];
-const lineal=st=>st.unidad==="pieza"||st.unidad==="ml";
-const grosorStock=st=>lineal(st)?real(secDims(st.seccion)[0]):st.espesor;
-const anchoStock=st=>lineal(st)?real(secDims(st.seccion)[1]):(st.unidad==="placa"?Math.min(...st.placa):0);
-const stockTxt=st=>lineal(st)?`${matDe(st).nombre} ${st.seccion.replace("x","×")}" (${grosorStock(st)} × ${anchoStock(st)} mm reales)`:`${matDe(st).nombre} de ${st.espesor} mm`;
-const uLblStock=st=>({placa:"placa "+st.placa.join("×"),pie:"pie",m2:"m²",pieza:`pieza ${st.seccion.replace("x","×")} × ${coma(st.largo)} m`,ml:`metro lineal ${st.seccion.replace("x","×")}`}[st.unidad]);
-function compra(st,pzs){
-  const k=1+st.merma/100;let area=0,vol=0;pzs.forEach(x=>{area+=x.area;vol+=x.vol});
-  if(st.unidad==="placa"){const pa=st.placa[0]*st.placa[1]/1e6,u=Math.ceil(area/(pa*(1-st.merma/100))-1e-9);return {usa:u,txt:u===1?"placa":"placas",area,vol}}
-  if(st.unidad==="pie")return {usa:Math.ceil(vol/PIE_M3*k-1e-9),txt:"pies",area,vol};
-  if(st.unidad==="m2")return {usa:Math.round(area*k*10)/10,txt:"m²",area,vol};
-  const T=grosorStock(st),W=anchoStock(st),Lmm=(num(st.largo)||3.05)*1000;
-  let lin=0,volResto=0;
-  pzs.forEach(x=>{
-    const len=Math.max(x.a,x.b),wid=Math.min(x.a,x.b),th=x.esp;
-    let n=Math.floor((W+1)/wid)*Math.floor((T+1)/th);
-    if(n<1)n=Math.floor((W+1)/th)*Math.floor((T+1)/wid);
-    if(n>=1&&(st.unidad==="ml"||len+5<=Lmm)){
-      if(st.unidad==="pieza")lin+=x.cant/(Math.floor(Lmm/(len+5))*n);else lin+=x.cant*(len+5)/1000/n;
-    } else volResto+=x.vol;
-  });
-  if(st.unidad==="pieza"){const u=Math.ceil(lin+volResto*k/volPiezaReal(st.seccion,st.largo)-1e-9);return {usa:u,txt:`${u===1?"pieza":"piezas"} de ${st.seccion.replace("x","×")} × ${coma(st.largo)} m`,area,vol}}
-  const [a,b]=secDims(st.seccion);
-  return {usa:Math.ceil((lin*1.05+volResto*k/(real(a)/1000*real(b)/1000))*10)/10,txt:`metros de ${st.seccion.replace("x","×")}`,area,vol};
-}
-
-/* ---------- despiece ---------- */
-function despiece(){
-  const pz=[],eG=g=>grosorStock(stockDe(g));
-  const add=(nombre,cant,a,b,esp,lados,tipo,fondo)=>{cant=Math.round(cant);if(cant>0&&a>0&&b>0)pz.push({nombre,cant,a:Math.round(a),b:Math.round(b),esp:Math.round(esp),lados,tipo,fondo:!!fondo,grupo:fondo?null:GRUPO_DE[tipo]})};
-  const R={pz,cnt:{},extra:{}};
-  if(P.familia==="caja"){
-    const e=eG("cuerpo"),ef=eG("frentes"),ec=eG("cajones");
-    const c=P.caja,H=P.alto,W=P.ancho,Dp=P.prof,Z=c.zocalo||0,Hc=H-Z,Hl=c.tapaPiso?Hc-2*e:Hc;
-    const mods=c.modulos,n=mods.length,fijos=mods.reduce((s,m)=>s+(m.ancho>0?m.ancho:0),0),auto=mods.filter(m=>!(m.ancho>0)).length;
-    const wAuto=auto?Math.max(0,(W-(n+1)*e-fijos)/auto):0;
-    add("Laterales y divisores",n+1,Dp,Hl,e,"1","est");
-    if(c.tapaPiso)add("Tapa y piso",2,Dp,W,e,"1","est");
-    let puertas=0,cajones=0,bisagras=0,hor=0,div=0;
-    mods.forEach((m,i)=>{
-      const w=m.ancho>0?m.ancho:wAuto,k=`módulo ${i+1}`;
-      if(!c.tapaPiso)add(`Tapa y piso ${k}`,2,Dp,w,e,"1","hor");
-      if(m.filas>0&&m.cols>0){
-        add(`Estantes casilleros ${k}`,m.filas-1,Dp,w,e,"1","hor");hor+=m.filas-1;
-        const rowH=(Hl-(m.filas-1)*e)/m.filas;
-        add(`Divisores casilleros ${k}`,(m.cols-1)*m.filas,Dp,rowH,e,"1","div");div+=(m.cols-1)*m.filas;
-      } else if(m.estantes>0){add(`Estantes ${k}`,m.estantes,Dp-20,w,e,"1","hor");hor+=m.estantes}
-      if(m.cajones>0){
-        const fH=180;
-        add(`Frentes de cajón ${k}`,m.cajones,fH-3,w+2*e-3,ef,"4","fre");
-        add(`Laterales de cajón ${k}`,2*m.cajones,140,Dp-60,ec,"1","caj");
-        add(`Frente y trasera interna de cajón ${k}`,2*m.cajones,140,w-30,ec,"0","caj");
-        add(`Piso de cajón ${k}`,m.cajones,Dp-60,w-30,3,"0","caj",true);
-        cajones+=m.cajones;
-      }
-      if(m.puertas>0){
-        const ph=Hc-(m.cajones>0?m.cajones*180:0)-3;
-        add(`Puertas ${k}`,m.puertas,(w+2*e)/m.puertas-3,ph,ef,"4","pta");
-        puertas+=m.puertas;bisagras+=m.puertas*(ph<=1000?2:ph<=1700?3:4);
-      }
-    });
-    if(Z>0){add("Zócalo frente",1,Z,W,e,"4","zoc");add("Zócalo costados",2,Z,Dp-e,e,"4","zoc")}
-    if(c.patas>0&&Z>0){const st=stockDe("patas"),pa=lineal(st)?real(secDims(st.seccion)[1]):65,pb=lineal(st)?real(secDims(st.seccion)[0]):65;add("Patas escondidas",c.patas,pa,Z,pb,"0","pataCaja")}
-    if(c.fondo)add("Fondo de chapadur",1,W,Hc,3,"0","fondo",true);
-    R.cnt={gestion:1,caja:n,estante:hor,divisor:div,puerta:puertas,cajon:cajones,zocalo:(Z>0||c.patas>0)?1:0,fondo:c.fondo?1:0,embalaje:1,instal:c.amurado?1:0};
-    R.extra={puertas,cajones,bisagras,manijas:puertas+cajones,uniones:(n+1)+(c.tapaPiso?2:0)+hor+div+cajones*4,estructura:(n+1)+(c.tapaPiso?2:0)+hor,perim:2*(W+Dp)};
-  } else if(P.familia==="armazon"){
-    const e=eG("faldones"),a=P.arm,L=P.ancho,A=P.prof,H=P.alto,sp=a.seccion,et=a.espTapa,vuelo=40;
-    const fl=Math.max(0,L-2*vuelo-2*sp+2*25),fc=Math.max(0,A-2*vuelo-2*sp+2*25);
-    add("Tapa",1,A,L,et,matDe(stockDe("tapa")).canto?"4":"0","tapa");
-    add("Patas",a.patas,sp,H-et,sp,"0","pata");
-    add("Faldones largos",2,a.faldon,fl,e,"0","fal");
-    add("Faldones cortos",2,a.faldon,fc,e,"0","fal");
-    if(a.refuerzos>0)add("Travesaños de refuerzo",a.refuerzos,50,fl,e,"0","ref");
-    if(a.estanteInf)add("Estante inferior",1,A-2*vuelo-2*sp,L-2*vuelo-2*sp,eG("estante"),matDe(stockDe("estante")).canto?"1":"0","estA");
-    R.cnt={gestion:1,pata:a.patas,faldon:4,refuerzo:a.refuerzos||0,tapa:Math.round(L*A/1e6*10)/10,estanteInf:a.estanteInf?1:0,armado:1,embalaje:1};
-    R.extra={uniones:8+2*(a.refuerzos||0),perim:2*(L+A)};
-  } else {
-    const L=P.ancho,A=P.prof,s=P.tab.soportes>0?P.tab.soportes:Math.max(2,Math.ceil(L/800)+1);
-    add("Tablero",1,A,L,eG("tablero"),matDe(stockDe("tablero")).canto?"4":"0","tab");
-    R.cnt={gestion:1,tablero:Math.round(L*A/1e6*10)/10,soporte:s,embalaje:1};
-    R.extra={soportes:s,perim:2*(L+A)};
-  }
-  // totales y compras por madera
-  let area=0,canto=0,vol=0,nPiezas=0,nCortes=0,areaFondo=0,areaTerm=0;
-  const grupos={};
-  pz.forEach(x=>{
-    x.area=x.cant*x.a*x.b/1e6;x.vol=x.area*x.esp/1000;
-    if(x.fondo){areaFondo+=x.area;x.canto=0;return}
-    const st=stockDe(x.grupo),m=matDe(st);x.stock=st;
-    x.canto=m.canto?(x.lados==="4"?x.cant*2*(x.a+x.b)/1000:x.lados==="1"?x.cant*Math.max(x.a,x.b)/1000:0):0;
-    nPiezas+=x.cant;area+=x.area;vol+=x.vol;canto+=x.canto;
-    if(m.cortes&&st.unidad==="placa")nCortes+=x.cant;
-    if(x.tipo!=="pataCaja")areaTerm+=x.tipo==="pata"?x.cant*4*x.a*x.b/1e6:x.area*1.5;
-    const key=st.principal?"madera":"madera_"+x.grupo;
-    (grupos[key]=grupos[key]||{key,st,grupos:new Set(),pzs:[]}).pzs.push(x);grupos[key].grupos.add(x.grupo);
-  });
-  const compras=Object.values(grupos).map(g=>({...g,grupos:[...g.grupos],...compra(g.st,g.pzs)}));
-  compras.sort((a,b)=>(a.key==="madera"?-1:0)-(b.key==="madera"?-1:0));
-  const cortes=Math.ceil(nCortes*1.33);
-  const planchas=areaFondo>0?Math.ceil(areaFondo/(2.6*1.8*0.9)):0;
-  const term=P.term.tipo!=="ninguna"?areaTerm:0;
-  R.cnt.term=Math.round(term*(1+0.25*Math.max(0,P.term.manos-1))*10)/10;
-  Object.assign(R,{area,canto,vol,nPiezas,compras,cortes,planchas,areaFondo,areaTerm:term});
-  return R;
-}
-
-/* ---------- materiales ---------- */
-function especMateriales(d){
-  const m=matSel(),s=[];
-  d.compras.forEach(c=>{const mm=matDe(c.st);
-    s.push({key:c.key,usa:c.usa,nombre:`${mm.nombre}${lineal(c.st)?"":" "+c.st.espesor+" mm"} (por ${uLblStock(c.st)})${c.st.principal&&d.compras.length===1?"":" — "+c.grupos.map(corto).join(", ")}`,precio:c.st.precio,rubro:"Madera",fijo:true,ref:refStock(c.st)})});
-  if(d.cortes)s.push({key:"corte",usa:d.cortes});
-  if(d.canto>0)s.push({key:"cantoServ",usa:Math.ceil(d.canto)});
-  if(d.planchas)s.push({key:"chapadur",usa:d.planchas});
-  const x=d.extra||{};
-  if(P.familia==="caja"){
-    const c=P.caja;
-    if(x.bisagras)s.push({key:"bisagras",usa:x.bisagras});
-    if(x.manijas)s.push({key:"manijas",usa:x.manijas});
-    if(x.cajones)s.push({key:"correderas",usa:x.cajones});
-    if(c.candado){s.push({key:"candado",usa:1});s.push({key:"pasador",usa:1})}
-    if(c.amurado)s.push({key:"escuadras",usa:2});
-    if(c.anclaje!=="tornillos")s.push({key:"tarugos",usa:4*x.uniones});
-    if(c.anclaje!=="tarugos"){const t=c.anclaje==="tornillos"?4*x.uniones:4*x.estructura;s.push({key:"tornillos",usa:t});if(m.canto)s.push({key:"tapaTornillo",usa:t})}
-  } else if(P.familia==="armazon"){
-    s.push({key:"fijadores",usa:8});
-    if(P.arm.anclaje==="tarugos")s.push({key:"tarugos",usa:2*x.uniones});
-    if(P.arm.anclaje==="tornillos")s.push({key:"tornillos",usa:4*x.uniones});
-  } else {
-    s.push({key:"soportes",usa:x.soportes});
-    s.push({key:"tornillos",usa:4*x.soportes});
-  }
-  if(d.areaTerm>0){
-    s.push({key:"termProd",usa:Math.ceil(d.areaTerm*P.term.manos/10*10)/10});
-    if(P.term.tipo==="tinte")s.push({key:"tinte",usa:Math.ceil(d.areaTerm/12*10)/10});
-  }
-  s.push({key:"rollo",usa:Math.ceil(x.perim/1000*3)});
-  return s;
-}
-function sincronizarMateriales(d){
-  const spec=especMateriales(d),keys=new Set(spec.map(x=>x.key));
-  mat=mat.filter(r=>!r.key||keys.has(r.key));
-  spec.forEach(x=>{
-    let r=mat.find(q=>q.key===x.key);
-    if(!r){const b=PRECIOS[x.key]||{nombre:x.nombre,cant:1,precio:x.precio,rubro:x.rubro};
-      r={id:uid++,key:x.key,nombre:b.nombre,rubro:b.rubro,cant:b.cant,precio:b.precio,usa:x.usa,entero:false,tengo:false,usaManual:false};mat.push(r)}
-    else if(!r.usaManual)r.usa=x.usa;
-    if(x.fijo){r.nombre=x.nombre;r.precio=x.precio;r.cant=1}
-    else if(x.nombre&&!r.nombreManual)r.nombre=x.nombre;
-    r.ref=x.ref||null;
-  });
-  const orden=spec.map(x=>x.key);
-  mat.sort((a,b)=>(a.key?orden.indexOf(a.key):999)-(b.key?orden.indexOf(b.key):999));
-}
-function setPrecioMadera(key,v){if(key==="madera"){P.precio=v;pintarPaso2()}else if(key&&key.startsWith("madera_"))parte(key.slice(7)).precio=v}
-const imputado=r=>{const c=Math.max(1,num(r.cant));if(!num(r.usa))return 0;return r.entero?Math.ceil(num(r.usa)/c)*num(r.precio):num(r.usa)*num(r.precio)/c};
-const aComprar=r=>(r.tengo||!num(r.usa))?0:Math.ceil(num(r.usa)/Math.max(1,num(r.cant)))*num(r.precio);
-
-function controlGrosor(d){
-  const grueso=[],encolar=[];
-  d.pz.forEach(x=>{
-    x.alerta=false;if(x.fondo)return;
-    const st=x.stock,T=grosorStock(st),W=anchoStock(st);
-    if(x.esp>T+1){x.alerta=true;grueso.push(x)}
-    else if(W&&Math.min(x.a,x.b)>W+1&&matDe(st).tipo==="macizo")encolar.push({x,n:Math.ceil(Math.min(x.a,x.b)/W),W});
-  });
-  return {grueso,encolar};
-}
-function renderDespiece(d){
-  const cg=controlGrosor(d),varias=d.compras.length>1;
-  let h=`<thead><tr><th>Pieza</th><th class="num">Cant.</th><th class="num">Medida (mm)</th><th class="num">Espesor</th>${varias?"<th>Sale de</th>":""}<th class="num">Canto</th><th class="num">m²</th></tr></thead><tbody>`;
-  d.pz.forEach(x=>{const st=x.stock;h+=`<tr${x.alerta?' style="background:var(--warn-soft)"':""}><td>${x.nombre}${x.alerta?' <b style="color:var(--warn)">· más gruesa que lo que comprás</b>':""}</td><td class="num">${x.cant}</td><td class="num">${x.a} × ${x.b}</td><td class="num">${x.esp}</td>${varias?`<td>${x.fondo?"Chapadur":lineal(st)?matDe(st).nombre+" "+st.seccion.replace("x","×"):matDe(st).nombre}</td>`:""}<td class="num">${!x.canto?"—":x.lados==="4"?"4 lados":"1 lado"}</td><td class="num">${x.area.toFixed(2)}</td></tr>`});
-  $("tDespiece").innerHTML=h+"</tbody>";
-  let av="";
-  if(cg.grueso.length){
-    av+=`<b>Ojo con el grosor.</b> `+cg.grueso.map(x=>`${x.nombre} necesita ${x.esp} mm y sale de ${stockTxt(x.stock)}.`).join(" ")+
-      ` Opciones: elegir otra madera para esa parte en "Madera por parte" (paso 2), encolar o bajar el grosor en el diseño.`;
-  }
-  if(cg.encolar.length)av+=(av?"<br>":"")+cg.encolar.map(e=>`${e.x.nombre} (${Math.min(e.x.a,e.x.b)} mm de ancho) se arma encolando unas ${e.n} piezas de ${e.W} mm.`).join(" ");
-  $("avisoGrosor").innerHTML=av;$("avisoGrosor").classList.toggle("oculto",!av);
-  const hayMacizo=d.compras.some(c=>matDe(c.st).tipo==="macizo");
-  $("resDespiece").innerHTML=`<span class="chip"><b>${d.nPiezas}</b> piezas</span><span class="chip"><b>${d.area.toFixed(2)} m²</b> de madera en piezas</span>`+
-    (hayMacizo?`<span class="chip"><b>${coma((d.compras.filter(c=>matDe(c.st).tipo==="macizo").reduce((s,c)=>s+c.vol,0)/PIE_M3).toFixed(1))}</b> pies netos de macizo</span>`:"")+
-    d.compras.map(c=>`<span class="chip"><b>${coma(c.usa)} ${c.txt}</b>${varias?" para "+c.grupos.map(corto).join(", "):""} (con ${c.st.merma} % de desperdicio)</span>`).join("")+
-    (d.cortes?`<span class="chip"><b>${d.cortes}</b> cortes</span>`:"")+(d.canto?`<span class="chip"><b>${d.canto.toFixed(1)} m</b> de canto</span>`:"")+
-    (d.planchas?`<span class="chip"><b>${d.planchas}</b> plancha de chapadur</span>`:"")+
-    (d.areaTerm?`<span class="chip"><b>${d.areaTerm.toFixed(1)} m²</b> a terminar</span>`:"");
-}
-function renderPartes(d){
-  const gs=[...new Set(d.pz.filter(x=>x.grupo).map(x=>x.grupo))];
-  const optsMat=sel=>`<option value="__p"${sel?"":" selected"}>La de arriba</option>`+MATS.map(m=>`<option value="${m.id}"${sel===m.id?" selected":""}>${m.nombre}</option>`).join("");
-  let h='<thead><tr><th>Parte</th><th>Madera</th><th>Por</th><th>Sección o espesor</th><th>Largo</th><th class="num">Precio</th><th class="num">Desperdicio</th></tr></thead><tbody>';
-  gs.forEach(g=>{
-    const o=parte(g).propia?stockDe(g):parte(g);
-    if(!o.propia){h+=`<tr data-g="${g}"><td>${GRUPOS[g]}</td><td><select data-f="material" aria-label="Madera de ${corto(g)}">${optsMat(null)}</select></td><td colspan="5" class="nota">Usa la madera de arriba</td></tr>`;return}
-    const ref=!num(o.precio)?refStock(o):null;
-    h+=`<tr data-g="${g}"><td>${GRUPOS[g]}</td><td><select data-f="material" aria-label="Madera de ${corto(g)}">${optsMat(o.material)}</select></td>
-      <td><select data-f="unidad" aria-label="Unidad">${[["placa","Placa"],["m2","m²"],["pie","Pie"],["pieza","Pieza"],["ml","Metro lineal"]].map(([v,t])=>`<option value="${v}"${o.unidad===v?" selected":""}>${t}</option>`).join("")}</select></td>
-      <td>${lineal(o)?`<select data-f="seccion" aria-label="Sección">${SECCIONES.map(x=>`<option value="${x}"${x===o.seccion?" selected":""}>${x.replace("x","×")}" (${real(secDims(x)[0])}×${real(secDims(x)[1])})</option>`).join("")}</select>`:`<input class="n-s" type="number" data-f="espesor" value="${o.espesor}" aria-label="Espesor mm"> mm`}</td>
-      <td>${o.unidad==="pieza"?`<select data-f="largo" aria-label="Largo">${LARGOS.map(x=>`<option value="${x}"${x==o.largo?" selected":""}>${coma(x)} m</option>`).join("")}</select>`:"—"}</td>
-      <td class="num"><input class="n" type="number" data-f="precio" value="${o.precio}" aria-label="Precio"${num(o.precio)?"":' style="border-color:var(--warn)"'}>${ref?`<br><button class="ej" style="margin-top:4px" data-refg="${g}" title="${ref.txt}">Usar ref. ${fmt(ref.precio)}</button>`:""}</td>
-      <td class="num"><input class="n-s" type="number" data-f="merma" value="${o.merma}" aria-label="Desperdicio %"> %</td></tr>`;
-  });
-  $("tPartes").innerHTML=h+"</tbody>";
-}
-$("tPartes").addEventListener("change",ev=>{
-  const tr=ev.target.closest("tr[data-g]"),f=ev.target.dataset.f;if(!tr||!f)return;
-  const g=tr.dataset.g,k=P.familia+"."+g,v=ev.target.value;
-  if(f==="material"){
-    if(v==="__p")P.partes[k]={propia:false};
-    else{const m=MATS.find(x=>x.id===v),prev=P.partes[k]||{};
-      P.partes[k]={propia:true,sigue:false,material:v,unidad:m.tipo==="placa"?"placa":(prev.unidad&&lineal(prev)?prev.unidad:"pieza"),seccion:prev.seccion||(g==="patas"?"3x3":"1x6"),largo:prev.largo||3.05,espesor:m.esp,precio:m.precio,merma:m.tipo==="placa"?18:(g==="patas"?10:m.merma),placa:m.placa?m.placa.slice():[2600,1830]}}
-  } else {const o=parte(g);o[f]=["seccion","unidad"].includes(f)?v:num(v);if(["unidad","seccion","largo","espesor"].includes(f))o.precio=0}
-  recalcular();
-});
-$("tPartes").addEventListener("click",ev=>{const g=ev.target.dataset.refg;if(!g)return;const o=parte(g),r=refStock(stockDe(g));if(r){o.precio=r.precio;recalcular()}});
-function renderMat(){
-  const rubros=["Madera","Herrajes","Terminación","Embalaje","Flete","Otros"];
-  let h='<thead><tr><th>Material</th><th>Rubro</th><th class="num">Se compra ×</th><th class="num">Precio</th><th class="num">Usa</th><th>Entero</th><th>Lo tengo</th><th class="num">Al presupuesto</th><th></th></tr></thead><tbody>';
-  mat.forEach(r=>{
-    const sinPrecio=!num(r.precio);
-    h+=`<tr data-id="${r.id}">
-      <td><input class="txt" data-f="nombre" value="${String(r.nombre).replace(/"/g,"&quot;")}" aria-label="Material"></td>
-      <td><select data-f="rubro" aria-label="Rubro">${rubros.map(x=>`<option${x===r.rubro?" selected":""}>${x}</option>`).join("")}</select></td>
-      <td class="num"><input class="n-s" type="number" data-f="cant" value="${r.cant}" aria-label="Cantidad por presentación"${r.key==="madera"?" disabled":""}></td>
-      <td class="num"><input class="n" type="number" data-f="precio" value="${r.precio}" aria-label="Precio"${sinPrecio?' style="border-color:var(--warn)"':""}>${sinPrecio&&r.ref?`<br><button class="ej" style="margin-top:4px" data-ref="${r.id}" title="${r.ref.txt}">Usar ref. ${fmt(r.ref.precio)}</button>`:""}</td>
-      <td class="num"><input class="n-s" type="number" step="0.1" data-f="usa" value="${r.usa}" aria-label="Cantidad que usa"></td>
-      <td><input type="checkbox" data-f="entero"${r.entero?" checked":""} aria-label="Cobrar entero"></td>
-      <td><input type="checkbox" data-f="tengo"${r.tengo?" checked":""} aria-label="Ya lo tengo"></td>
-      <td class="num" data-out="imp">${fmt(imputado(r))}</td>
-      <td><button class="x" data-del="${r.id}" aria-label="Borrar renglón">×</button></td></tr>`;
-  });
-  $("tMat").innerHTML=h+"</tbody>";
-}
-$("tMat").addEventListener("input",ev=>{
-  const tr=ev.target.closest("tr[data-id]");if(!tr)return;
-  const r=mat.find(q=>q.id==tr.dataset.id),f=ev.target.dataset.f;if(!r||!f)return;
-  r[f]=ev.target.type==="checkbox"?ev.target.checked:ev.target.value;
-  if(f==="usa")r.usaManual=true;
-  if(f==="nombre")r.nombreManual=true;
-  if(f==="precio"){ev.target.style.borderColor=num(r.precio)?"":"var(--warn)";setPrecioMadera(r.key,num(r.precio))}
-  tr.querySelector('[data-out="imp"]').textContent=fmt(imputado(r));
-  totales();
-});
-$("tMat").addEventListener("click",ev=>{const rid=ev.target.dataset.ref;if(rid){const r=mat.find(q=>q.id==rid);if(r&&r.ref){r.precio=r.ref.precio;setPrecioMadera(r.key,r.precio);recalcular()}return}});
-$("tMat").addEventListener("click",ev=>{const id=ev.target.dataset.del;if(!id)return;mat=mat.filter(q=>q.id!=id);renderMat();totales()});
-$("addMat").addEventListener("click",()=>{mat.push({id:uid++,key:null,nombre:"",rubro:"Otros",cant:1,precio:0,usa:1,entero:false,tengo:false,usaManual:true});renderMat();totales();const ins=$("tMat").querySelectorAll('input[data-f="nombre"]');ins[ins.length-1].focus()});
-
-/* ---------- tiempos y mano de obra ---------- */
-function sincronizarComp(d){
-  if(compFam!==P.familia){comp=COMPS[P.familia].map(c=>({...c,cant:0,cantManual:false}));compFam=P.familia}
-  comp.forEach(c=>{if(!c.cantManual)c.cant=d.cnt[c.key]||0});
-}
-const horasInst=()=>comp.filter(c=>c.inst).reduce((s,c)=>s+num(c.cant)*num(c.h),0);
-const horasComp=()=>comp.filter(c=>!c.inst).reduce((s,c)=>s+num(c.cant)*num(c.h),0)*num($("nivel").value)*(num($("fMat").value)||1)+horasInst();
-function renderComp(){
-  let h='<thead><tr><th>Componente</th><th class="num">Cantidad</th><th class="num">Horas c/u</th><th class="num">Horas</th></tr></thead><tbody>';
-  comp.forEach(c=>{h+=`<tr data-k="${c.key}"><td>${c.nombre}${c.inst?' <span class="chip" style="padding:1px 8px;font-size:12px">en el lugar</span>':""}</td><td class="num"><input class="n-s" type="number" step="0.1" data-f="cant" value="${c.cant}" aria-label="Cantidad"></td><td class="num"><input class="n-s" type="number" step="0.05" data-f="h" value="${c.h}" aria-label="Horas por unidad"></td><td class="num" data-out="hs">${f1(num(c.cant)*num(c.h))}</td></tr>`});
-  $("tT").innerHTML=h+"</tbody>";
-}
-$("tT").addEventListener("input",ev=>{
-  const tr=ev.target.closest("tr[data-k]");if(!tr)return;
-  const c=comp.find(x=>x.key===tr.dataset.k),f=ev.target.dataset.f;c[f]=ev.target.value;if(f==="cant")c.cantManual=true;
-  tr.querySelector('[data-out="hs"]').textContent=f1(num(c.cant)*num(c.h));actualizarDias();
-});
-function actualizarDias(){
-  const hs=Math.round(horasComp()*2)/2,r=mo[0];
-  if(r&&!r.manual){r.dias=Math.max(0.5,Math.round(hs/(num(r.hdia)||3.5)*2)/2);renderMO()}
-  const hi=horasInst();
-  $("sugHoras").textContent=`Total sugerido: ${hs.toLocaleString("es-AR")} horas`+(hi?` (${f1(hs-hi)} en el taller y ${f1(hi)} de instalación en el lugar)`:"")+`. Abajo se pasan a días según las horas por día que trabajes. Los factores de terminación y material no se aplican a la instalación.`;
-  totales();
-}
-function renderMO(){
-  if(!mo.length)mo.push({id:uid++,quien:"Vos",cat:"Promedio convenio",dias:0,hdia:3.5,valor:7100,manual:false});
-  let h='<thead><tr><th>Quién</th><th>Categoría</th><th class="num">Días</th><th class="num">Horas por día</th><th class="num">Valor hora</th><th class="num">Subtotal</th><th></th></tr></thead><tbody>';
-  mo.forEach(r=>{h+=`<tr data-id="${r.id}"><td><input class="txt" style="min-width:110px" data-f="quien" value="${r.quien}" aria-label="Quién"></td>
-    <td><select data-f="cat" aria-label="Categoría">${ESCALA.map(x=>`<option${x.cat===r.cat?" selected":""}>${x.cat}</option>`).join("")}</select></td>
-    <td class="num"><input class="n-s" type="number" step="0.5" data-f="dias" value="${r.dias}" aria-label="Días"></td>
-    <td class="num"><input class="n-s" type="number" step="0.5" data-f="hdia" value="${r.hdia}" aria-label="Horas por día"></td>
-    <td class="num"><input class="n" type="number" data-f="valor" value="${r.valor}" aria-label="Valor hora"></td>
-    <td class="num" data-out="sub">${fmt(num(r.dias)*num(r.hdia)*num(r.valor))}</td>
-    <td>${mo.length>1?`<button class="x" data-del="${r.id}" aria-label="Quitar persona">×</button>`:""}</td></tr>`});
-  $("tMO").innerHTML=h+"</tbody>";
-}
-function moEdit(ev){
-  const tr=ev.target.closest("tr[data-id]");if(!tr)return;
-  const r=mo.find(x=>x.id==tr.dataset.id),f=ev.target.dataset.f;if(!r||!f)return;
-  r[f]=ev.target.value;if(f==="dias"||f==="hdia")r.manual=true;
-  if(f==="cat"){const e=ESCALA.find(x=>x.cat===r.cat);r.valor=e.v;tr.querySelector('[data-f="valor"]').value=e.v}
-  tr.querySelector('[data-out="sub"]').textContent=fmt(num(r.dias)*num(r.hdia)*num(r.valor));totales();
-}
-$("tMO").addEventListener("input",moEdit);
-$("tMO").addEventListener("click",ev=>{const id=ev.target.dataset.del;if(!id)return;mo=mo.filter(x=>x.id!=id);renderMO();totales()});
-$("addMO").addEventListener("click",()=>{mo.push({id:uid++,quien:"Ayudante",cat:"Ayudante",dias:mo[0]?mo[0].dias:1,hdia:mo[0]?mo[0].hdia:4,valor:6100.67,manual:true});renderMO();totales()});
-
-/* ---------- totales ---------- */
-function totales(){
-  const metodo=document.querySelector('input[name="metodo"]:checked').value;
-  $("bloqueHoras").classList.toggle("oculto",metodo!=="horas");$("bloqueMult").classList.toggle("oculto",metodo!=="mult");
-  const porRubro={};let matTotal=0,compra=0,stock=0,sinPrecio=0;
-  mat.forEach(r=>{const v=imputado(r);matTotal+=v;porRubro[r.rubro]=(porRubro[r.rubro]||0)+v;const c=aComprar(r);compra+=c;stock+=Math.max(0,c-v);if(num(r.usa)&&!num(r.precio))sinPrecio++});
-  const insumos=matTotal*num($("insumos").value)/100,materiales=matTotal+insumos;
-  let horas=0,moBase=0,gastos=0,ganancia=0,total;
-  if(metodo==="horas"){
-    mo.forEach(r=>{horas+=num(r.dias)*num(r.hdia);moBase+=num(r.dias)*num(r.hdia)*num(r.valor)});
-    gastos=(materiales+moBase)*num($("gastos").value)/100;ganancia=(materiales+moBase+gastos)*num($("ganancia").value)/100;
-    total=materiales+moBase+gastos+ganancia;
-  } else total=materiales*num($("multFijo").value);
-  const multRes=materiales?total/materiales:0;
-  { const hT0=horasComp(),hI0=horasInst(),pI=(metodo==="horas"&&hT0>0)?(total-materiales)*hI0/hT0:0;
-    const rub=[];["Madera","Herrajes","Terminación","Embalaje","Flete","Otros"].forEach(k=>{if(porRubro[k])rub.push([k==="Madera"?"Madera y cortes":k,porRubro[k]])});
-    if(insumos)rub.push(["Insumos",insumos]);rub.push(["Mano de obra",total-materiales-pI]);if(pI)rub.push(["Instalación en el lugar",pI]);
-    ULT={rubros:rub,total,materiales,matTotal,insumos,metodo,horas,moBase,gastos,ganancia,multiplicador:multRes,compra,sobrante:stock,sinPrecio}; }
-  let c='<div class="t">Lo que ve el cliente</div>';
-  ["Madera","Herrajes","Terminación","Embalaje","Flete","Otros"].forEach(k=>{if(porRubro[k])c+=`<div class="fila"><span>${k==="Madera"?"Madera y cortes":k}</span><span>${fmt(porRubro[k])}</span></div>`});
-  if(insumos)c+=`<div class="fila"><span>Insumos</span><span>${fmt(insumos)}</span></div>`;
-  const hT=horasComp(),hI=horasInst(),parteInst=(metodo==="horas"&&hT>0)?(total-materiales)*hI/hT:0;
-  c+=`<div class="fila"><span>Mano de obra</span><span>${fmt(total-materiales-parteInst)}</span></div>${parteInst?`<div class="fila"><span>Instalación en el lugar</span><span>${fmt(parteInst)}</span></div>`:""}<div class="fila total"><span>Total</span><span>${fmt(total)}</span></div>
-    <p class="nota" style="margin-top:8px">Sin nombres de proveedores ni precios de cada material. En la mano de obra quedan incluidos los gastos del taller y la ganancia.</p>`;
-  $("vistaCliente").innerHTML=c;
-  let i='<div class="t">Solo para vos</div>';
-  if(sinPrecio)i+=`<div class="chip warn" style="margin-bottom:6px">${sinPrecio} ${sinPrecio===1?"renglón":"renglones"} sin precio: el total está incompleto</div>`;
-  i+=`<div class="fila"><span>Materiales imputados</span><span>${fmt(matTotal)}</span></div><div class="fila"><span>Insumos menores (${num($("insumos").value)} %)</span><span>${fmt(insumos)}</span></div>`;
-  if(metodo==="horas")i+=`<div class="fila"><span>Mano de obra (${horas.toLocaleString("es-AR")} h)</span><span>${fmt(moBase)}</span></div><div class="fila"><span>Gastos del taller (${num($("gastos").value)} %)</span><span>${fmt(gastos)}</span></div><div class="fila"><span>Ganancia (${num($("ganancia").value)} %)</span><span>${fmt(ganancia)}</span></div>`;
-  else i+=`<div class="fila"><span>Materiales × ${num($("multFijo").value).toLocaleString("es-AR")}</span><span>${fmt(total)}</span></div>`;
-  i+=`<div class="fila total"><span>Total</span><span>${fmt(total)}</span></div>
-    <div class="fila" style="margin-top:10px;align-items:baseline"><span>Multiplicador resultante</span><span class="mult">×${multRes.toFixed(2).replace(".",",")}</span></div>
-    ${sinPrecio?'<div class="fila sub"><span>Va a cambiar cuando cargues los precios que faltan</span></div>':""}<div class="fila sub"><span>Tenés que comprar</span><span>${fmt(compra)}</span></div><div class="fila sub"><span>Te queda en el taller (sobrante)</span><span>${fmt(stock)}</span></div>`;
-  $("vistaInterna").innerHTML=i;
-}
-["insumos","gastos","ganancia","multFijo"].forEach(id=>$(id).addEventListener("input",totales));
-$("nivel").addEventListener("change",actualizarDias);$("fMat").addEventListener("input",actualizarDias);
-document.querySelectorAll('input[name="metodo"]').forEach(x=>x.addEventListener("change",totales));
-
-function recalcular(){
-  D=despiece();renderPartes(D);renderDespiece(D);sincronizarMateriales(D);renderMat();sincronizarComp(D);renderComp();renderMO();actualizarDias();
-}
-
-/* ---------- paso 1: interpretar el texto ---------- */
-const MAT_WORDS=[["nogal","nogal"],["roble","roble"],["guatamb","guatambu"],["cedro","cedro"],["kiri","kiri"],["para[ií]so","paraiso"],["eucal","eucalipto"],
-  ["fen[oó]lico","fenolico"],["aglomerado","agl_mel"],["mdf crudo","mdf_crudo"],["melamina|mdf","mdf_mel"],["tablero de pino","pino_tab"],["pino","pino"]];
-function medidasDe(t){
-  const mm=v=>v<=400?v*10:v; // si parece en cm, pasa a mm
-  const g=t.match(/(\d+(?:[.,]\d+)?)\s*(?:x|×|por)\s*(\d+(?:[.,]\d+)?)(?:\s*(?:x|×|por)\s*(\d+(?:[.,]\d+)?))?/);
-  const o={};
-  const alto=t.match(/(\d+(?:[.,]\d+)?)\s*(?:cm|mm)?\s*de\s*alto/),ancho=t.match(/(\d+(?:[.,]\d+)?)\s*(?:cm|mm)?\s*de\s*(?:ancho|largo)/),prof=t.match(/(\d+(?:[.,]\d+)?)\s*(?:cm|mm)?\s*de\s*(?:fondo|profundidad|prof)/);
-  if(alto)o.alto=mm(num(alto[1]));if(ancho)o.ancho=mm(num(ancho[1]));if(prof)o.prof=mm(num(prof[1]));
-  if(!ancho){const s=t.match(/de\s*(\d+(?:[.,]\d+)?)\s*(cm|mm)\b/);if(s)o.ancho=s[2]==="cm"?num(s[1])*10:num(s[1])}
-  if(g&&!o.ancho){const a=[g[1],g[2],g[3]].filter(Boolean).map(v=>mm(num(v)));o.ancho=a[0];if(a[1])o.prof=a[1];if(a[2])o.alto=a[2]}
-  return o;
-}
-function interpretarLocal(texto){
-  const t=texto.toLowerCase(),r={};
-  r.material=(MAT_WORDS.find(([re])=>new RegExp(re).test(t))||[,"pino"])[1];
-  const pers=t.match(/para\s*(\d+)/);const n=pers?+pers[1]:0;const md=medidasDe(t);
-  if(/bajo ?mesada/.test(t)){r.familia="caja";Object.assign(r,{alto:900,ancho:800,prof:600,caja:{zocalo:100,patas:0,modulos:[{estantes:1,puertas:2,cajones:0}]}})}
-  else if(/mesa de luz/.test(t)){r.familia="caja";Object.assign(r,{alto:550,ancho:450,prof:350,caja:{zocalo:0,patas:0,modulos:[{estantes:1,puertas:0,cajones:1}]}})}
-  else if(/escritorio/.test(t)){r.familia="armazon";Object.assign(r,{alto:750,ancho:1200,prof:600})}
-  else if(/ratona|mesita|mesa baja/.test(t)){r.familia="armazon";Object.assign(r,{alto:450,ancho:1000,prof:550})}
-  else if(/banco|banqueta/.test(t)){r.familia="armazon";Object.assign(r,{alto:450,ancho:1200,prof:350,arm:{seccion:50,espTapa:30,faldon:80}})}
-  else if(/\bmesa\b/.test(t)){r.familia="armazon";const L=n?Math.max(1200,Math.ceil(n/2)*600-300):1500;Object.assign(r,{alto:750,ancho:L,prof:n>6?1000:n>4?1000:800});if(n===6)Object.assign(r,{ancho:1500,prof:1000})}
-  else if(/estante|repisa|mesada|tabla|tapa/.test(t)){r.familia="tablero";Object.assign(r,{alto:0,ancho:1000,prof:250})}
-  else {
-    r.familia="caja";
-    if(/alacena/.test(t))Object.assign(r,{alto:700,ancho:800,prof:300,caja:{zocalo:0,patas:0,modulos:[{estantes:1,puertas:2,cajones:0}]}});
-    else if(/placard|ropero/.test(t))Object.assign(r,{alto:2000,ancho:1200,prof:600,caja:{zocalo:70,patas:0,modulos:[{estantes:1,puertas:2,cajones:0}]}});
-    else if(/biblioteca/.test(t))Object.assign(r,{alto:1800,ancho:800,prof:300,caja:{zocalo:70,patas:0,modulos:[{estantes:4,puertas:0,cajones:0}]}});
-    else if(/c[oó]moda|cajonera/.test(t)){const cj=t.match(/(\d+)\s*cajon/);Object.assign(r,{alto:800,ancho:1000,prof:450,caja:{zocalo:70,patas:0,modulos:[{estantes:0,puertas:0,cajones:cj?+cj[1]:4}]}})}
-    else Object.assign(r,{alto:1700,ancho:1200,prof:350,caja:{zocalo:70,patas:0,modulos:[{estantes:3,puertas:2,cajones:0}]}});
-  }
-  if(r.familia==="caja"&&r.caja&&r.caja.modulos[0]){
-    const cj=t.match(/(\d+|un|una)\s*caj[oó]n/);if(cj)r.caja.modulos[0].cajones=/un/.test(cj[1])?1:+cj[1];
-    const pu=t.match(/(\d+)\s*puertas?/);if(pu)r.caja.modulos[0].puertas=+pu[1];
-  }
-  Object.assign(r,md);
-  if(/aceite/.test(t))r.term="aceite";else if(/tinte/.test(t))r.term="tinte";else if(/laca|poliuret/.test(t))r.term="laca";else if(/barniz/.test(t))r.term="barniz";
-  return r;
-}
-function prompt(texto){
-  return `Sos una carpintera argentina con experiencia. Una colega describe un mueble que quiere presupuestar. Interpretalo y devolvé SOLO un objeto JSON, sin texto alrededor, con esta forma:
-{"familia":"caja"|"armazon"|"tablero","nombre":string,"material":uno de ${JSON.stringify(MATS.map(m=>m.id))},"alto":mm,"ancho":mm,"prof":mm,
- "caja":{"zocalo":mm,"patas":n,"tapaPiso":bool,"fondo":bool,"amurado":bool,"candado":bool,"anclaje":"ambos"|"tarugos"|"tornillos","modulos":[{"ancho":mm o 0 para repartir,"estantes":n,"puertas":n,"cajones":n,"filas":n,"cols":n}]},
- "arm":{"patas":n,"seccion":mm,"espTapa":mm,"faldon":mm,"refuerzos":n,"estanteInf":bool,"anclaje":"espiga"|"tarugos"|"tornillos"},
- "tab":{"soportes":n},
- "term":"ninguna"|"aceite"|"barniz"|"laca"|"tinte","dudas":string}
-Reglas:
-- "caja" = muebles de paneles (guardado, alacena, bajo mesada, placard, biblioteca, cómoda, mesa de luz). Los módulos son sectores entre laterales, de izquierda a derecha; filas y cols son casilleros (si hay casilleros, estantes = 0). "ancho" de "caja" es el ancho total del mueble.
-- "armazon" = patas + faldones + tapa (mesa, escritorio, banco). "ancho" es el largo de la tapa y "prof" su ancho.
-- "tablero" = una pieza (estante de pared, tapa, mesada).
-- Incluí solo el bloque de la familia elegida.
-- Medidas en milímetros. Si están en cm, convertí. Si faltan, usá estas de referencia: mesa de comedor 750 de alto y 600 mm por persona (para 6: 1500×1000; para 4: 1200×800); escritorio 750×1200×600; mesa ratona 450 de alto; mueble de pared 300 de profundidad; bajo mesada 900 de alto × 600 de profundidad, zócalo 100; alacena 700 de alto × 300; placard 600 de profundidad; cómoda 800 de alto × 450; cajón 425–500 de profundidad.
-- Si no dicen material, elegí pino. Melamina o MDF blanco = "mdf_mel". Si no dicen terminación: melamina "ninguna", madera "barniz".
-- No inventes precios. En "dudas" anotá en una frase lo que supusiste.
-
-Descripción: """${texto.slice(0,1500)}"""`;
-}
-function aplicar(r){
-  if(!r||typeof r!=="object")return;
-  if(["caja","armazon","tablero"].includes(r.familia))P.familia=r.familia;
-  if(r.material&&MATS.some(m=>m.id===r.material)){P.material=r.material;aplicarMaterialDefaults();$("fMat").value=matSel().tipo==="macizo"?1.2:1}
-  ["alto","ancho","prof"].forEach(k=>{if(num(r[k])>0)P[k]=Math.round(num(r[k]))});
-  if(P.familia==="caja"&&r.caja){
-    const c=r.caja,d={zocalo:70,patas:0,secPata:"3x3",largoPata:2.44,tapaPiso:true,fondo:true,amurado:false,candado:false,anclaje:matSel().tipo==="placa"?"ambos":"tarugos"};
-    P.caja=Object.assign(d,...["zocalo","patas","tapaPiso","fondo","amurado","candado","anclaje"].filter(k=>c[k]!==undefined).map(k=>({[k]:c[k]})));
-    P.caja.modulos=(Array.isArray(c.modulos)&&c.modulos.length?c.modulos:[{estantes:2}]).slice(0,8).map(m=>({ancho:Math.max(0,num(m.ancho)),estantes:Math.max(0,Math.round(num(m.estantes))),puertas:Math.max(0,Math.round(num(m.puertas))),cajones:Math.max(0,Math.round(num(m.cajones))),filas:Math.max(0,Math.round(num(m.filas))),cols:Math.max(0,Math.round(num(m.cols)))}));
-  }
-  if(P.familia==="armazon"){const a=r.arm||{};P.arm={patas:num(a.patas)||4,seccion:num(a.seccion)||65,espTapa:num(a.espTapa)||(matSel().tipo==="placa"?P.espesor:30),faldon:num(a.faldon)||100,refuerzos:Math.max(0,Math.round(num(a.refuerzos))),estanteInf:!!a.estanteInf,anclaje:["espiga","tarugos","tornillos"].includes(a.anclaje)?a.anclaje:"espiga"}}
-  if(P.familia==="tablero"){P.tab={soportes:Math.max(0,Math.round(num((r.tab||{}).soportes)))}}
-  if(["ninguna","aceite","barniz","laca","tinte"].includes(r.term)){P.term.tipo=r.term;P.term.manos=r.term==="aceite"?2:3}
-  P.partes={};mat=mat.filter(x=>!x.key);mo.forEach(x=>x.manual=false);compFam=null;
-  pintarPaso2();pintarDiseno();recalcular();
-}
 /* ---------- conexión con Encastre ---------- */
 const SUPABASE_URL="https://ocxwslozstvitlxihaim.supabase.co";
 const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jeHdzbG96c3R2aXRseGloYWltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDg5NTcsImV4cCI6MjA5NTMyNDk1N30.Jr-FWpH_2qcUIGK126eBuSScZ6EDcARzdpd4CkXrg5w";
@@ -936,8 +359,8 @@ const MAP_MAT={mdf_melamina:"mdf_mel",aglomerado_melamina:"agl_mel",mdf:"mdf_cru
 const MAP_ESP={"Pino":"pino","Paraíso":"paraiso","Kiri":"kiri","Eucalipto":"eucalipto","Cedro":"cedro","Roble":"roble"};
 const MAP_GRUPO={madera_dura:"dura",madera_semidura:"semidura",madera_blanda:"blanda"};
 const NOM_MAT={madera_dura:"madera dura",madera_semidura:"madera semidura",madera_blanda:"madera blanda",aglomerado:"aglomerado",aglomerado_melamina:"aglomerado con melamina",mdf:"MDF",mdf_melamina:"MDF con melamina",fenolico:"fenólico"};
-const MAP_TERM={crudo:"ninguna",pintado:"laca",lacheado:"barniz",melamina_color:"ninguna",enchapado:"barniz"};
 const NOM_TERM={crudo:"en crudo",pintado:"pintado",lacheado:"laqueado o barnizado",melamina_color:"melamina de color",enchapado:"enchapado"};
+const LLEVA_TERM={pintado:true,lacheado:true,enchapado:true,crudo:false,melamina_color:false};
 let MUEBLES=[];
 function matDePedido(it){
   if(MAP_MAT[it.material])return MAP_MAT[it.material];
@@ -960,62 +383,95 @@ function textoDe(it){
   if(it.notasCroquis)p.push("Notas del cliente: "+String(it.notasCroquis).trim());
   return p.join(" ");
 }
-function forzarDatosPedido(it){
-  if(!it)return;
-  const mid=matDePedido(it);
-  if(mid&&mid!==P.material){P.material=mid;aplicarMaterialDefaults();$("fMat").value=matSel().tipo==="macizo"?1.2:1}
-  if(num(it.alto)>0&&P.familia!=="tablero")P.alto=Math.round(num(it.alto)*10);
-  if(num(it.ancho)>0)P.ancho=Math.round(num(it.ancho)*10);
-  if(num(it.profundidad)>0)P.prof=Math.round(num(it.profundidad)*10);
-  if(it.terminacion&&MAP_TERM[it.terminacion]){P.term.tipo=MAP_TERM[it.terminacion];P.term.manos=P.term.tipo==="aceite"?2:3}
-  if(P.familia==="caja"&&it.tieneCajones&&num(it.cantidadCajones)>0&&!P.caja.modulos.some(m=>m.cajones>0))P.caja.modulos[0].cajones=num(it.cantidadCajones);
-  P.partes={};mat=mat.filter(x=>!x.key);compFam=null;
-  pintarPaso2();pintarDiseno();recalcular();
+function prompt(texto){
+  return `Sos una carpintera argentina. Leé este pedido de un mueble y devolvé SOLO un objeto JSON, sin texto alrededor:
+{"tipo":"caja"|"mesa"|"estante","material":uno de ${JSON.stringify(MATS.map(m=>m.id))},"alto":cm,"ancho":cm,"prof":cm,"puertas":n,"cajones":n,"estantes":n,"casilleros":n,"instala":bool,"termina":bool,"dudas":string}
+- "caja": muebles de placas o tablas con puertas, cajones o estantes (guardado, alacena, bajo mesada, placard, biblioteca, cómoda, mesa de luz).
+- "mesa": mesa, escritorio o banco (patas, faldones y tapa). "ancho" es el largo y "prof" el ancho de la tapa.
+- "estante": una sola pieza (estante de pared, tapa, mesada).
+- Medidas en centímetros. Si faltan: mesa de comedor 75 de alto y 60 cm por persona (para 6: 150×100); escritorio 75×120×60; bajo mesada 90×60 de profundidad; alacena 70×30; placard 60 de profundidad; cómoda 80×45; estante de pared 25 de profundidad.
+- "instala": true si se amura, se cuelga o se coloca en el lugar. "termina": true si lleva barniz, laca, pintura o aceite.
+- Si no dicen material, pino. Melamina o MDF blanco = "mdf_mel".
+- En "dudas", una frase con lo que supusiste. No inventes precios.
+
+Pedido: """${texto.slice(0,1500)}"""`;
+}
+function interpretarLocal(texto){
+  const t=texto.toLowerCase(),r={};
+  const mats=[["roble","roble"],["cedro","cedro"],["kiri","kiri"],["para[ií]so","paraiso"],["eucal","eucalipto"],["fen[oó]lico","fenolico"],["aglomerado","agl_mel"],["mdf crudo","mdf_crudo"],["melamina|mdf","mdf_mel"],["pino","pino"]];
+  r.material=(mats.find(([re])=>new RegExp(re).test(t))||[,"pino"])[1];
+  const n=+((t.match(/para\s*(\d+)/)||[])[1]||0);
+  if(/escritorio/.test(t))Object.assign(r,{tipo:"mesa",alto:75,ancho:120,prof:60});
+  else if(/\bmesa\b(?! de luz)|banco/.test(t))Object.assign(r,{tipo:"mesa",alto:75,ancho:n===6?150:n?Math.max(120,Math.ceil(n/2)*60):150,prof:n>4||!n?100:80});
+  else if(/estante|repisa|mesada(?!.*bajo)|tapa/.test(t)&&!/bajo ?mesada/.test(t))Object.assign(r,{tipo:"estante",ancho:100,prof:25});
+  else Object.assign(r,{tipo:"caja",alto:/bajo ?mesada/.test(t)?90:/alacena/.test(t)?70:/c[oó]moda/.test(t)?80:170,ancho:100,prof:/bajo ?mesada|placard|ropero/.test(t)?60:/c[oó]moda/.test(t)?45:35,puertas:/c[oó]moda|cajonera/.test(t)?0:2,estantes:/c[oó]moda/.test(t)?0:2});
+  const g=(re)=>{const m=t.match(re);return m?(/un/.test(m[1])?1:+m[1]):null};
+  const pu=g(/(\d+)\s*puertas?/),cj=g(/(\d+|un|una)\s*caj[oó]n/),es=g(/(\d+)\s*estantes?/),ca=g(/(\d+)\s*casilleros?/);
+  if(pu!=null)r.puertas=pu;if(cj!=null)r.cajones=cj;if(es!=null)r.estantes=es;if(ca!=null)r.casilleros=ca;
+  const al=t.match(/(\d+)\s*(?:cm)?\s*de\s*alto/),an=t.match(/(\d+)\s*(?:cm)?\s*de\s*(?:ancho|largo)/),pr=t.match(/(\d+)\s*(?:cm)?\s*de\s*(?:fondo|profundidad)/);
+  if(al)r.alto=+al[1];if(an)r.ancho=+an[1];if(pr)r.prof=+pr[1];
+  r.instala=/amur|colg|instal|coloca/.test(t);r.termina=/barniz|laca|pint|aceite|lustr/.test(t);
+  return r;
+}
+function aplicar(r,it){
+  if(!r)return;
+  if(["caja","mesa","estante"].includes(r.tipo))S.tipo=r.tipo;
+  if(r.material&&MATS.some(m=>m.id===r.material))S.material=r.material;
+  ["alto","ancho","prof","puertas","cajones","estantes","casilleros"].forEach(k=>{if(r[k]!=null&&isFinite(num(r[k])))S[k]=Math.max(0,Math.round(num(r[k])))});
+  if(S.tipo!=="caja"){S.puertas=0;S.cajones=0;S.estantes=0;S.casilleros=0}
+  if(typeof r.instala==="boolean")S.instala=r.instala;
+  if(typeof r.termina==="boolean")S.termina=r.termina;
+  if(it){ // lo que dice el pedido manda
+    const mid=matDePedido(it);if(mid)S.material=mid;
+    if(num(it.alto)>0)S.alto=num(it.alto);if(num(it.ancho)>0)S.ancho=num(it.ancho);if(num(it.profundidad)>0)S.prof=num(it.profundidad);
+    if(it.terminacion in LLEVA_TERM)S.termina=LLEVA_TERM[it.terminacion];
+    if(S.tipo==="caja"&&it.tieneCajones&&num(it.cantidadCajones)>0)S.cajones=num(it.cantidadCajones);
+  }
+  if(matSel().tipo==="placa"&&S.tipo==="caja")S.termina=S.termina&&!/mel/.test(S.material);
+  S.unidad=matSel().tipo==="placa"?"placa":"pie";
+  S.precio=precioRecordado();S.montos={};
+  todo();
 }
 async function interpretar(){
   const texto=$("texto").value.trim();if(!texto)return;
   const btn=$("btnInterpretar"),est=$("estadoIA"),it=MUEBLES[+$("mueble").value||0];
-  btn.disabled=true;est.className="estado";est.textContent="Interpretando el pedido…";
-  const clave=PEDIDO_ID?`encastre_pres_ia_${PEDIDO_ID}_${$("mueble").value||0}_${texto.length}`:null;
-  let r=null;try{if(clave)r=JSON.parse(sessionStorage.getItem(clave)||"null")}catch(e){}
-  if(!r){r=await pedirIA(prompt(texto));if(r&&clave){try{sessionStorage.setItem(clave,JSON.stringify(r))}catch(e){}}}
-  if(r){aplicar(r);forzarDatosPedido(it);est.className="estado ok";est.textContent="Listo. "+(r.dudas?"Supuse: "+r.dudas:"Revisá medidas y materiales.")}
-  else{aplicar(interpretarLocal(texto));forzarDatosPedido(it);est.className="estado err";est.textContent="La IA no respondió: lo armé con reglas simples. Revisá todo."}
+  btn.disabled=true;est.className="estado";est.textContent="Leyendo el pedido…";
+  const clave=`encastre_pres_simple_${PEDIDO_ID||"x"}_${$("mueble").value||0}_${texto.length}`;
+  let r=null;try{r=JSON.parse(sessionStorage.getItem(clave)||"null")}catch(e){}
+  if(!r){r=await pedirIA(prompt(texto));if(r){try{sessionStorage.setItem(clave,JSON.stringify(r))}catch(e){}}}
+  if(r){aplicar(r,it);est.className="estado ok";est.textContent=r.dudas?"Supuse: "+r.dudas:"Listo. Revisá las medidas."}
+  else{aplicar(interpretarLocal(texto),it);est.className="estado err";est.textContent="Lo armé con reglas simples. Revisá las medidas."}
   btn.disabled=false;
 }
 $("btnInterpretar").addEventListener("click",interpretar);
-document.querySelectorAll(".ej").forEach(b=>b.addEventListener("click",()=>{$("texto").value=b.dataset.ej;interpretar()}));
 $("mueble").addEventListener("change",()=>{const it=MUEBLES[+$("mueble").value];if(it){$("texto").value=textoDe(it);interpretar()}});
 
 /* ---------- cargar en "Tu presupuesto" ---------- */
 $("btnCargar").addEventListener("click",()=>{
   const est=$("estadoCargar");
-  if(!ULT){return}
-  if(!PEDIDO_ID||!EN_APP){est.className="estado err";est.textContent="Para cargarlo, abrí el presupuesto automático desde un pedido en Encastre.";return}
-  if(ULT.sinPrecio&&!confirm(`Hay ${ULT.sinPrecio} ${ULT.sinPrecio===1?"renglón":"renglones"} de materiales sin precio, así que el total está incompleto. ¿Lo cargás igual?`))return;
+  if(!PEDIDO_ID||!EN_APP){est.className="estado err";est.textContent="Para cargarlo, abrilo desde un pedido en Encastre.";return}
+  if(!num(S.precio)&&!confirm("Falta el precio de la madera. ¿Lo cargás igual?"))return;
   const it=MUEBLES[+$("mueble").value||0]||{};
   const pref=MUEBLES.length>1&&it.descripcion?it.descripcion.trim()+" — ":"";
-  const items=ULT.rubros.map(([n,v])=>({descripcion:pref+n,precio:Math.round(v)})).filter(x=>x.precio>0);
-  const dif=Math.round(ULT.total)-items.reduce((a,x)=>a+x.precio,0);
-  const mo_=items.find(x=>/Mano de obra$/.test(x.descripcion));if(mo_)mo_.precio+=dif;
-  const calculo={version:1,fecha:new Date().toISOString(),mueble:it.descripcion||"",texto:$("texto").value,
-    diseno:JSON.parse(JSON.stringify(P)),
-    materiales:mat.map(r=>({nombre:r.nombre,rubro:r.rubro,se_compra:num(r.cant),precio:num(r.precio),usa:num(r.usa),entero:!!r.entero,lo_tengo:!!r.tengo,imputado:Math.round(imputado(r))})),
-    tiempos:comp.map(c=>({componente:c.nombre,cantidad:num(c.cant),horas_cu:num(c.h),en_el_lugar:!!c.inst})),
-    mano_de_obra:mo.map(r=>({quien:r.quien,categoria:r.cat,dias:num(r.dias),horas_dia:num(r.hdia),valor_hora:num(r.valor)})),
-    porcentajes:{insumos:num($("insumos").value),gastos:num($("gastos").value),ganancia:num($("ganancia").value),multiplicador_fijo:num($("multFijo").value),nivel:num($("nivel").value),ajuste_material:num($("fMat").value)},
-    resumen:ULT};
+  const {t,vis}=totalRedondo();
+  const items=vis.map(r=>({descripcion:pref+r.nom,precio:monto(r.k)})).filter(x=>x.precio>0);
+  const dif=t-items.reduce((a,x)=>a+x.precio,0);
+  const mo=items.find(x=>/Mano de obra$/.test(x.descripcion));if(mo)mo.precio+=dif;
+  const calculo={version:"simple-1",fecha:new Date().toISOString(),mueble:it.descripcion||"",texto:$("texto").value,
+    mueble_datos:{tipo:S.tipo,alto:S.alto,ancho:S.ancho,prof:S.prof,puertas:S.puertas,cajones:S.cajones,estantes:S.estantes,casilleros:S.casilleros,instala:S.instala,termina:S.termina},
+    madera:{material:matSel().nombre,unidad:S.unidad,seccion:S.unidad==="pieza"?S.seccion:null,largo:S.unidad==="pieza"?S.largo:null,precio:S.precio,cantidad:C.usa},
+    herrajes:{cantidades:C.herr,precios:S.herr},horas:C.horas,horas_instalacion:C.horasInst,valor_hora:S.valorHora,ganancia_pct:S.ganancia,
+    renglones:items,total:t};
   window.parent.postMessage({tipo:"encastre-presupuesto",accion:"cargar",pedidoId:PEDIDO_ID,mueble:it.descripcion||"",items,calculo},location.origin);
   est.className="estado ok";est.textContent="Cargado.";
 });
 
 /* ---------- inicio ---------- */
 async function iniciar(){
-  pintarPaso2();pintarDiseno();recalcular();
+  todo();
   if(!PEDIDO_ID)return;
-  $("ejemplos").classList.add("oculto");
   const av=$("avisoSesion");
-  if(!SES||!SES.token){av.innerHTML="<b>No encontré tu sesión.</b> Entrá a Encastre con tu cuenta y abrí el presupuesto automático desde el pedido.";av.classList.remove("oculto");return}
+  if(!SES||!SES.token){av.innerHTML="<b>No encontré tu sesión.</b> Entrá a Encastre con tu cuenta y abrí el presupuesto desde el pedido.";av.classList.remove("oculto");return}
   try{
     const r=await leer("pedidos",`?id=eq.${encodeURIComponent(PEDIDO_ID)}&select=*`);
     const p=r&&r[0];if(!p)throw new Error("no encontrado");
@@ -1024,7 +480,7 @@ async function iniciar(){
     $("campoMueble").classList.toggle("oculto",MUEBLES.length<2);
     $("texto").value=textoDe(MUEBLES[0]);
     interpretar();
-  }catch(e){av.innerHTML="<b>No pude leer el pedido.</b> Cerrá esta ventana y volvé a abrirla desde el pedido. Si sigue igual, escribí abajo el mueble y armalo a mano.";av.classList.remove("oculto");$("texto").value=""}
+  }catch(e){av.innerHTML="<b>No pude leer el pedido.</b> Escribí el mueble y tocá \"Armar presupuesto\".";av.classList.remove("oculto");$("texto").value=""}
 }
 iniciar();
 })();
