@@ -54,6 +54,10 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .renglon .det{grid-column:1/-1;font-size:14px;color:var(--muted)}
 .renglon input.monto{text-align:right;font-weight:700;font-size:17px}
 .mini{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.sub{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:5px 0;border-top:1px dotted var(--line)}
+.sub:first-child{border-top:0}
+.sub .v{text-align:right;color:var(--ink,#2D3436);font-weight:600}
+.sub .v .mini input{width:96px}
 .mini input{width:84px;padding:4px 6px;font-size:14px;text-align:right}
 .total{display:flex;justify-content:space-between;align-items:baseline;padding-top:12px;border-top:2px solid var(--ink)}
 .total span:first-child{font-weight:900;font-size:20px}
@@ -254,20 +258,32 @@ function visibles(){
 }
 function sugerido(k){return mil(C[k]||0)}
 function monto(k){return S.montos[k]!=null?S.montos[k]:sugerido(k)}
+// Cada dato del detalle en su propio renglón: lo que es a la izquierda, el número a la derecha
+const sub=(izq,der)=>`<div class="sub"><span>${izq}</span><span class="v">${der}</span></div>`;
+const campo=(attr,val,pre="$",pos="",paso="")=>`<span class="mini">${pre}<input ${attr} type="number"${paso?` step="${paso}"`:""} value="${val}">${pos}</span>`;
 function detalle(k){
   const m=matSel();
-  if(k==="madera")return `${C.usa} ${C.uTxt} de ${m.nombre}${S.precio?` × ${fmt(S.precio)}`:""}${C.extraMadera}. Incluye cola, lijas y tornillería.`+(num(S.precio)?"":` <b style="color:var(--warn)">Cargá el precio de la madera en el paso 2.</b>`);
+  if(k==="madera")return sub(`${m.nombre}`,`${C.usa} ${C.uTxt}`)
+    +sub("Precio",num(S.precio)?`${fmt(S.precio)} c/u`:`<b style="color:var(--warn)">Cargalo en el paso 2</b>`)
+    +(C.extraMadera?sub("Además",C.extraMadera.replace(/^\s*\+\s*/,"").split(" + ").join("<br>")):"")
+    +sub("Incluye","cola, lijas y tornillería");
   if(k==="herrajes"){
     const h=C.herr,p=[];
-    if(h.bisagras)p.push(`${h.bisagras} bisagras × <span class="mini">$<input data-h="bisagra" type="number" value="${S.herr.bisagra}"></span>`);
-    if(h.manijas)p.push(`${h.manijas} manijas × <span class="mini">$<input data-h="manija" type="number" value="${S.herr.manija}"></span>`);
-    if(h.correderas)p.push(`${h.correderas} pares de correderas × <span class="mini">$<input data-h="corredera" type="number" value="${S.herr.corredera}"></span>`);
-    if(h.soportes)p.push(`${h.soportes} soportes (poné el monto a la derecha)`);
-    return p.length?p.join(" · "):"Sumá lo que lleve.";
+    if(h.bisagras)p.push(sub(`${h.bisagras} bisagras`,campo('data-h="bisagra"',S.herr.bisagra,"$"," c/u")));
+    if(h.manijas)p.push(sub(`${h.manijas} manijas`,campo('data-h="manija"',S.herr.manija,"$"," c/u")));
+    if(h.correderas)p.push(sub(`${h.correderas} pares de correderas`,campo('data-h="corredera"',S.herr.corredera,"$"," c/u")));
+    if(h.soportes)p.push(sub(`${h.soportes} soportes`,"poné el monto arriba"));
+    return p.length?p.join(""):"Sumá lo que lleve.";
   }
-  if(k==="terminacion")return `Unos ${C.litros} ${C.litros===1?"litro":"litros"} para ${coma(C.termM2.toFixed(1))} m² a 3 manos × <span class="mini">$<input data-l="1" type="number" value="${S.litro}"></span> el litro.`;
-  if(k==="mo")return `${coma(C.horas)} horas (unos ${coma(Math.ceil(C.horas/S.horasDia))} días de <span class="mini"><input data-c="horasDia" type="number" step="0.5" value="${S.horasDia}"></span> h) × <span class="mini">$<input data-c="valorHora" type="number" value="${S.valorHora}"></span> la hora + <span class="mini"><input data-c="ganancia" type="number" value="${S.ganancia}"></span> % de ganancia y gastos del taller.`;
-  if(k==="inst")return `${coma(C.horasInst)} horas en el lugar, al mismo valor.`;
+  if(k==="terminacion")return sub("Superficie",`${coma(C.termM2.toFixed(1))} m² a 3 manos`)
+    +sub("Producto",`unos ${C.litros} ${C.litros===1?"litro":"litros"}`)
+    +sub("Precio del litro",campo('data-l="1"',S.litro));
+  if(k==="mo")return sub("Horas de trabajo",`${coma(C.horas)} h`)
+    +sub("Horas por día",campo('data-c="horasDia"',S.horasDia,"",` h`,"0.5"))
+    +sub("Días (aprox.)",`${coma(Math.ceil(C.horas/S.horasDia))}`)
+    +sub("Valor de la hora",campo('data-c="valorHora"',S.valorHora))
+    +sub("Ganancia y gastos del taller",campo('data-c="ganancia"',S.ganancia,"",` %`));
+  if(k==="inst")return sub("Horas en el lugar",`${coma(C.horasInst)} h`)+sub("Valor de la hora","el mismo de mano de obra");
   return "";
 }
 function pintarPresupuesto(){

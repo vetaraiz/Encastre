@@ -5195,7 +5195,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-19.3";
+const VERSION_APP = "v2026-10-20.1";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -16341,10 +16341,15 @@ function PedidoClienteFormato({
   items
 }) {
   const M = C.marron;
-  const fila = (etiqueta, valor) => valor ? /*#__PURE__*/React.createElement("div", {
+  // Cada dato en un renglón: el nombre a la izquierda y el valor en una columna a la derecha
+  const filaBase = (etiqueta, contenido) => /*#__PURE__*/React.createElement("div", {
     style: {
       padding: "10px 14px",
-      borderBottom: `1px solid ${C.borde}`
+      borderBottom: `1px solid ${C.borde}`,
+      display: "grid",
+      gridTemplateColumns: "minmax(92px, 34%) 1fr",
+      gap: 12,
+      alignItems: "baseline"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -16352,16 +16357,18 @@ function PedidoClienteFormato({
       fontWeight: 700,
       color: C.medio,
       textTransform: "uppercase",
-      letterSpacing: .5,
-      marginBottom: 3
+      letterSpacing: .5
     }
   }, etiqueta), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 16,
       color: C.texto,
-      fontWeight: 600
+      fontWeight: 600,
+      minWidth: 0,
+      overflowWrap: "anywhere"
     }
-  }, valor)) : null;
+  }, contenido));
+  const fila = (etiqueta, valor) => valor ? filaBase(etiqueta, valor) : null;
   const lista = items && items.length > 0 ? items : [{}];
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -16400,7 +16407,11 @@ function PedidoClienteFormato({
   }, "Vence: ", fechaLimite))), /*#__PURE__*/React.createElement("div", {
     style: {
       borderBottom: `2px solid ${M}`,
-      padding: "12px 14px"
+      padding: "12px 14px",
+      display: "grid",
+      gridTemplateColumns: "minmax(92px, 34%) 1fr",
+      gap: 12,
+      alignItems: "baseline"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -16408,8 +16419,7 @@ function PedidoClienteFormato({
       fontWeight: 700,
       color: M,
       textTransform: "uppercase",
-      letterSpacing: .5,
-      marginBottom: 4
+      letterSpacing: .5
     }
   }, "Cliente"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -16435,39 +16445,28 @@ function PedidoClienteFormato({
         textTransform: "uppercase",
         letterSpacing: .5
       }
-    }, "🪑 Mueble ", i + 1), fila("Descripción", it.descripcion), (it.alto || it.ancho || it.profundidad) && /*#__PURE__*/React.createElement("div", {
-      style: {
-        padding: "10px 14px",
-        borderBottom: `1px solid ${C.borde}`
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 12,
-        fontWeight: 700,
-        color: C.medio,
-        textTransform: "uppercase",
-        letterSpacing: .5,
-        marginBottom: 4
-      }
-    }, "Medidas"), [["Alto", it.alto], ["Ancho", it.ancho], ["Profundidad", it.profundidad]].filter(([n, v]) => v).map(([n, v]) => /*#__PURE__*/React.createElement("div", {
+    }, "🪑 Mueble ", i + 1), fila("Descripción", it.descripcion), (it.alto || it.ancho || it.profundidad) && filaBase("Medidas", [["Alto", it.alto], ["Ancho", it.ancho], ["Profundidad", it.profundidad]].filter(([n, v]) => v).map(([n, v]) => /*#__PURE__*/React.createElement("div", {
       key: n,
       style: {
-        display: "flex",
-        justifyContent: "space-between",
-        marginBottom: 3,
-        fontSize: 15
+        marginBottom: 6
       }
     }, /*#__PURE__*/React.createElement("span", {
       style: {
-        color: C.textoSuave
+        color: C.textoSuave,
+        fontWeight: 400
       }
-    }, n), /*#__PURE__*/React.createElement("span", {
+    }, n, ": "), /*#__PURE__*/React.createElement("span", {
       style: {
-        fontFamily: "monospace",
         color: C.marron,
-        fontWeight: 700
+        fontWeight: 800
       }
-    }, v, "cm = ", cmToMm(v), "mm = ", cmToIn(v), "\"")))), fila("Material", mat?.label ? `${mat.label}${it.especie ? ` · ${it.especie}` : ""}` : null), fila("Terminación", ter?.label ? `${ter.label}${it.color ? ` · ${it.color}` : ""}` : null), fila("Cajones", it.tieneCajones ? `${it.cantidadCajones || "—"}${it.medidasCajones ? ` · ${it.medidasCajones}` : ""}` : null), fila("Notas del croquis", it.notasCroquis), it.croquisImg && /*#__PURE__*/React.createElement("div", {
+    }, v, " cm"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 13,
+        color: C.textoSuave,
+        fontWeight: 400
+      }
+    }, cmToMm(v), " mm · ", cmToIn(v), "\"")))), fila("Material", mat?.label ? `${mat.label}${it.especie ? ` · ${it.especie}` : ""}` : null), fila("Terminación", ter?.label ? `${ter.label}${it.color ? ` · ${it.color}` : ""}` : null), fila("Cajones", it.tieneCajones ? `${it.cantidadCajones || "—"}${it.medidasCajones ? ` · ${it.medidasCajones}` : ""}` : null), fila("Notas del croquis", it.notasCroquis), it.croquisImg && /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "10px 14px"
       }
