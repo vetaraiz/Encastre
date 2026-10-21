@@ -1893,6 +1893,25 @@ const db = {
       });
     } catch (e) {/* silencioso: el aviso es secundario */}
   },
+  async adminCuentas(accion, email) {
+    const tk = await this.tokenActual();
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/admin-cuentas`, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${tk}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        accion,
+        email
+      })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (r.status === 404 && !data.error) throw new Error("Falta crear la función «admin-cuentas» en Supabase.");
+    if (!r.ok || data.error) throw new Error(data.error || data.message || "No se pudo (" + r.status + ")");
+    return data;
+  },
   async crearPago(preview) {
     const tk = this.ses?.token;
     if (!tk) throw new Error("Sesión inválida");
@@ -5256,7 +5275,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-21.2";
+const VERSION_APP = "v2026-10-21.4";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -19611,6 +19630,160 @@ function MisQuejas({
 }
 
 // ─── PANEL DE ADMINISTRACIÓN (solo usuario.tipo==="admin") ────────────────────
+// ─── ADMIN: CORRECCIONES DE INGRESO (usa la función admin-cuentas de Supabase) ───
+function AdminAcceso({
+  emailInicial
+}) {
+  const [email, setEmail] = useState(emailInicial || "");
+  const [datos, setDatos] = useState(null);
+  const [ocupado, setOcupado] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [clave, setClave] = useState("");
+  const correr = async (accion, pregunta) => {
+    if (!email.trim()) return;
+    if (pregunta && !window.confirm(pregunta)) return;
+    setOcupado(true);
+    setMsg("");
+    if (accion !== "clave_temporal") setClave("");
+    try {
+      const d = await db.adminCuentas(accion, email.trim().toLowerCase());
+      setDatos(d);
+      if (d.clave) setClave(d.clave);
+      if (d.ok) setMsg("✅ " + d.ok);
+    } catch (e) {
+      setMsg("❌ " + (e.message || "No se pudo"));
+    }
+    setOcupado(false);
+  };
+  useEffect(() => {
+    if (emailInicial) correr("estado");
+  }, []);
+  const f = v => v ? new Date(v).toLocaleString("es-AR") : "nunca";
+  const a = datos && datos.acceso,
+    fi = datos && datos.ficha;
+  const bloqueado = a && a.bloqueado_hasta && new Date(a.bloqueado_hasta) > new Date();
+  const suspendida = fi && fi.suspendido_hasta && new Date(fi.suspendido_hasta) > new Date();
+  const renglon = (t, v, mal) => /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "minmax(110px, 40%) 1fr",
+      gap: 10,
+      padding: "6px 0",
+      borderBottom: `1px dashed ${C.borde}`,
+      fontSize: 15
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: C.textoSuave
+    }
+  }, t), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 700,
+      color: mal ? C.error : C.texto
+    }
+  }, v));
+  const diag = !datos ? null : !a && !fi ? "No existe ninguna cuenta con ese mail. Puede registrarse de cero." : !a && fi ? "Tiene ficha pero no acceso: es raro. Pasale el caso a Claude." : a && !fi ? "Se creó el acceso pero no la ficha: le aparece «Perfil no encontrado». Borrá el acceso y que se registre de nuevo." : fi.activo === false ? "La cuenta está dada de baja. Reactivala." : suspendida || bloqueado ? "La cuenta está suspendida. Reactivala si corresponde." : !a.mail_confirmado ? "No confirmó el mail. Confirmalo desde acá." : "La cuenta está bien. Si no puede entrar, es la contraseña o la verificación de seguridad: ponele una contraseña temporal.";
+  const btn = (t, accion, pregunta, rojo) => /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    disabled: ocupado,
+    onClick: () => correr(accion, pregunta),
+    style: {
+      ...S.btn("ghost"),
+      ...(rojo ? {
+        color: C.error,
+        borderColor: C.error
+      } : {}),
+      minHeight: 42,
+      padding: "8px 14px",
+      fontSize: 15
+    }
+  }, t);
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      ...S.card,
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      ...S.cardTitle,
+      marginBottom: 8
+    }
+  }, "🔑 Correcciones de ingreso"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "email",
+    value: email,
+    onChange: e => setEmail(e.target.value),
+    onKeyDown: e => {
+      if (e.key === "Enter") correr("estado");
+    },
+    placeholder: "Mail de la persona",
+    style: {
+      ...S.input,
+      flex: 1
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    disabled: ocupado || !email.trim(),
+    onClick: () => correr("estado"),
+    style: {
+      ...S.btn("dark"),
+      minHeight: 48
+    }
+  }, ocupado ? "…" : "Ver")), msg && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 10,
+      fontSize: 15,
+      fontWeight: 700,
+      color: msg.startsWith("❌") ? C.error : C.exito
+    }
+  }, msg), clave && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 10,
+      padding: "10px 12px",
+      background: "#EAF3E6",
+      border: `1px solid ${C.verde}`,
+      borderRadius: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      color: C.textoSuave
+    }
+  }, "Contraseña temporal (pasásela y que la cambie desde Mi cuenta):"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 24,
+      fontWeight: 900,
+      letterSpacing: 1,
+      fontFamily: "monospace",
+      color: C.texto,
+      userSelect: "all"
+    }
+  }, clave)), datos && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "8px 12px",
+      background: C.suave,
+      borderLeft: `4px solid ${C.marron}`,
+      fontSize: 15,
+      fontWeight: 700,
+      marginBottom: 8
+    }
+  }, diag), renglon("Acceso", a ? "creado el " + f(a.creado) : "no tiene", !a), a && renglon("Mail confirmado", a.mail_confirmado ? "sí" : "no", !a.mail_confirmado), a && renglon("Último ingreso", f(a.ultimo_ingreso)), renglon("Ficha", fi ? (fi.nombre || "(sin nombre)") + " · " + (ROLES[fi.tipo] || fi.tipo) : "no tiene", !fi), fi && renglon("Estado", fi.activo === false ? "dada de baja" : suspendida ? "suspendida hasta " + f(fi.suspendido_hasta) : bloqueado ? "bloqueada" : "activa", fi.activo === false || suspendida || bloqueado), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      flexWrap: "wrap",
+      marginTop: 12
+    }
+  }, a && !a.mail_confirmado && btn("✉️ Confirmar mail", "confirmar_mail"), a && btn("🔐 Contraseña temporal", "clave_temporal", "¿Ponerle una contraseña nueva? La que tenía deja de funcionar."), (fi && (fi.activo === false || suspendida) || bloqueado) && btn("✅ Reactivar", "reactivar", "¿Reactivar esta cuenta?"), a && !fi && btn("🗑️ Borrar acceso incompleto", "borrar_acceso", "¿Borrar el acceso? Después la persona se registra de nuevo con el mismo mail.", true))));
+}
 function AdminUsuarios() {
   const [lista, setLista] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -19747,7 +19920,10 @@ function AdminUsuarios() {
         marginBottom: 16
       },
       onClick: () => setSel(null)
-    }, "← Volver"), /*#__PURE__*/React.createElement("div", {
+    }, "← Volver"), sel.email && /*#__PURE__*/React.createElement(AdminAcceso, {
+      key: sel.id,
+      emailInicial: sel.email
+    }), /*#__PURE__*/React.createElement("div", {
       style: S.card
     }, /*#__PURE__*/React.createElement("div", {
       style: {
@@ -19866,7 +20042,7 @@ function AdminUsuarios() {
       }
     }, msg)));
   }
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(AdminAcceso, null), /*#__PURE__*/React.createElement("div", {
     style: {
       ...S.cardTitle,
       fontSize: 26,
