@@ -4185,10 +4185,35 @@ function AuthScreen({
   const [resaltarTerminos, setResaltarTerminos] = useState(false);
   const [verLegal, setVerLegal] = useState(null); // null | "terminos" | "privacidad"
   const captchaWidgetId = useRef(null);
+  // Si Cloudflare no responde (conexión lenta, navegador viejo, bloqueador), se avisa y se puede reintentar
+  const [captchaFalla, setCaptchaFalla] = useState(false);
+  const [captchaIntento, setCaptchaIntento] = useState(0);
+  const tokenRef = useRef("");
+  useEffect(() => {
+    tokenRef.current = captchaToken;
+    if (captchaToken) setCaptchaFalla(false);
+  }, [captchaToken]);
+  const vigilarCaptcha = () => setTimeout(() => {
+    if (!tokenRef.current) setCaptchaFalla(true);
+  }, 12000);
+  const reintentarCaptcha = () => {
+    setCaptchaFalla(false);
+    setCaptchaToken("");
+    if (!window.turnstile) {
+      const sc = document.createElement("script");
+      sc.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?r=" + Date.now();
+      sc.async = true;
+      document.head.appendChild(sc);
+    }
+    setCaptchaIntento(n => n + 1);
+    vigilarCaptcha();
+  };
   const CAPTCHA_SITE_KEY = "0x4AAAAAAEQA-qNlI1IMVVKL";
   useEffect(() => {
     let intentos = 0;
+    let vivo = true;
     const montar = () => {
+      if (!vivo) return;
       if (window.turnstile && document.getElementById("cf-turnstile-widget")) {
         if (captchaWidgetId.current !== null) {
           try {
@@ -4197,27 +4222,35 @@ function AuthScreen({
         }
         captchaWidgetId.current = window.turnstile.render("#cf-turnstile-widget", {
           sitekey: CAPTCHA_SITE_KEY,
-          // Solo se muestra si Cloudflare necesita que la persona toque algo (así no aparece "Operación exitosa" en el medio del formulario)
-          appearance: "interaction-only",
+          // Solo se muestra si Cloudflare necesita que la persona toque algo (así no aparece "Operación exitosa" en el medio del formulario).
+          // Si hubo que reintentar, se muestra siempre, para que la persona vea qué pasa.
+          appearance: captchaIntento > 0 ? "always" : "interaction-only",
           language: "es",
           callback: token => setCaptchaToken(token),
           "expired-callback": () => setCaptchaToken(""),
-          "error-callback": () => setCaptchaToken("")
+          "error-callback": () => {
+            setCaptchaToken("");
+            setCaptchaFalla(true);
+          }
         });
-      } else if (intentos < 20) {
+      } else if (intentos < 240) {
+        // Con conexión lenta el script de Cloudflare puede tardar: se sigue esperando hasta 60 segundos
         intentos++;
         setTimeout(montar, 250);
+      } else {
+        setCaptchaFalla(true);
       }
     };
     montar();
     return () => {
+      vivo = false;
       if (window.turnstile && captchaWidgetId.current !== null) {
         try {
           window.turnstile.remove(captchaWidgetId.current);
         } catch {}
       }
     };
-  }, [modo]);
+  }, [modo, captchaIntento]);
   const resetCaptcha = () => {
     if (window.turnstile && captchaWidgetId.current !== null) {
       try {
@@ -4287,6 +4320,7 @@ function AuthScreen({
     esperaCaptchaRef.current = true;
     setEsperandoCaptcha(true);
     setCargando(false);
+    vigilarCaptcha();
   };
   useEffect(() => {
     if (captchaToken && esperaCaptchaRef.current) {
@@ -5038,7 +5072,33 @@ function AuthScreen({
       textAlign: "center",
       marginTop: 10
     }
-  }, "Un segundo: estamos comprobando que no seas un robot. Si abajo aparece un recuadro, tocalo."), /*#__PURE__*/React.createElement("div", {
+  }, "Un segundo: estamos comprobando que no seas un robot. Si abajo aparece un recuadro, tocalo."), captchaFalla && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 12,
+      padding: "10px 12px",
+      background: "#FFF4E5",
+      border: "1px solid #E0A85A",
+      borderRadius: 10,
+      fontSize: 15,
+      color: "#5A3A12"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700,
+      marginBottom: 4
+    }
+  }, "La verificación de seguridad no terminó en este teléfono."), /*#__PURE__*/React.createElement("div", null, "Tocá \u00ABReintentar\u00BB. Si sigue igual, probá con wifi o abrí encastre.com.ar en Google Chrome actualizado."), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: reintentarCaptcha,
+    style: {
+      ...S.btn("ghost"),
+      marginTop: 8,
+      width: "100%",
+      justifyContent: "center",
+      minHeight: 40,
+      padding: "8px 14px"
+    }
+  }, "🔄 Reintentar")), /*#__PURE__*/React.createElement("div", {
     id: "cf-turnstile-widget",
     style: {
       marginTop: 12,
@@ -5057,7 +5117,8 @@ function AuthScreen({
         return;
       }
       if (!captchaToken) {
-        setErr("Primero completá la verificación de seguridad (el cuadrito de abajo) y después tocá de nuevo \"¿Olvidaste tu contraseña?\".");
+        setErr("Esperá unos segundos a que termine la verificación de seguridad y tocá de nuevo \"¿Olvidaste tu contraseña?\".");
+        vigilarCaptcha();
         return;
       }
       setErr("");
@@ -5195,7 +5256,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-21.1";
+const VERSION_APP = "v2026-10-21.2";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
