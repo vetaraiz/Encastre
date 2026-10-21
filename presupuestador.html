@@ -203,7 +203,7 @@ function calcular(){
     let divs=0,hors=0;
     if(cas){const f=Math.max(1,Math.round(Math.sqrt(cas))),c=Math.ceil(cas/f);hors=f-1;divs=(c-1)*f;pieza(hors,D,wMod,e,1);pieza(divs,D,(Hl-(f-1)*e)/f,e,1)}
     if(S.puertas>0){const ph=Hc-S.cajones*180;pieza(S.puertas,(wMod*mods+2*e)/S.puertas,ph,e,4);herr.bisagras=S.puertas*(ph<=1000?2:ph<=1700?3:4)}
-    if(S.cajones>0){pieza(S.cajones,177,wMod+2*e,e,4);pieza(4*S.cajones,140,Math.max(D-60,wMod-30),e,1);herr.correderas=S.cajones}
+    if(S.cajones>0){pieza(S.cajones,177,wMod+2*e,e,4);pieza(4*S.cajones,140,Math.max(D-60,wMod-30),Math.min(e,15),1);herr.correderas=S.cajones}
     herr.manijas=S.puertas+S.cajones;
     if(zoc)pieza(1,zoc,W,e,4);
     const fondo=W*Hc/1e6;
@@ -233,7 +233,7 @@ function calcular(){
   let madera=usa*num(S.precio);
   let extraMadera="";
   if(m.servicio&&S.unidad==="placa"){const cortes=Math.ceil(piezas*1.33),cm=Math.ceil(canto);madera+=cortes*OESTE.corte+cm*OESTE.canto;extraMadera=` + cortes y canto (${cortes} cortes, ${cm} m)`}
-  if(S.tipo==="caja"&&det.fondo){madera+=Math.ceil(det.fondo/(2.6*1.8*0.9))*53000;extraMadera+=" + fondo de chapadur"}
+  if(S.tipo==="caja"&&det.fondo){madera+=det.fondo*1.1/(2.6*1.8)*53000;extraMadera+=" + fondo de chapadur"}
   madera*=1.05; // cola, lijas y tornillería menor
   const herrajes=herr.bisagras*S.herr.bisagra+herr.manijas*S.herr.manija+herr.correderas*S.herr.corredera;
   const litros=S.termina?Math.ceil(termM2*3/10):0;
@@ -406,6 +406,7 @@ function prompt(texto){
 - "mesa": mesa, escritorio o banco (patas, faldones y tapa). "ancho" es el largo y "prof" el ancho de la tapa.
 - "estante": una sola pieza (estante de pared, tapa, mesada).
 - Medidas en centímetros. Si faltan: mesa de comedor 75 de alto y 60 cm por persona (para 6: 150×100); escritorio 75×120×60; bajo mesada 90×60 de profundidad; alacena 70×30; placard 60 de profundidad; cómoda 80×45; estante de pared 25 de profundidad.
+- Puertas, cajones, estantes y casilleros: solo los que el pedido dice o los que ese mueble lleva siempre; si no, 0. Mesa de luz o mesita de noche: sin puertas ni casilleros salvo que lo pida.
 - "instala": true si se amura, se cuelga o se coloca en el lugar. "termina": true si lleva barniz, laca, pintura o aceite.
 - Si no dicen material, pino. Melamina o MDF blanco = "mdf_mel".
 - En "dudas", una frase con lo que supusiste. No inventes precios.
@@ -420,7 +421,8 @@ function interpretarLocal(texto){
   if(/escritorio/.test(t))Object.assign(r,{tipo:"mesa",alto:75,ancho:120,prof:60});
   else if(/\bmesa\b(?! de luz)|banco/.test(t))Object.assign(r,{tipo:"mesa",alto:75,ancho:n===6?150:n?Math.max(120,Math.ceil(n/2)*60):150,prof:n>4||!n?100:80});
   else if(/estante|repisa|mesada(?!.*bajo)|tapa/.test(t)&&!/bajo ?mesada/.test(t))Object.assign(r,{tipo:"estante",ancho:100,prof:25});
-  else Object.assign(r,{tipo:"caja",alto:/bajo ?mesada/.test(t)?90:/alacena/.test(t)?70:/c[oó]moda/.test(t)?80:170,ancho:100,prof:/bajo ?mesada|placard|ropero/.test(t)?60:/c[oó]moda/.test(t)?45:35,puertas:/c[oó]moda|cajonera/.test(t)?0:2,estantes:/c[oó]moda/.test(t)?0:2});
+  else if(/mesa de luz|mesita|mesa de noche/.test(t))Object.assign(r,{tipo:"caja",alto:60,ancho:45,prof:40,puertas:0,cajones:2,estantes:0});
+  else Object.assign(r,{tipo:"caja",alto:/bajo ?mesada/.test(t)?90:/alacena/.test(t)?70:/c[oó]moda/.test(t)?80:170,ancho:100,prof:/bajo ?mesada|placard|ropero/.test(t)?60:/c[oó]moda/.test(t)?45:35,puertas:/c[oó]moda|cajonera/.test(t)?0:2,estantes:/c[oó]moda|cajonera/.test(t)?0:2});
   const g=(re)=>{const m=t.match(re);return m?(/un/.test(m[1])?1:+m[1]):null};
   const pu=g(/(\d+)\s*puertas?/),cj=g(/(\d+|un|una)\s*caj[oó]n/),es=g(/(\d+)\s*estantes?/),ca=g(/(\d+)\s*casilleros?/);
   if(pu!=null)r.puertas=pu;if(cj!=null)r.cajones=cj;if(es!=null)r.estantes=es;if(ca!=null)r.casilleros=ca;
@@ -431,6 +433,7 @@ function interpretarLocal(texto){
 }
 function aplicar(r,it){
   if(!r)return;
+  S.puertas=0;S.cajones=0;S.estantes=0;S.casilleros=0;
   if(["caja","mesa","estante"].includes(r.tipo))S.tipo=r.tipo;
   if(r.material&&MATS.some(m=>m.id===r.material))S.material=r.material;
   ["alto","ancho","prof","puertas","cajones","estantes","casilleros"].forEach(k=>{if(r[k]!=null&&isFinite(num(r[k])))S[k]=Math.max(0,Math.round(num(r[k])))});

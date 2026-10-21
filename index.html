@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content"/>
   <title>Encastre</title>
   <meta name="version" content="1790185547"/>
 
@@ -1603,9 +1603,9 @@ const {
 const SUPABASE_URL = "https://ocxwslozstvitlxihaim.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jeHdzbG96c3R2aXRseGloYWltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDg5NTcsImV4cCI6MjA5NTMyNDk1N30.Jr-FWpH_2qcUIGK126eBuSScZ6EDcARzdpd4CkXrg5w";
 const VAPID_PUBLIC = "BFVBdnRep1UDfTImbVyZhEf_AaYAd14HsruwDy3NO4cmUAJjadZke-4M9upuzYHk_2ak2M1-sui1y-wavex0lKQ";
-// Lanzamiento: primeros 30 días solo para profesionales, gratis. El 26/10 abre consumidor final y empieza a cobrarse a aserradero/ferretería/pinturería/flete.
+// Lanzamiento extendido a 3 meses (hasta el 26/12). Antes: primeros 30 días solo para profesionales, gratis. El 26/10 abre consumidor final y empieza a cobrarse a aserradero/ferretería/pinturería/flete.
 const FECHA_LANZAMIENTO = new Date("2026-09-26T00:00:00-03:00");
-const FECHA_FIN_PROMO = new Date("2026-10-26T00:00:00-03:00");
+const FECHA_FIN_PROMO = new Date("2026-12-26T00:00:00-03:00");
 const db = {
   // Sesión del usuario logueado. Si es null, se usa la clave anónima (como antes).
   ses: null,
@@ -4449,7 +4449,7 @@ function AuthScreen({
             if (idNuevo) {
               try {
                 const vencPrueba = new Date();
-                vencPrueba.setDate(vencPrueba.getDate() + 30);
+                vencPrueba.setDate(vencPrueba.getDate() + 90);
                 await db.insert("suscripciones", {
                   usuario_id: idNuevo,
                   estado: "prueba",
@@ -5195,7 +5195,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-20.1";
+const VERSION_APP = "v2026-10-21.1";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -5308,6 +5308,38 @@ async function avisarAceptacionPorChat({
     detail: clave
   })), 400);
 }
+function useZonaVisible(activo) {
+  const leer = () => {
+    const vv = window.visualViewport;
+    return vv ? {
+      top: vv.offsetTop,
+      h: vv.height
+    } : {
+      top: 0,
+      h: window.innerHeight
+    };
+  };
+  const [z, setZ] = useState(leer);
+  useEffect(() => {
+    if (!activo) return;
+    const vv = window.visualViewport;
+    const act = () => setZ(leer());
+    act();
+    if (vv) {
+      vv.addEventListener("resize", act);
+      vv.addEventListener("scroll", act);
+    }
+    window.addEventListener("resize", act);
+    return () => {
+      if (vv) {
+        vv.removeEventListener("resize", act);
+        vv.removeEventListener("scroll", act);
+      }
+      window.removeEventListener("resize", act);
+    };
+  }, [activo]);
+  return z;
+}
 function Chat({
   pedidoId,
   tipoPedido,
@@ -5330,6 +5362,9 @@ function Chat({
   const [meBloquearon, setMeBloquearon] = useState(false);
   const [abierto, setAbierto] = useState(() => !!soloPanel || CHATS_ABIERTOS.has(claveChat));
   const [chatAceptado, setChatAceptado] = useState(false);
+  const [errEnvio, setErrEnvio] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const zona = useZonaVisible(abierto);
   const endRef = useRef(null);
   const vivoChat = useRef(true);
   useEffect(() => {
@@ -5429,19 +5464,32 @@ function Chat({
   const noLeidos = msgs.filter(m => m.para_usuario_id === miUsuario.id && !m.leido).length;
   const bloqueado = !!bloqueoMio || meBloquearon;
   const enviar = async () => {
-    if (!txt.trim() || bloqueado) return;
+    if (!txt.trim() || bloqueado || enviando) return;
+    if (!otroId) {
+      setErrEnvio("No se pudo identificar con quién es el chat. Cerralo y volvé a abrirlo desde el pedido.");
+      return;
+    }
+    const texto = txt;
     const m = {
       pedido_id: pedidoId,
       tipo_pedido: tipoPedido,
       de_usuario_id: miUsuario.id,
       para_usuario_id: otroId,
-      texto: txt
+      texto
     };
+    setErrEnvio("");
+    setEnviando(true);
     setTxt("");
     try {
-      await db.insert("mensajes", m);
+      await db.insertMin("mensajes", m);
       await cargar();
-    } catch {}
+    } catch (e) {
+      // El mensaje NO se guardó: se devuelve a la caja para no perderlo y se avisa
+      setTxt(texto);
+      const em = String(e && e.message || "");
+      setErrEnvio(/row-level|42501|permission/i.test(em) ? "No se pudo guardar el mensaje (permiso de la base de datos). Avisale a Encastre desde «Reportar o comentar»." : /JWT|token|401/i.test(em) ? "Se venció tu sesión. Salí y volvé a entrar, y mandalo de nuevo." : "No se pudo enviar. Revisá tu conexión y tocá «Enviar» de nuevo." + (em ? " (" + em.slice(0, 120) + ")" : ""));
+    }
+    setEnviando(false);
   };
   const bloquear = async () => {
     if (!otroId) return;
@@ -5508,7 +5556,10 @@ function Chat({
   }, noLeidos > 9 ? "9+" : noLeidos, " nuevo", noLeidos > 1 ? "s" : "")), abierto && /*#__PURE__*/React.createElement("div", {
     style: {
       position: "fixed",
-      inset: 0,
+      left: 0,
+      right: 0,
+      top: zona.top,
+      height: zona.h,
       zIndex: 301,
       background: "#00000066",
       display: "flex",
@@ -5522,7 +5573,8 @@ function Chat({
     style: {
       background: C.card,
       width: "min(440px,100vw)",
-      height: "min(660px,90vh)",
+      height: Math.min(660, Math.round(zona.h * (window.innerWidth > 480 ? 0.9 : 1))),
+      maxHeight: "100%",
       display: "flex",
       flexDirection: "column",
       border: `1px solid ${C.borde}`,
@@ -5653,14 +5705,35 @@ function Chat({
       gap: 8,
       padding: 12,
       borderTop: `1px dashed ${C.borde}`,
-      flexShrink: 0
+      flexShrink: 0,
+      position: "relative"
     }
-  }, /*#__PURE__*/React.createElement("input", {
+  }, errEnvio && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      left: 12,
+      right: 12,
+      bottom: "100%",
+      marginBottom: 6,
+      background: "#FDECEA",
+      color: C.error,
+      border: `1px solid ${C.error}55`,
+      borderRadius: 8,
+      padding: "6px 10px",
+      fontSize: 14,
+      fontWeight: 700
+    }
+  }, errEnvio), /*#__PURE__*/React.createElement("input", {
     value: txt,
     onChange: e => setTxt(e.target.value),
     onKeyDown: e => {
       if (e.key === "Enter") enviar();
     },
+    onFocus: () => setTimeout(() => {
+      if (endRef.current) endRef.current.scrollIntoView({
+        block: "end"
+      });
+    }, 300),
     placeholder: "Escribí tu mensaje...",
     style: {
       ...S.input,
@@ -5673,8 +5746,9 @@ function Chat({
       color: "#fff",
       textShadow: "none"
     },
-    onClick: enviar
-  }, "Enviar"))))));
+    onClick: enviar,
+    disabled: enviando
+  }, enviando ? "…" : "Enviar"))))));
 }
 
 // ─── CALIFICACIÓN ─────────────────────────────────────────────────────────────
@@ -9148,7 +9222,7 @@ function VistaCarpinteria({
       fontSize: 17,
       marginBottom: 6
     }
-  }, "📅 Mes de lanzamiento: 30 días gratis"), /*#__PURE__*/React.createElement("div", {
+  }, "📅 Lanzamiento: 3 meses gratis"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 15
     }
@@ -13428,13 +13502,13 @@ function VistaFlete({
     style: S.col()
   }, /*#__PURE__*/React.createElement("label", {
     style: S.label
-  }, "Origen"), /*#__PURE__*/React.createElement("input", {
+  }, "Origen"), /*#__PURE__*/React.createElement(CampoDireccion, {
     value: pedF.origen,
-    onChange: e => setPedF(f => ({
+    onChange: v => setPedF(f => ({
       ...f,
-      origen: e.target.value
+      origen: v
     })),
-    placeholder: "Dirección de origen",
+    placeholder: "Calle y altura (ej: Cuenca 3000)",
     style: {
       ...S.input,
       ...marcaErr(intFl, !pedF.origen)
@@ -13443,13 +13517,13 @@ function VistaFlete({
     style: S.col()
   }, /*#__PURE__*/React.createElement("label", {
     style: S.label
-  }, "Destino"), /*#__PURE__*/React.createElement("input", {
+  }, "Destino"), /*#__PURE__*/React.createElement(CampoDireccion, {
     value: pedF.destino,
-    onChange: e => setPedF(f => ({
+    onChange: v => setPedF(f => ({
       ...f,
-      destino: e.target.value
+      destino: v
     })),
-    placeholder: "Dirección de destino",
+    placeholder: "Calle y altura (ej: Cuenca 3000)",
     style: {
       ...S.input,
       ...marcaErr(intFl, !pedF.destino)
@@ -15895,7 +15969,7 @@ function PantallaBienvenida({
       icon: "🪑",
       title: "Consumidor final",
       color: C.verde,
-      lines: ["Encastre es gratis para vos. No pagás suscripción, nunca.", "Ya te podés registrar y cargar tu pedido. Durante el mes de lanzamiento las carpinterías lo van a poder ver y cotizar recién a partir del 26/10."]
+      lines: ["Encastre es gratis para vos. No pagás suscripción, nunca.", "Ya te podés registrar y cargar tu pedido: las carpinterías lo ven y te mandan presupuestos."]
     }, {
       icon: "🔨",
       title: "Carpintería",
@@ -15905,12 +15979,12 @@ function PantallaBienvenida({
       icon: "🌲🖌️🔩",
       title: "Aserradero, ferretería y pinturería",
       color: C.medio,
-      lines: ["Mes de lanzamiento gratis (hasta el 26/10). Después, $10.000 por mes."]
+      lines: ["Lanzamiento gratis por 3 meses (hasta el 26/12). Después, $10.000 por mes."]
     }, {
       icon: "🚚",
       title: "Flete",
       color: C.medio,
-      lines: ["Mes de lanzamiento gratis (hasta el 26/10). Después, $7.000 por mes."]
+      lines: ["Lanzamiento gratis por 3 meses (hasta el 26/12). Después, $7.000 por mes."]
     }, {
       icon: "🧰",
       title: "Trabajador/a",
@@ -16764,6 +16838,144 @@ function aplicarTema(tipo) {
     const v = t ? tipo : "";
     if (document.body.dataset.tema !== v) document.body.dataset.tema = v;
   } catch {}
+}
+// ─── DIRECCIÓN CON SUGERENCIAS + MAPA (Georef, gratis, todo el país; mapa de OpenStreetMap) ───
+function CampoDireccion({
+  value,
+  onChange,
+  placeholder,
+  style
+}) {
+  const [sug, setSug] = useState([]);
+  const [abierta, setAbierta] = useState(false);
+  const [buscando, setBuscando] = useState(false);
+  const [punto, setPunto] = useState(null);
+  const timer = useRef(null);
+  const ultima = useRef("");
+  const buscar = texto => {
+    clearTimeout(timer.current);
+    const t = String(texto || "").trim();
+    if (t.length < 4) {
+      setSug([]);
+      return;
+    }
+    timer.current = setTimeout(async () => {
+      ultima.current = t;
+      setBuscando(true);
+      try {
+        const r = await fetch("https://apis.datos.gob.ar/georef/api/direcciones?max=6&direccion=" + encodeURIComponent(t));
+        const d = await r.json();
+        if (ultima.current !== t) return;
+        const lista = (d.direcciones || []).map(x => ({
+          texto: (() => {
+            const prov = x.provincia && x.provincia.nombre;
+            const loc = x.localidad_censal && x.localidad_censal.nombre;
+            const dep = x.departamento && x.departamento.nombre;
+            const partes = [x.calle && x.calle.nombre ? x.calle.nombre + (x.altura && x.altura.valor ? " " + x.altura.valor : "") : x.nomenclatura, loc && loc !== prov ? loc : dep, prov];
+            return partes.filter((v, i) => v && partes.indexOf(v) === i).join(", ");
+          })(),
+          detalle: x.nomenclatura || "",
+          lat: x.ubicacion && x.ubicacion.lat,
+          lon: x.ubicacion && x.ubicacion.lon
+        })).filter(x => x.texto);
+        setSug(lista);
+        setAbierta(true);
+      } catch {
+        setSug([]);
+      }
+      setBuscando(false);
+    }, 450);
+  };
+  useEffect(() => () => clearTimeout(timer.current), []);
+  const elegir = x => {
+    onChange(x.texto);
+    setPunto(x.lat != null && x.lon != null ? {
+      lat: x.lat,
+      lon: x.lon
+    } : null);
+    setSug([]);
+    setAbierta(false);
+  };
+  const d = 0.006;
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "relative"
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    value: value,
+    onChange: e => {
+      onChange(e.target.value);
+      setPunto(null);
+      buscar(e.target.value);
+    },
+    onFocus: () => {
+      if (sug.length) setAbierta(true);
+    },
+    onBlur: () => setTimeout(() => setAbierta(false), 200),
+    placeholder: placeholder,
+    autoComplete: "off",
+    style: style
+  }), buscando && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: C.textoSuave,
+      marginTop: 4
+    }
+  }, "Buscando direcciones…"), abierta && sug.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      top: "100%",
+      zIndex: 50,
+      background: C.card,
+      border: `1px solid ${C.borde}`,
+      borderRadius: 10,
+      boxShadow: "0 6px 18px #00000026",
+      marginTop: 4,
+      overflow: "hidden"
+    }
+  }, sug.map((x, i) => /*#__PURE__*/React.createElement("button", {
+    key: i,
+    type: "button",
+    onMouseDown: e => e.preventDefault(),
+    onClick: () => elegir(x),
+    style: {
+      display: "block",
+      width: "100%",
+      textAlign: "left",
+      background: "transparent",
+      border: "none",
+      borderTop: i ? `1px solid ${C.borde}` : "none",
+      padding: "10px 12px",
+      cursor: "pointer",
+      fontFamily: "'Lato',sans-serif"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 15,
+      fontWeight: 700,
+      color: C.texto
+    }
+  }, "📍 ", x.texto))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: C.textoSuave,
+      padding: "6px 12px",
+      borderTop: `1px solid ${C.borde}`
+    }
+  }, "¿No aparece? Escribila completa y seguí.")), punto && /*#__PURE__*/React.createElement("iframe", {
+    title: "Mapa",
+    loading: "lazy",
+    src: `https://www.openstreetmap.org/export/embed.html?bbox=${punto.lon - d},${punto.lat - d},${punto.lon + d},${punto.lat + d}&layer=mapnik&marker=${punto.lat},${punto.lon}`,
+    style: {
+      width: "100%",
+      height: 170,
+      border: `1px solid ${C.borde}`,
+      borderRadius: 10,
+      marginTop: 8
+    }
+  }));
 }
 // ─── DESCARGAR / IMPRIMIR / COMPARTIR PRESUPUESTOS ───────────────────────────
 function cargarScriptExt(src) {
@@ -17785,13 +17997,13 @@ const FLUJOS = {
         lines: ["Elegiste «Carpintería» como tipo de usuario.", "Completaste nombre, email, teléfono y contraseña.", "Cargaste tu provincia y tu localidad."]
       }, {
         type: "arrow",
-        label: "30 días gratis"
+        label: "3 meses gratis"
       }, {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "Primer mes gratis",
-        lines: ["Tenés 30 días de prueba sin costo para usar Encastre como carpintería.", "Durante esos 30 días usás todo sin restricciones: pedidos de clientes, pedidos a aserradero/ferretería/pinturería, chat, etc."]
+        title: "3 meses gratis",
+        lines: ["Tenés 3 meses (90 días) de prueba sin costo para usar Encastre como carpintería.", "Durante esos 3 meses usás todo sin restricciones: pedidos de clientes, pedidos a aserradero/ferretería/pinturería, chat, etc."]
       }, {
         type: "arrow"
       }, {
@@ -17806,7 +18018,7 @@ const FLUJOS = {
         type: "step",
         n: 4,
         icon: "💳",
-        title: "Después de los 30 días",
+        title: "Después de los 3 meses",
         lines: ["La suscripción mensual cuesta $10.000 fijos.", "Si no pagás, seguís usando Encastre con normalidad — pedir a aserradero, ferretería, pinturería, chat, etc. Lo único que se bloquea es «Pedidos de clientes»: los pedidos nuevos siguen apareciendo en tu lista, pero no podés abrirlos ni cotizarlos hasta pagar.", "Apenas pagás, se desbloquea automáticamente.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja mi cuenta».", "Te podés dar de baja cuando quieras, sin trámites: menú (⋮) → «Mi cuenta» → «Dar de baja»."]
       }]
     },
@@ -18061,13 +18273,13 @@ const FLUJOS = {
         lines: ["Elegiste «Aserradero» como tipo de usuario.", "Completaste nombre, email, teléfono y contraseña.", "Cargaste tu provincia y tu localidad."]
       }, {
         type: "arrow",
-        label: "mes de lanzamiento gratis"
+        label: "3 meses de lanzamiento gratis"
       }, {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "Primer mes gratis",
-        lines: ["Durante el mes de lanzamiento (hasta el 26/10) usás Encastre sin costo."]
+        title: "3 meses gratis",
+        lines: ["Durante los 3 meses de lanzamiento (hasta el 26/12) usás Encastre sin costo."]
       }, {
         type: "arrow"
       }, {
@@ -18082,7 +18294,7 @@ const FLUJOS = {
         type: "step",
         n: 4,
         icon: "💳",
-        title: "Después del 26/10",
+        title: "Después del 26/12",
         lines: ["La suscripción mensual cuesta $10.000 fijos.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».", "Sin suscripción activa después de esa fecha, la cuenta queda bloqueada hasta que pagues."]
       }]
     },
@@ -18177,13 +18389,13 @@ const FLUJOS = {
         lines: ["Elegiste «Ferretería» como tipo de usuario.", "Completaste nombre, email, teléfono y contraseña.", "Cargaste tu provincia y tu localidad."]
       }, {
         type: "arrow",
-        label: "mes de lanzamiento gratis"
+        label: "3 meses de lanzamiento gratis"
       }, {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "Primer mes gratis",
-        lines: ["Durante el mes de lanzamiento (hasta el 26/10) usás Encastre sin costo."]
+        title: "3 meses gratis",
+        lines: ["Durante los 3 meses de lanzamiento (hasta el 26/12) usás Encastre sin costo."]
       }, {
         type: "arrow"
       }, {
@@ -18198,7 +18410,7 @@ const FLUJOS = {
         type: "step",
         n: 4,
         icon: "💳",
-        title: "Después del 26/10",
+        title: "Después del 26/12",
         lines: ["La suscripción mensual cuesta $10.000 fijos.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».", "Sin suscripción activa después de esa fecha, la cuenta queda bloqueada hasta que pagues."]
       }]
     },
@@ -18293,13 +18505,13 @@ const FLUJOS = {
         lines: ["Elegiste «Pinturería» como tipo de usuario.", "Completaste nombre, email, teléfono y contraseña.", "Cargaste tu provincia y tu localidad."]
       }, {
         type: "arrow",
-        label: "mes de lanzamiento gratis"
+        label: "3 meses de lanzamiento gratis"
       }, {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "Primer mes gratis",
-        lines: ["Durante el mes de lanzamiento (hasta el 26/10) usás Encastre sin costo."]
+        title: "3 meses gratis",
+        lines: ["Durante los 3 meses de lanzamiento (hasta el 26/12) usás Encastre sin costo."]
       }, {
         type: "arrow"
       }, {
@@ -18314,7 +18526,7 @@ const FLUJOS = {
         type: "step",
         n: 4,
         icon: "💳",
-        title: "Después del 26/10",
+        title: "Después del 26/12",
         lines: ["La suscripción mensual cuesta $10.000 fijos.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».", "Sin suscripción activa después de esa fecha, la cuenta queda bloqueada hasta que pagues."]
       }]
     },
@@ -18409,13 +18621,13 @@ const FLUJOS = {
         lines: ["Elegiste «Flete» como tipo de usuario.", "Completaste nombre, email, teléfono y contraseña.", "Cargaste tu provincia y tu localidad."]
       }, {
         type: "arrow",
-        label: "mes de lanzamiento gratis"
+        label: "3 meses de lanzamiento gratis"
       }, {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "Primer mes gratis",
-        lines: ["Durante el mes de lanzamiento (hasta el 26/10) usás Encastre sin costo."]
+        title: "3 meses gratis",
+        lines: ["Durante los 3 meses de lanzamiento (hasta el 26/12) usás Encastre sin costo."]
       }, {
         type: "arrow"
       }, {
@@ -18430,7 +18642,7 @@ const FLUJOS = {
         type: "step",
         n: 4,
         icon: "💳",
-        title: "Después del 26/10",
+        title: "Después del 26/12",
         lines: ["La suscripción mensual cuesta $7.000 fijos.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».", "Sin suscripción activa después de esa fecha, la cuenta queda bloqueada hasta que pagues."]
       }]
     },
@@ -22536,7 +22748,7 @@ function App() {
       });
       return;
     }
-    // Aserradero/ferretería/pinturería/flete son gratis durante el mes de lanzamiento (hasta FECHA_FIN_PROMO); recién ahí empieza a importar si tienen suscripción activa.
+    // Aserradero/ferretería/pinturería/flete son gratis durante el lanzamiento (hasta FECHA_FIN_PROMO, 3 meses); recién ahí empieza a importar si tienen suscripción activa.
     if (GRUPO_PAGA_LUEGO.includes(usu.tipo) && new Date() < FECHA_FIN_PROMO) {
       const diasRestantes = Math.ceil((FECHA_FIN_PROMO - new Date()) / 86400000);
       setSuscInfo({
