@@ -5298,7 +5298,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-22.1";
+const VERSION_APP = "v2026-10-22.2";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -16497,6 +16497,38 @@ function PantallaBienvenida({
     onClick: compartirApp
   }, "📤 Compartir aplicación")));
 }
+// Logo de la empresa: máximo 320 px; PNG si el original es PNG (conserva el fondo transparente)
+function comprimirLogo(file) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith("image/")) {
+      reject(new Error("no es imagen"));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 320,
+          k = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(img.width * k));
+        c.height = Math.max(1, Math.round(img.height * k));
+        const g = c.getContext("2d");
+        const png = /png|svg|gif|webp/.test(file.type);
+        if (!png) {
+          g.fillStyle = "#ffffff";
+          g.fillRect(0, 0, c.width, c.height);
+        }
+        g.drawImage(img, 0, 0, c.width, c.height);
+        resolve(png ? c.toDataURL("image/png") : c.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = () => reject(new Error("no se pudo leer la imagen"));
+      img.src = ev.target.result;
+    };
+    reader.onerror = () => reject(new Error("no se pudo leer el archivo"));
+    reader.readAsDataURL(file);
+  });
+}
 function comprimirFoto(file) {
   return new Promise((resolve, reject) => {
     if (!file) {
@@ -17704,13 +17736,28 @@ function PresupuestoFormato({
     }
   }, "Datos de la empresa"), /*#__PURE__*/React.createElement("div", {
     style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 4
+    }
+  }, empresa.logo && /*#__PURE__*/React.createElement("img", {
+    src: empresa.logo,
+    alt: "",
+    style: {
+      maxWidth: 72,
+      maxHeight: 56,
+      objectFit: "contain",
+      flexShrink: 0
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
       fontFamily: "'Lato',sans-serif",
       fontWeight: 700,
       fontSize: 18,
-      color: C.marron,
-      marginBottom: 4
+      color: C.marron
     }
-  }, empresa.nombre || "—"), /*#__PURE__*/React.createElement("div", {
+  }, empresa.nombre || "—")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexWrap: "wrap",
@@ -21165,6 +21212,9 @@ function MiCuenta({
     titulo: ""
   })));
   const [procFoto, setProcFoto] = useState(false);
+  const [logo, setLogo] = useState(usuario.logo || "");
+  const [procLogo, setProcLogo] = useState(false);
+  const [msgLogo, setMsgLogo] = useState("");
   const [tituloPendiente, setTituloPendiente] = useState("");
   const [fotoPendiente, setFotoPendiente] = useState(null);
   const parchearSesion = campos => {
@@ -21263,6 +21313,35 @@ function MiCuenta({
       setErrPub("No se pudieron guardar los datos: " + (e.message || "revisá tu conexión"));
     }
     setGuardandoPub(false);
+  };
+  const guardarLogo = async nuevo => {
+    setMsgLogo("");
+    setProcLogo(true);
+    try {
+      await db.updateMin("usuarios", {
+        logo: nuevo || null
+      }, `id=eq.${usuario.id}`);
+      parchearSesion({
+        logo: nuevo || null
+      });
+      setLogo(nuevo || "");
+      setMsgLogo(nuevo ? "✅ Logo guardado. Ya aparece en tus presupuestos." : "Logo quitado.");
+    } catch (e) {
+      const em = String(e && e.message || "");
+      setMsgLogo("❌ No se pudo guardar el logo" + (/logo/.test(em) && /column|schema/.test(em) ? " (falta la columna «logo» en la base)." : ": " + (em.slice(0, 120) || "revisá tu conexión")));
+    }
+    setProcLogo(false);
+  };
+  const elegirLogo = async file => {
+    if (!file) return;
+    setProcLogo(true);
+    try {
+      const data = await comprimirLogo(file);
+      await guardarLogo(data);
+    } catch (e) {
+      setMsgLogo("❌ No se pudo leer la imagen. Probá con un archivo JPG o PNG.");
+      setProcLogo(false);
+    }
   };
   const guardarTrabajos = async nuevos => {
     setTrabajos(nuevos);
@@ -21665,6 +21744,94 @@ function MiCuenta({
     },
     onClick: onDarDeBaja
   }, "🚫 Dar de baja mi cuenta"))), solapa === "publico" && !esCliente && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: S.card
+  }, /*#__PURE__*/React.createElement("div", {
+    style: S.cardTitle
+  }, "🏷️ Logo de tu empresa"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      color: C.textoSuave,
+      marginBottom: 12
+    }
+  }, "Aparece en tus presupuestos y cotizaciones, al lado del nombre de tu empresa, también en el PDF y al imprimir."), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 14,
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 96,
+      height: 96,
+      border: `1px dashed ${C.borde}`,
+      borderRadius: 10,
+      background: "#fff",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+      flexShrink: 0
+    }
+  }, logo ? /*#__PURE__*/React.createElement("img", {
+    src: logo,
+    alt: "Logo",
+    style: {
+      maxWidth: "100%",
+      maxHeight: "100%",
+      objectFit: "contain"
+    }
+  }) : /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      color: C.textoSuave,
+      textAlign: "center",
+      padding: 6
+    }
+  }, "Sin logo")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 8,
+      flex: 1,
+      minWidth: 160
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      ...S.btn("gold"),
+      justifyContent: "center",
+      cursor: procLogo ? "wait" : "pointer"
+    }
+  }, procLogo ? "Guardando..." : logo ? "🔄 Cambiar logo" : "📤 Subir logo", /*#__PURE__*/React.createElement("input", {
+    type: "file",
+    accept: "image/*",
+    style: {
+      display: "none"
+    },
+    disabled: procLogo,
+    onChange: e => {
+      elegirLogo(e.target.files && e.target.files[0]);
+      e.target.value = "";
+    }
+  })), logo && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    disabled: procLogo,
+    onClick: () => window.confirm("¿Quitar el logo?") && guardarLogo(""),
+    style: {
+      ...S.btn("ghost"),
+      justifyContent: "center",
+      minHeight: 40,
+      padding: "8px 14px",
+      fontSize: 15
+    }
+  }, "Quitar logo"))), msgLogo && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 10,
+      fontSize: 15,
+      fontWeight: 700,
+      color: msgLogo.startsWith("❌") ? C.error : C.exito
+    }
+  }, msgLogo)), /*#__PURE__*/React.createElement("div", {
     style: S.card
   }, /*#__PURE__*/React.createElement("div", {
     style: S.cardTitle
