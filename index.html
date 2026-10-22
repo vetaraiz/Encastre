@@ -2100,7 +2100,30 @@ const EL = {
 };
 const cmToMm = c => (c * 10).toFixed(0);
 const cmToIn = c => (c / 2.54).toFixed(2);
-const inToCm = i => (i * 2.54).toFixed(1);
+// Pulgadas con fracciones: acepta "1/2", "1 1/2", "1-1/2", "1,5", "½" y devuelve el número (0.5, 1.5…)
+const pulg = v => {
+  if (v == null || v === "") return 0;
+  if (typeof v === "number") return v;
+  let t = String(v).trim().replace(/["”'′]/g, "").replace(/½/g, " 1/2").replace(/¼/g, " 1/4").replace(/¾/g, " 3/4").replace(/⅛/g, " 1/8").replace(/,/g, ".").trim();
+  const m = t.match(/^(\d+(?:\.\d+)?)?[\s-]*(?:(\d+)\s*\/\s*(\d+))?$/);
+  if (!m || !m[1] && !m[2]) return 0;
+  const ent = m[1] ? parseFloat(m[1]) : 0;
+  const fr = m[2] && Number(m[3]) ? Number(m[2]) / Number(m[3]) : 0;
+  return Math.round((ent + fr) * 10000) / 10000;
+};
+// Y al revés: 0.5 → "½", 1.5 → "1 ½", 0.375 → "3/8"
+const fraccion = v => {
+  const n = pulg(v);
+  if (!n) return String(v ?? "");
+  const ent = Math.floor(n + 1e-9),
+    resto = n - ent;
+  const F = [[1 / 8, "1/8"], [1 / 4, "¼"], [3 / 8, "3/8"], [1 / 2, "½"], [5 / 8, "5/8"], [3 / 4, "¾"], [7 / 8, "7/8"]];
+  if (resto < 0.001) return String(ent);
+  const f = F.find(([x]) => Math.abs(x - resto) < 0.001);
+  if (!f) return String(Math.round(n * 100) / 100).replace(".", ",");
+  return ent ? ent + " " + f[1] : f[1];
+};
+const inToCm = i => (pulg(i) * 2.54).toFixed(1);
 const ftToCm = f => (f * 30.48).toFixed(1);
 
 // ─── CONTADORES DE NOVEDADES (cotizaciones sin abrir + mensajes sin leer) ───
@@ -3913,7 +3936,7 @@ function IAaserradero({
   const pedir = async () => {
     setFase("cargando");
     const res = await pedirIA(`Sos un aserradero argentino profesional.
-Pedido: ${pedido.material}, ${pedido.pies} pies largo (${ftToCm(pedido.pies)}cm), ${pedido.pulgadas}" sección (${inToCm(pedido.pulgadas)}cm), ${pedido.cantidad} piezas.
+Pedido: ${pedido.material}, ${pedido.pies} pies largo (${ftToCm(pedido.pies)}cm), ${fraccion(pedido.pulgadas)}" sección (${inToCm(pedido.pulgadas)}cm), ${pedido.cantidad} piezas.
 Respondé SOLO con JSON válido:
 {"precio_por_pie":número,"precio_total":número,"tiempo_entrega":"texto","items":[{"concepto":"texto","detalle":"texto","monto":número}],"nota":"texto"}`);
     if (res?.precio_total) {
@@ -5275,7 +5298,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-21.4";
+const VERSION_APP = "v2026-10-22.1";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -6355,7 +6378,28 @@ function NuevoPedido({
       marginTop: 3,
       fontFamily: "monospace"
     }
-  }, "= ", cmToMm(it[k]), "mm · ", cmToIn(it[k]), "\"")))), /*#__PURE__*/React.createElement("div", {
+  }, "= ", cmToMm(it[k]), "mm · ", cmToIn(it[k]), "\""), Number(it[k]) > 600 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 6,
+      padding: "8px 10px",
+      background: "#FFF4E5",
+      border: "1px solid #E0A85A",
+      borderRadius: 8,
+      fontSize: 15,
+      color: "#5A3A12"
+    }
+  }, "Ojo: ", it[k], " cm son ", String(Math.round(Number(it[k]) / 10) / 10).replace(".", ","), " metros. ¿La escribiste en milímetros?", /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setIt(i, k, String(Math.round(Number(it[k]) / 10 * 10) / 10)),
+    style: {
+      ...S.btn("ghost"),
+      display: "flex",
+      marginTop: 6,
+      minHeight: 36,
+      padding: "6px 12px",
+      fontSize: 15
+    }
+  }, "Usar ", String(Math.round(Number(it[k]) / 10 * 10) / 10).replace(".", ","), " cm"))))), /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 12
     }
@@ -8634,7 +8678,7 @@ function VistaCarpinteria({
   };
   const enviarAserr = async () => {
     if (enviandoPed) return;
-    const itemsValidos = (asF.items || []).filter(it => it.material.trim() && Number(it.pies) > 0 && Number(it.pulgadas) > 0 && Number(it.cantidad) > 0);
+    const itemsValidos = (asF.items || []).filter(it => it.material.trim() && Number(it.pies) > 0 && pulg(it.pulgadas) > 0 && Number(it.cantidad) > 0);
     if (itemsValidos.length === 0) {
       setIntAs(true);
       return;
@@ -8644,11 +8688,11 @@ function VistaCarpinteria({
       const itemsLimpios = itemsValidos.map(it => ({
         material: it.material.trim(),
         pies: Number(it.pies),
-        pulgadas: Number(it.pulgadas),
-        espesor: Number(it.espesor || 0),
+        pulgadas: pulg(it.pulgadas),
+        espesor: pulg(it.espesor),
         cantidad: Number(it.cantidad)
       }));
-      const resumen = itemsLimpios.map(it => `${it.material} ${it.pies}'×${it.pulgadas}"${it.espesor ? ` esp.${it.espesor}"` : ""} (${it.cantidad}u)`).join(", ");
+      const resumen = itemsLimpios.map(it => `${it.material} ${it.pies}'×${fraccion(it.pulgadas)}"${it.espesor ? ` esp.${fraccion(it.espesor)}"` : ""} (${it.cantidad}u)`).join(", ");
       const primero = itemsLimpios[0];
       // Guardamos items (lista) + columnas del primer ítem por compatibilidad con lo ya existente
       await guardarPedidoProv("pedidos_aserradero", {
@@ -9694,7 +9738,9 @@ function VistaCarpinteria({
     }, /*#__PURE__*/React.createElement("label", {
       style: S.label
     }, "Ancho (pulgadas)"), /*#__PURE__*/React.createElement("input", {
-      type: "number",
+      type: "text",
+      inputMode: "text",
+      placeholder: "Ej: 1 1/2",
       value: it.pulgadas,
       onChange: e => setIt("pulgadas", e.target.value),
       placeholder: "0\"",
@@ -9713,7 +9759,9 @@ function VistaCarpinteria({
     }, /*#__PURE__*/React.createElement("label", {
       style: S.label
     }, "Espesor (pulgadas)"), /*#__PURE__*/React.createElement("input", {
-      type: "number",
+      type: "text",
+      inputMode: "text",
+      placeholder: "Ej: 1 1/2",
       value: it.espesor || "",
       onChange: e => setIt("espesor", e.target.value),
       placeholder: "0\"",
@@ -9949,7 +9997,7 @@ function VistaCarpinteria({
         fontSize: 17,
         color: C.textoSuave
       }
-    }, p.pies, "' largo · ", p.pulgadas, "\" ancho · ", p.espesor, "\" espesor · ", p.cantidad, " piezas"), /*#__PURE__*/React.createElement("div", {
+    }, p.pies, "' largo · ", fraccion(p.pulgadas), "\" ancho · ", fraccion(p.espesor), "\" espesor · ", p.cantidad, " piezas"), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 17,
         color: C.textoSuave
@@ -10003,8 +10051,8 @@ function VistaCarpinteria({
             items: (p.items && p.items.length ? p.items : [p]).map(it => ({
               material: it.material || "",
               pies: String(it.pies ?? ""),
-              pulgadas: String(it.pulgadas ?? ""),
-              espesor: String(it.espesor ?? ""),
+              pulgadas: it.pulgadas ? fraccion(it.pulgadas) : "",
+              espesor: it.espesor ? fraccion(it.espesor) : "",
               cantidad: String(it.cantidad ?? "")
             })),
             descripcion: p.descripcion || "",
@@ -11457,8 +11505,8 @@ function VistaAserradero({
       const items = pedidoItems.map(it => {
         const medidas = [];
         if (it.pies) medidas.push(`${it.pies} pies`);
-        if (it.pulgadas) medidas.push(`${it.pulgadas}"`);
-        if (it.espesor) medidas.push(`espesor ${it.espesor}`);
+        if (it.pulgadas) medidas.push(`${fraccion(it.pulgadas)}"`);
+        if (it.espesor) medidas.push(`espesor ${fraccion(it.espesor)}"`);
         return {
           descripcion: [it.material, medidas.join(" × ")].filter(Boolean).join(" — "),
           precio: "",
@@ -11648,7 +11696,7 @@ function VistaAserradero({
             cantidad: sel.cantidad
           }];
         }
-        return its.map(it => [it.material, `${it.pies}' (${ftToCm(it.pies)}cm)`, `${it.pulgadas}" (${inToCm(it.pulgadas)}cm)`, it.espesor ? `${it.espesor}"` : "—", `${it.cantidad} u`]);
+        return its.map(it => [it.material, `${it.pies}' (${ftToCm(it.pies)}cm)`, `${fraccion(it.pulgadas)}" (${inToCm(it.pulgadas)}cm)`, it.espesor ? `${fraccion(it.espesor)}"` : "—", `${it.cantidad} u`]);
       })(),
       notas: sel.descripcion,
       fechaLimite: sel.fecha_limite ? new Date(sel.fecha_limite).toLocaleDateString("es-AR") : null
@@ -19649,7 +19697,7 @@ function AdminAcceso({
       const d = await db.adminCuentas(accion, email.trim().toLowerCase());
       setDatos(d);
       if (d.clave) setClave(d.clave);
-      if (d.ok) setMsg("✅ " + d.ok);
+      if (d.ok) setMsg((d.mail_enviado === false ? "⚠️ " : "✅ ") + d.ok);
     } catch (e) {
       setMsg("❌ " + (e.message || "No se pudo"));
     }
@@ -19738,7 +19786,7 @@ function AdminAcceso({
       marginTop: 10,
       fontSize: 15,
       fontWeight: 700,
-      color: msg.startsWith("❌") ? C.error : C.exito
+      color: msg.startsWith("❌") ? C.error : msg.startsWith("⚠️") ? "#9A5B00" : C.exito
     }
   }, msg), clave && /*#__PURE__*/React.createElement("div", {
     style: {
@@ -19753,7 +19801,7 @@ function AdminAcceso({
       fontSize: 14,
       color: C.textoSuave
     }
-  }, "Contraseña temporal (pasásela y que la cambie desde Mi cuenta):"), /*#__PURE__*/React.createElement("div", {
+  }, "Contraseña temporal (le llega por mail; que la cambie desde Mi cuenta):"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 24,
       fontWeight: 900,
@@ -19782,7 +19830,7 @@ function AdminAcceso({
       flexWrap: "wrap",
       marginTop: 12
     }
-  }, a && !a.mail_confirmado && btn("✉️ Confirmar mail", "confirmar_mail"), a && btn("🔐 Contraseña temporal", "clave_temporal", "¿Ponerle una contraseña nueva? La que tenía deja de funcionar."), (fi && (fi.activo === false || suspendida) || bloqueado) && btn("✅ Reactivar", "reactivar", "¿Reactivar esta cuenta?"), a && !fi && btn("🗑️ Borrar acceso incompleto", "borrar_acceso", "¿Borrar el acceso? Después la persona se registra de nuevo con el mismo mail.", true))));
+  }, a && !a.mail_confirmado && btn("✉️ Confirmar mail", "confirmar_mail"), a && btn("🔐 Contraseña temporal", "clave_temporal", "¿Ponerle una contraseña nueva? Se la mandamos por mail y la que tenía deja de funcionar."), (fi && (fi.activo === false || suspendida) || bloqueado) && btn("✅ Reactivar", "reactivar", "¿Reactivar esta cuenta?"), a && !fi && btn("🗑️ Borrar acceso incompleto", "borrar_acceso", "¿Borrar el acceso? Después la persona se registra de nuevo con el mismo mail.", true))));
 }
 function AdminUsuarios() {
   const [lista, setLista] = useState([]);

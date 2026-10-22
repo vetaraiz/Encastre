@@ -431,6 +431,7 @@ function interpretarLocal(texto){
   r.instala=/amur|colg|instal|coloca/.test(t);r.termina=/barniz|laca|pint|aceite|lustr/.test(t);
   return r;
 }
+let AVISO_MEDIDAS="";
 function aplicar(r,it){
   if(!r)return;
   S.puertas=0;S.cajones=0;S.estantes=0;S.casilleros=0;
@@ -443,6 +444,13 @@ function aplicar(r,it){
   if(it){ // lo que dice el pedido manda
     const mid=matDePedido(it);if(mid)S.material=mid;
     if(num(it.alto)>0)S.alto=num(it.alto);if(num(it.ancho)>0)S.ancho=num(it.ancho);if(num(it.profundidad)>0)S.prof=num(it.profundidad);
+  }
+  // Medidas imposibles (más de 6 metros): casi seguro las escribieron en milímetros en un campo de centímetros
+  AVISO_MEDIDAS="";
+  const antes=[S.alto,S.ancho,S.prof];
+  ["alto","ancho","prof"].forEach(k=>{while(S[k]>600)S[k]=Math.round(S[k]/10)});
+  if(antes.some((v,i)=>v!==[S.alto,S.ancho,S.prof][i]))AVISO_MEDIDAS=`Las medidas del pedido (${antes.join(" × ")}) parecían estar en milímetros: las tomé como ${S.alto} × ${S.ancho} × ${S.prof} cm. Revisalas.`;
+  if(it){
     if(it.terminacion in LLEVA_TERM)S.termina=LLEVA_TERM[it.terminacion];
     if(S.tipo==="caja"&&it.tieneCajones&&num(it.cantidadCajones)>0)S.cajones=num(it.cantidadCajones);
   }
@@ -458,8 +466,8 @@ async function interpretar(){
   const clave=`encastre_pres_simple_${PEDIDO_ID||"x"}_${$("mueble").value||0}_${texto.length}`;
   let r=null;try{r=JSON.parse(sessionStorage.getItem(clave)||"null")}catch(e){}
   if(!r){r=await pedirIA(prompt(texto));if(r){try{sessionStorage.setItem(clave,JSON.stringify(r))}catch(e){}}}
-  if(r){aplicar(r,it);est.className="estado ok";est.textContent=r.dudas?"Supuse: "+r.dudas:"Listo. Revisá las medidas."}
-  else{aplicar(interpretarLocal(texto),it);est.className="estado err";est.textContent="Lo armé con reglas simples. Revisá las medidas."}
+  if(r){aplicar(r,it);est.className="estado ok";est.textContent=(AVISO_MEDIDAS?AVISO_MEDIDAS+" ":"")+(r.dudas?"Supuse: "+r.dudas:"Listo. Revisá las medidas.")}
+  else{aplicar(interpretarLocal(texto),it);est.className="estado err";est.textContent=(AVISO_MEDIDAS?AVISO_MEDIDAS+" ":"")+"Lo armé con reglas simples. Revisá las medidas."}
   btn.disabled=false;
 }
 $("btnInterpretar").addEventListener("click",interpretar);
