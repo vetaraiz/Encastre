@@ -4,6 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content"/>
   <title>Encastre</title>
+  <!-- Siempre en modo claro: evita que el modo oscuro del celular oscurezca la app -->
+  <meta name="color-scheme" content="only light"/>
   <meta name="version" content="1790185547"/>
 
   <!-- PWA -->
@@ -27,6 +29,7 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Stardos+Stencil:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
   <style>
+    :root { color-scheme: only light; }
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
     body { background:#F7EDE2; font-size:17px; font-family:'Lato',sans-serif; color:#2D3436; }
     ::-webkit-scrollbar { width:6px; }
@@ -5298,7 +5301,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-22.2";
+const VERSION_APP = "v2026-10-22.3";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
