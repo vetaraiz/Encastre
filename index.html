@@ -5340,7 +5340,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-23.2";
+const VERSION_APP = "v2026-10-23.3";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -20647,6 +20647,421 @@ const CIRCUITOS_MOV = [{
   campoReqId: "solicitante_id",
   campoProvId: "flete_id"
 }];
+// ─── ADMIN: NÚMEROS Y ALERTAS ───────────────────────────────────────────────
+function AdminNumeros() {
+  const [datos, setDatos] = useState(null);
+  const [cargando, setCargando] = useState(true);
+  const [periodo, setPeriodo] = useState(30);
+  const [abierta, setAbierta] = useState(null);
+  const cargar = useCallback(async () => {
+    setCargando(true);
+    const leer = async (t, q) => {
+      try {
+        return await db.select(t, q);
+      } catch {
+        return null;
+      }
+    };
+    const usuarios = await leer("usuarios", "?select=id,nombre,tipo,created_at,activo");
+    const quejas = await leer("quejas", "?select=id,estado,created_at,descripcion");
+    const susc = await leer("suscripciones", "?select=usuario_id,estado,fecha_vencimiento,creado_en&order=creado_en.desc");
+    const circ = [];
+    for (const c of CIRCUITOS_MOV) {
+      const ped = await leer(c.tablaPed, "?order=created_at.desc");
+      const cot = await leer(c.tablaCot, "?select=*");
+      circ.push({
+        ...c,
+        ped: ped || [],
+        cot: cot || [],
+        error: ped == null
+      });
+    }
+    setDatos({
+      usuarios: usuarios || [],
+      quejas,
+      susc,
+      circ,
+      cuando: new Date()
+    });
+    setCargando(false);
+  }, []);
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
+  if (cargando && !datos) return /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: 30,
+      textAlign: "center",
+      color: C.textoSuave
+    }
+  }, "Calculando…");
+  const ahora = Date.now(),
+    DIA = 86400000;
+  const desde = periodo ? ahora - periodo * DIA : 0;
+  const enPeriodo = f => f && new Date(f).getTime() >= desde;
+  const nom = Object.fromEntries((datos.usuarios || []).map(u => [u.id, u.nombre]));
+  const pct = (a, b) => b ? Math.round(a / b * 100) + " %" : "—";
+  const aceptada = e => e === "aceptado" || e === "aceptada";
+  const CORTO = {
+    cliente: "Clientes",
+    aserradero: "Aserraderos",
+    ferreteria: "Ferreterías",
+    pintureria: "Pinturerías",
+    flete: "Fletes"
+  };
+  // ── alertas
+  const alertas = [];
+  if (datos.quejas) {
+    const nuevas = datos.quejas.filter(q => !q.estado || q.estado === "nueva");
+    if (nuevas.length) alertas.push({
+      id: "quejas",
+      nivel: "alta",
+      t: `${nuevas.length} ${nuevas.length === 1 ? "reporte nuevo sin responder" : "reportes nuevos sin responder"}`,
+      items: nuevas.map(q => (q.descripcion || "").slice(0, 90))
+    });
+  }
+  datos.circ.forEach(c => {
+    const conCot = new Set(c.cot.map(x => x.pedido_id));
+    const vivos = c.ped.filter(p => !["cancelado", "eliminado", "aceptado"].includes(p.estado));
+    const porVencer = vivos.filter(p => p.fecha_limite && new Date(p.fecha_limite).getTime() > ahora && new Date(p.fecha_limite).getTime() - ahora < 2 * DIA && !conCot.has(p.id));
+    if (porVencer.length) alertas.push({
+      id: "vence-" + c.id,
+      nivel: "alta",
+      t: `${CORTO[c.id] || c.label}: ${porVencer.length} ${porVencer.length === 1 ? "pedido vence" : "pedidos vencen"} en menos de 2 días sin ninguna cotización`,
+      items: porVencer.map(p => `${nom[p[c.campoReqId]] || "—"} · ${p.descripcion || p.material || p.origen || ""}`.slice(0, 90))
+    });
+    const vencidosSin = vivos.filter(p => p.fecha_limite && new Date(p.fecha_limite).getTime() <= ahora && enPeriodo(p.created_at) && !conCot.has(p.id));
+    if (vencidosSin.length) alertas.push({
+      id: "vencidos-" + c.id,
+      nivel: "media",
+      t: `${CORTO[c.id] || c.label}: ${vencidosSin.length} ${vencidosSin.length === 1 ? "pedido venció" : "pedidos vencieron"} sin recibir cotizaciones`,
+      items: vencidosSin.map(p => `${nom[p[c.campoReqId]] || "—"} · ${p.descripcion || p.material || p.origen || ""}`.slice(0, 90))
+    });
+    const sinCerrar = c.cot.filter(x => aceptada(x.estado) && !x.concretada_at && x.aceptado_at && ahora - new Date(x.aceptado_at).getTime() > 14 * DIA);
+    if (sinCerrar.length) alertas.push({
+      id: "cerrar-" + c.id,
+      nivel: "baja",
+      t: `${CORTO[c.id] || c.label}: ${sinCerrar.length} ${sinCerrar.length === 1 ? "operación aceptada hace más de 2 semanas sigue" : "operaciones aceptadas hace más de 2 semanas siguen"} sin cerrar`,
+      items: sinCerrar.map(x => `${nom[x[c.campoProvId]] || "—"}`)
+    });
+  });
+  if (datos.susc) {
+    const vistos = new Set(),
+      ultimas = [];
+    datos.susc.forEach(x => {
+      if (!vistos.has(x.usuario_id)) {
+        vistos.add(x.usuario_id);
+        ultimas.push(x);
+      }
+    });
+    const venceProx = ultimas.filter(x => x.fecha_vencimiento && new Date(x.fecha_vencimiento).getTime() > ahora && new Date(x.fecha_vencimiento).getTime() - ahora < 7 * DIA);
+    if (venceProx.length) alertas.push({
+      id: "susc",
+      nivel: "media",
+      t: `${venceProx.length} ${venceProx.length === 1 ? "carpintería tiene" : "carpinterías tienen"} la prueba o la suscripción por vencer en menos de 7 días`,
+      items: venceProx.map(x => `${nom[x.usuario_id] || "—"} · vence ${new Date(x.fecha_vencimiento).toLocaleDateString("es-AR")}`)
+    });
+    datos.ultimasSusc = ultimas;
+  }
+  // ── usuarios
+  const TIPOS = ["cliente", "carpinteria", "aserradero", "ferreteria", "pintureria", "flete", "trabajador"];
+  const us = datos.usuarios.filter(u => u.tipo !== "admin");
+  const filasUs = TIPOS.map(t => {
+    const de = us.filter(u => u.tipo === t);
+    return [ROLES[t] || t, de.filter(u => u.activo !== false).length, de.filter(u => enPeriodo(u.created_at)).length];
+  });
+  // ── circuitos
+  const filasCirc = datos.circ.map(c => {
+    const peds = c.ped.filter(p => enPeriodo(p.created_at) && p.estado !== "eliminado");
+    const ids = new Set(peds.map(p => p.id));
+    const cots = c.cot.filter(x => ids.has(x.pedido_id));
+    const conCot = new Set(cots.map(x => x.pedido_id));
+    const acept = new Set(cots.filter(x => aceptada(x.estado)).map(x => x.pedido_id));
+    const concret = cots.filter(x => x.concretada_at).length;
+    return {
+      c,
+      n: peds.length,
+      conCot: conCot.size,
+      acept: acept.size,
+      concret,
+      prom: peds.length ? (cots.length / peds.length).toFixed(1).replace(".", ",") : "—"
+    };
+  });
+  const tot = filasCirc.reduce((a, f) => ({
+    n: a.n + f.n,
+    acept: a.acept + f.acept,
+    concret: a.concret + f.concret
+  }), {
+    n: 0,
+    acept: 0,
+    concret: 0
+  });
+  // ── estilos
+  const titulo = t => /*#__PURE__*/React.createElement("div", {
+    style: {
+      ...S.cardTitle,
+      marginTop: 6
+    }
+  }, t);
+  const cifra = (n, t, color) => /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: "1 1 30%",
+      minWidth: 96,
+      padding: "4px 0"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 30,
+      fontWeight: 900,
+      color: color || C.marron,
+      fontFamily: "'Lato',sans-serif",
+      lineHeight: 1.1
+    }
+  }, n), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      color: C.textoSuave
+    }
+  }, t));
+  const th = {
+    textAlign: "left",
+    fontSize: 13,
+    color: C.textoSuave,
+    fontWeight: 700,
+    padding: "6px 6px",
+    borderBottom: `1px solid ${C.borde}`
+  };
+  const td = {
+    fontSize: 15,
+    padding: "8px 6px",
+    borderBottom: `1px dashed ${C.borde}`
+  };
+  const tdn = {
+    ...td,
+    textAlign: "right",
+    fontWeight: 700
+  };
+  const colorNivel = {
+    alta: C.error,
+    media: "#9A5B00",
+    baja: C.textoSuave
+  };
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "baseline",
+      justifyContent: "space-between",
+      gap: 10,
+      flexWrap: "wrap",
+      marginBottom: 6
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      ...S.cardTitle,
+      fontSize: 26,
+      marginBottom: 0
+    }
+  }, "📈 Números"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: cargar,
+    disabled: cargando,
+    style: {
+      ...S.btn("link"),
+      fontSize: 15
+    }
+  }, cargando ? "Actualizando…" : "🔄 Actualizar")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      marginBottom: 18
+    }
+  }, [[7, "Últimos 7 días"], [30, "Últimos 30 días"], [0, "Desde el inicio"]].map(([v, l]) => /*#__PURE__*/React.createElement("button", {
+    key: v,
+    type: "button",
+    onClick: () => setPeriodo(v),
+    style: {
+      flex: 1,
+      background: "transparent",
+      border: "none",
+      borderBottom: periodo === v ? `2px solid ${C.marron}` : "2px solid transparent",
+      color: periodo === v ? C.marron : C.textoSuave,
+      fontWeight: periodo === v ? 800 : 400,
+      padding: "10px 4px",
+      cursor: "pointer",
+      fontFamily: "'Lato',sans-serif",
+      fontSize: 15
+    }
+  }, l))), /*#__PURE__*/React.createElement("div", {
+    style: S.card
+  }, titulo(alertas.length ? `⚠️ Para atender (${alertas.length})` : "✅ Nada urgente"), alertas.length === 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: C.textoSuave,
+      fontSize: 15
+    }
+  }, "No hay reportes sin responder, pedidos por vencer sin cotizar ni pruebas por vencer."), alertas.map(a => /*#__PURE__*/React.createElement("div", {
+    key: a.id,
+    style: {
+      padding: "8px 0",
+      borderBottom: `1px dashed ${C.borde}`
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setAbierta(abierta === a.id ? null : a.id),
+    style: {
+      background: "transparent",
+      border: "none",
+      padding: 0,
+      textAlign: "left",
+      cursor: "pointer",
+      width: "100%",
+      minHeight: 36,
+      display: "flex",
+      gap: 8,
+      alignItems: "baseline",
+      fontFamily: "'Lato',sans-serif",
+      fontSize: 16,
+      color: colorNivel[a.nivel],
+      fontWeight: 700
+    }
+  }, /*#__PURE__*/React.createElement("span", null, "●"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      flex: 1
+    }
+  }, a.t), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: C.textoSuave,
+      fontSize: 13
+    }
+  }, abierta === a.id ? "▲" : "▼")), abierta === a.id && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 6,
+      paddingLeft: 18
+    }
+  }, a.items.slice(0, 15).map((x, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      fontSize: 14,
+      color: C.texto,
+      padding: "2px 0"
+    }
+  }, "· ", x)), a.items.length > 15 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: C.textoSuave
+    }
+  }, "… y ", a.items.length - 15, " más"))))), /*#__PURE__*/React.createElement("div", {
+    style: S.card
+  }, titulo("🔁 Actividad del período"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 8
+    }
+  }, cifra(tot.n, "pedidos nuevos (todos los rubros)"), cifra(tot.acept, "con una propuesta aceptada", C.verde), cifra(tot.concret, "operaciones cerradas"), cifra(us.filter(u => enPeriodo(u.created_at)).length, "usuarios nuevos")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      overflowX: "auto",
+      marginTop: 14
+    }
+  }, /*#__PURE__*/React.createElement("table", {
+    style: {
+      width: "100%",
+      borderCollapse: "collapse",
+      minWidth: 300
+    }
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
+    style: th
+  }, "Circuito"), /*#__PURE__*/React.createElement("th", {
+    style: {
+      ...th,
+      textAlign: "right"
+    }
+  }, "Pedidos"), /*#__PURE__*/React.createElement("th", {
+    style: {
+      ...th,
+      textAlign: "right"
+    }
+  }, "Cotizados"), /*#__PURE__*/React.createElement("th", {
+    style: {
+      ...th,
+      textAlign: "right"
+    }
+  }, "Aceptados"))), /*#__PURE__*/React.createElement("tbody", null, filasCirc.map(f => /*#__PURE__*/React.createElement("tr", {
+    key: f.c.id
+  }, /*#__PURE__*/React.createElement("td", {
+    style: td
+  }, CORTO[f.c.id] || f.c.label, f.c.error && /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: C.error,
+      fontSize: 12
+    }
+  }, " (sin acceso)")), /*#__PURE__*/React.createElement("td", {
+    style: tdn
+  }, f.n), /*#__PURE__*/React.createElement("td", {
+    style: tdn
+  }, f.conCot, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: C.textoSuave,
+      fontWeight: 400
+    }
+  }, pct(f.conCot, f.n))), /*#__PURE__*/React.createElement("td", {
+    style: tdn
+  }, f.acept, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: C.textoSuave,
+      fontWeight: 400
+    }
+  }, pct(f.acept, f.n))))))))), /*#__PURE__*/React.createElement("div", {
+    style: S.card
+  }, titulo("👥 Usuarios"), /*#__PURE__*/React.createElement("table", {
+    style: {
+      width: "100%",
+      borderCollapse: "collapse"
+    }
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
+    style: th
+  }, "Tipo"), /*#__PURE__*/React.createElement("th", {
+    style: {
+      ...th,
+      textAlign: "right"
+    }
+  }, "Activos"), /*#__PURE__*/React.createElement("th", {
+    style: {
+      ...th,
+      textAlign: "right"
+    }
+  }, "Nuevos en el período"))), /*#__PURE__*/React.createElement("tbody", null, filasUs.map(([t, a, n]) => /*#__PURE__*/React.createElement("tr", {
+    key: t
+  }, /*#__PURE__*/React.createElement("td", {
+    style: td
+  }, t), /*#__PURE__*/React.createElement("td", {
+    style: tdn
+  }, a), /*#__PURE__*/React.createElement("td", {
+    style: {
+      ...tdn,
+      color: n ? C.verde : C.textoSuave
+    }
+  }, n ? "+" + n : "0")))))), datos.ultimasSusc && /*#__PURE__*/React.createElement("div", {
+    style: S.card
+  }, titulo("💳 Suscripciones de carpinterías"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 8
+    }
+  }, cifra(datos.ultimasSusc.filter(x => x.estado === "prueba" && new Date(x.fecha_vencimiento).getTime() > ahora).length, "en prueba"), cifra(datos.ultimasSusc.filter(x => x.estado === "activa" && new Date(x.fecha_vencimiento).getTime() > ahora).length, "pagando", C.verde), cifra(datos.ultimasSusc.filter(x => new Date(x.fecha_vencimiento).getTime() <= ahora).length, "vencidas", C.error))), !datos.quejas && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: C.textoSuave
+    }
+  }, "No se pudieron leer los reportes."), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: C.textoSuave,
+      marginTop: 4
+    }
+  }, "Actualizado: ", datos.cuando.toLocaleString("es-AR"), ". Lanzamiento gratis para proveedores hasta el ", FECHA_FIN_PROMO.toLocaleDateString("es-AR"), "."));
+}
 function AdminMovimientos() {
   const [circuito, setCircuito] = useState("cliente");
   const [pedidos, setPedidos] = useState([]);
@@ -20872,7 +21287,7 @@ function VistaAdmin({
   usuario,
   onSalir
 }) {
-  const [tab, setTab] = useState("quejas");
+  const [tab, setTab] = useState("numeros");
   return /*#__PURE__*/React.createElement("div", {
     style: S.app
   }, /*#__PURE__*/React.createElement("div", {
@@ -20977,19 +21392,20 @@ function VistaAdmin({
       gap: 6,
       width: "100%"
     }
-  }, [["quejas", "⚠️ Quejas"], ["usuarios", "👥 Usuarios"], ["movimientos", "📊 Movimientos"]].map(([id, l]) => /*#__PURE__*/React.createElement("button", {
+  }, [["numeros", "📈 Números"], ["quejas", "⚠️ Quejas"], ["usuarios", "👥 Usuarios"], ["movimientos", "📊 Movimientos"]].map(([id, l]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     style: {
       flex: 1,
       minWidth: 0,
-      background: tab === id ? C.acento : "transparent",
-      color: tab === id ? C.marron : C.suave,
-      border: tab === id ? "none" : `1px solid ${C.acento}44`,
-      borderRadius: 10,
+      background: "transparent",
+      color: tab === id ? "#FFF6EC" : "#F2D3A0",
+      border: "none",
+      borderBottom: tab === id ? "2px solid #FFF6EC" : "2px solid transparent",
+      borderRadius: 0,
       padding: "10px 4px",
       cursor: "pointer",
       fontSize: 15,
-      fontWeight: 700,
+      fontWeight: tab === id ? 800 : 400,
       fontFamily: "'Lato',sans-serif",
       whiteSpace: "nowrap",
       overflow: "hidden",
@@ -20999,7 +21415,7 @@ function VistaAdmin({
     onClick: () => setTab(id)
   }, l)))), /*#__PURE__*/React.createElement("div", {
     style: S.main
-  }, tab === "quejas" && /*#__PURE__*/React.createElement(AdminQuejas, null), tab === "usuarios" && /*#__PURE__*/React.createElement(AdminUsuarios, null), tab === "movimientos" && /*#__PURE__*/React.createElement(AdminMovimientos, null)));
+  }, tab === "numeros" && /*#__PURE__*/React.createElement(AdminNumeros, null), tab === "quejas" && /*#__PURE__*/React.createElement(AdminQuejas, null), tab === "usuarios" && /*#__PURE__*/React.createElement(AdminUsuarios, null), tab === "movimientos" && /*#__PURE__*/React.createElement(AdminMovimientos, null)));
 }
 function Papelera({
   usuario,
