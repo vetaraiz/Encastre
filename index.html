@@ -42,6 +42,8 @@
     #root button { 
       min-height: 48px;
     }
+    /* Opciones en renglones (material, terminación, tipo…): texto legible, sin caja */
+    #root button[style*="flex-basis: 100%"] { font-size: 16px !important; min-height: 44px; }
     /* Topbar: logo arriba, ENCASTRE abajo, eslogan abajo */
     .encastre-topbar-brand {
       display: flex !important;
@@ -3171,17 +3173,16 @@ function TabsConectadas({
       key: id,
       onClick: () => onChange(id),
       style: {
-        background: on ? C.marron : C.card,
-        color: on ? C.crema : C.marron,
-        border: `2px solid ${C.marron}55`,
-        borderBottom: on ? `2px solid ${C.marron}` : `2px solid ${C.marron}55`,
-        borderRadius: "12px 12px 0 0",
-        marginRight: -2,
+        background: "transparent",
+        color: on ? C.marron : C.textoSuave,
+        border: "none",
+        borderBottom: on ? `2px solid ${C.marron}` : "2px solid transparent",
+        borderRadius: 0,
+        marginRight: 0,
         position: "relative",
-        zIndex: on ? 2 : 1,
         cursor: "pointer",
         fontFamily: "'Lato',sans-serif",
-        fontWeight: 800,
+        fontWeight: on ? 800 : 400,
         fontSize: 14,
         padding: "10px 6px",
         flex: 1,
@@ -3394,8 +3395,15 @@ const S = {
     padding: "18px 16px"
   },
   card: {
+    background: "transparent",
+    border: "1px solid transparent",
+    borderRadius: 0,
+    padding: "6px 2px",
+    marginBottom: 26
+  },
+  cardLista: {
     background: C.card,
-    border: `1px solid ${C.borde}`,
+    border: "1px solid #7E3A2266",
     borderRadius: 14,
     padding: 22,
     marginBottom: 16,
@@ -3482,16 +3490,18 @@ const S = {
     fontFamily: "'Lato',sans-serif"
   },
   tag: on => ({
-    background: on ? C.marron : C.input,
-    color: on ? C.crema : C.textoSuave,
-    border: `1px solid ${on ? C.marron : C.borde}`,
-    borderRadius: 10,
-    padding: "11px 18px",
+    background: on ? "#7E3A2214" : "transparent",
+    color: on ? C.marron : C.texto,
+    border: "none",
+    borderRadius: 8,
     cursor: "pointer",
     fontSize: 17,
-    fontWeight: 700,
+    fontWeight: on ? 800 : 400,
     transition: "all .15s",
-    fontFamily: "'Lato',sans-serif"
+    fontFamily: "'Lato',sans-serif",
+    flexBasis: "100%",
+    textAlign: "left",
+    padding: "10px 12px"
   }),
   badge: e => ({
     background: EC[e] + "22",
@@ -3537,6 +3547,29 @@ const S = {
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 // Sello de "elegido": madera (decidido) + "falta concretar" (todavía en marcha)
+// Antes de aceptar: confirma en la base que no haya otra ya aceptada para el mismo pedido
+// (por si la pantalla estaba desactualizada o llegó una cotización después de elegir)
+async function hayOtraAceptada(tabla, pedidoId, id, estadoAceptado) {
+  try {
+    const d = await db.select(tabla, `?pedido_id=eq.${pedidoId}&estado=eq.${estadoAceptado}&id=neq.${id}&select=id`);
+    return d.length > 0;
+  } catch {
+    return false;
+  }
+}
+const AVISO_YA_ELEGISTE = "Ya elegiste otra propuesta para este pedido. Si querés cambiarla, primero escribile por el chat a quien elegiste.";
+// Lo que ve un proveedor que todavía no cotizó cuando el pedido ya se cerró
+function PedidoYaCerrado() {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 20,
+      paddingTop: 20,
+      borderTop: `2px dashed ${C.borde}`,
+      fontWeight: 700,
+      color: C.textoSuave
+    }
+  }, "🔒 Este pedido ya está cerrado: ya se eligió una propuesta. No se pueden mandar cotizaciones nuevas.");
+}
 function SelloSeleccionado({
   falta,
   compacto,
@@ -4649,7 +4682,7 @@ function AuthScreen({
       background: C.card,
       borderRadius: 10,
       padding: 24,
-      border: `1px solid ${C.borde}`
+      border: "none"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -4823,10 +4856,16 @@ function AuthScreen({
   }, ["login", "registro"].map(m => /*#__PURE__*/React.createElement("button", {
     key: m,
     style: {
-      ...S.btn(modo === m ? "dark" : "ghost"),
       flex: 1,
-      justifyContent: "center",
-      fontSize: 16
+      background: "transparent",
+      border: "none",
+      borderBottom: modo === m ? `2px solid ${C.marron}` : "2px solid transparent",
+      color: modo === m ? C.marron : C.textoSuave,
+      fontWeight: modo === m ? 800 : 400,
+      fontFamily: "'Lato',sans-serif",
+      cursor: "pointer",
+      padding: "10px 6px",
+      fontSize: 17
     },
     onClick: () => setModo(m)
   }, m === "login" ? "Iniciar sesión" : "Crear cuenta"))), modo === "registro" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
@@ -5301,7 +5340,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-22.3";
+const VERSION_APP = "v2026-10-23.1";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -5683,7 +5722,7 @@ function Chat({
       maxHeight: "100%",
       display: "flex",
       flexDirection: "column",
-      border: `1px solid ${C.borde}`,
+      border: "none",
       boxShadow: "0 -4px 24px #5C2E0A44",
       margin: window.innerWidth > 480 ? "0 16px 16px 0" : "0"
     }
@@ -6011,7 +6050,7 @@ function Calificar({
       background: C.input,
       borderRadius: 10,
       padding: 12,
-      border: `1px solid ${C.borde}`
+      border: "none"
     },
     className: "fade"
   }, /*#__PURE__*/React.createElement("div", {
@@ -6305,7 +6344,7 @@ function NuevoPedido({
   }, "📅 Estamos en el mes de lanzamiento: podés cargar tu pedido ahora, pero las carpinterías recién van a poder verlo y enviarte presupuestos a partir del 26/10."), items.map((it, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     style: {
-      border: `1px solid ${C.borde}`,
+      border: "none",
       borderRadius: 10,
       padding: 14,
       marginBottom: 14,
@@ -7050,6 +7089,10 @@ function VistaCliente({
     }
   };
   const aceptar = async pr => {
+    if (await hayOtraAceptada("presupuestos", sel.id, pr.id, "aceptado")) {
+      alert(AVISO_YA_ELEGISTE);
+      return;
+    }
     setAceptando(true);
     try {
       const ahora = new Date().toISOString();
@@ -7190,7 +7233,16 @@ function VistaCliente({
       fontSize: 15,
       fontWeight: 700
     }
-  }, "⏸️ Cotización pausada: la carpintería la frenó por ahora. Todavía no se puede aceptar."), pr.estado === "enviado" && !pr.pausada && /*#__PURE__*/React.createElement("div", {
+  }, "⏸️ Cotización pausada: la carpintería la frenó por ahora. Todavía no se puede aceptar."), pr.estado === "enviado" && presups.some(x => x.estado === "aceptado" && x.id !== pr.id) ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 12,
+      padding: "10px 14px",
+      background: C.input,
+      color: C.textoSuave,
+      textAlign: "center",
+      fontSize: 14
+    }
+  }, "Ya elegiste otro presupuesto para este pedido.") : pr.estado === "enviado" && !pr.pausada && /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 12
     }
@@ -7568,7 +7620,7 @@ function VistaCliente({
           borderTop: `1px solid ${C.borde}`,
           background: presupSel.has(pr.id) ? C.suave : pr.estado === "aceptado" ? "#1F3A5F1F" : i === 0 ? "#4A7C3F14" : "transparent",
           outline: pr.estado === "aceptado" ? `2px solid ${C.elegido}` : "none",
-          opacity: pr.estado === "rechazado" ? 0.45 : 1,
+          opacity: pr.estado === "rechazado" || pr.estado === "enviado" && presups.some(x => x.estado === "aceptado" && x.id !== pr.id) ? 0.45 : 1,
           cursor: "pointer"
         },
         onClick: () => abrirCot(pr)
@@ -7634,7 +7686,7 @@ function VistaCliente({
         style: {
           border: pr.estado === "aceptado" ? `3px solid ${C.elegido}` : `1px solid ${presupSel.has(pr.id) ? C.acento : i === 0 ? C.verde : C.borde}`,
           background: presupSel.has(pr.id) ? C.suave : i === 0 ? "#4A7C3F14" : C.card,
-          opacity: pr.estado === "rechazado" ? 0.45 : 1,
+          opacity: pr.estado === "rechazado" || pr.estado === "enviado" && presups.some(x => x.estado === "aceptado" && x.id !== pr.id) ? 0.45 : 1,
           padding: 14,
           cursor: "pointer"
         },
@@ -7775,7 +7827,7 @@ function VistaCliente({
     return /*#__PURE__*/React.createElement("div", {
       key: p.id,
       style: {
-        ...S.card,
+        ...S.cardLista,
         cursor: "pointer",
         transition: "all .15s",
         ...(abierto ? {
@@ -8278,6 +8330,10 @@ function VistaCarpinteria({
   };
   const [aceptandoFerr, setAceptandoFerr] = useState(false);
   const aceptarCotFerr = async ct => {
+    if (await hayOtraAceptada("cotizaciones_ferreteria", selFerr.id, ct.id, "aceptada")) {
+      alert(AVISO_YA_ELEGISTE);
+      return;
+    }
     setAceptandoFerr(true);
     try {
       const ahora = new Date().toISOString();
@@ -8368,6 +8424,10 @@ function VistaCarpinteria({
   };
   const [aceptandoPint, setAceptandoPint] = useState(false);
   const aceptarCotPint = async ct => {
+    if (await hayOtraAceptada("cotizaciones_pintureria", selPint.id, ct.id, "aceptada")) {
+      alert(AVISO_YA_ELEGISTE);
+      return;
+    }
     setAceptandoPint(true);
     try {
       const ahora = new Date().toISOString();
@@ -8634,6 +8694,10 @@ function VistaCarpinteria({
     } catch {}
   };
   const aceptarCotAserr = async ct => {
+    if (await hayOtraAceptada("cotizaciones_aserradero", selAserr.id, ct.id, "aceptada")) {
+      alert(AVISO_YA_ELEGISTE);
+      return;
+    }
     setAceptandoAserr(true);
     try {
       const ahora = new Date().toISOString();
@@ -8803,7 +8867,7 @@ function VistaCarpinteria({
       tiempoEntrega: miPresupuesto.tiempo_entrega,
       esEmpresa: true,
       aceptado: false
-    }))) : sel.estado === "cancelado" ? /*#__PURE__*/React.createElement("div", {
+    }))) : sel.estado === "aceptado" ? /*#__PURE__*/React.createElement(PedidoYaCerrado, null) : sel.estado === "cancelado" ? /*#__PURE__*/React.createElement("div", {
       style: {
         marginTop: 20,
         paddingTop: 20,
@@ -9045,7 +9109,7 @@ function VistaCarpinteria({
         style: S.input
       })), /*#__PURE__*/React.createElement("div", {
         style: {
-          border: `1px solid ${C.borde}`,
+          border: "none",
           borderRadius: 10,
           padding: 10,
           marginBottom: 10
@@ -9108,7 +9172,7 @@ function VistaCarpinteria({
         style: S.input
       })))), /*#__PURE__*/React.createElement("div", {
         style: {
-          border: `1px solid ${C.borde}`,
+          border: "none",
           borderRadius: 10,
           padding: 10,
           marginBottom: 14
@@ -9153,7 +9217,7 @@ function VistaCarpinteria({
           background: C.suave,
           borderRadius: 10,
           padding: 12,
-          border: `1px solid ${C.borde}`,
+          border: "none",
           marginBottom: 12
         }
       }, /*#__PURE__*/React.createElement("div", {
@@ -9258,17 +9322,16 @@ function VistaCarpinteria({
     }, "🗑️ Archivar este pedido"))));
   }
   const tabBase = id => ({
-    background: tab === id ? C.marron : C.card,
-    color: tab === id ? C.crema : C.marron,
-    border: `2px solid ${C.marron}55`,
-    borderBottom: tab === id ? `2px solid ${C.marron}` : `2px solid ${C.marron}55`,
-    borderRadius: "12px 12px 0 0",
-    marginRight: -2,
+    background: "transparent",
+    color: tab === id ? C.marron : C.textoSuave,
+    border: "none",
+    borderBottom: tab === id ? `2px solid ${C.marron}` : "2px solid transparent",
+    borderRadius: 0,
+    marginRight: 0,
     position: "relative",
-    zIndex: tab === id ? 2 : 1,
     cursor: "pointer",
     fontFamily: "'Lato',sans-serif",
-    fontWeight: 800,
+    fontWeight: tab === id ? 800 : 400,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -9529,7 +9592,7 @@ function VistaCarpinteria({
       return /*#__PURE__*/React.createElement("div", {
         key: p.id,
         style: {
-          ...S.card,
+          ...S.cardLista,
           display: "flex",
           gap: 10,
           cursor: bloqueadoClientes ? "not-allowed" : cerradoParaMi ? "default" : "pointer",
@@ -9564,7 +9627,7 @@ function VistaCarpinteria({
           alignItems: "center",
           justifyContent: "center",
           background: C.suave,
-          border: `1px solid ${C.borde}`,
+          border: "none",
           fontSize: 13,
           fontWeight: 700,
           color: C.marron
@@ -9686,7 +9749,7 @@ function VistaCarpinteria({
     return /*#__PURE__*/React.createElement("div", {
       key: i,
       style: {
-        border: `1px solid ${C.borde}`,
+        border: "none",
         borderRadius: 10,
         padding: 10,
         marginBottom: 8,
@@ -9956,7 +10019,7 @@ function VistaCarpinteria({
     return /*#__PURE__*/React.createElement("div", {
       key: p.id,
       style: {
-        ...S.card,
+        ...S.cardLista,
         ...(abierto ? {
           borderColor: C.acento,
           borderWidth: 2
@@ -10099,7 +10162,7 @@ function VistaCarpinteria({
           marginBottom: 10,
           overflow: "hidden",
           background: C.input,
-          opacity: ct.estado === "rechazada" ? 0.45 : 1,
+          opacity: ct.estado === "rechazada" || cotizacionesAserr.some(x => x.estado === "aceptada" && x.id !== ct.id) ? 0.45 : 1,
           transition: "opacity .3s"
         }
       }, /*#__PURE__*/React.createElement("div", {
@@ -10217,7 +10280,7 @@ function VistaCarpinteria({
         falta: "la compra",
         comprador: true,
         notif: notif
-      }) : ct.estado === "rechazada" ? /*#__PURE__*/React.createElement("div", {
+      }) : ct.estado === "rechazada" || cotizacionesAserr.some(x => x.estado === "aceptada" && x.id !== ct.id) ? /*#__PURE__*/React.createElement("div", {
         style: {
           marginTop: 10,
           padding: "10px 14px",
@@ -10285,7 +10348,7 @@ function VistaCarpinteria({
   }, "Agregá un renglón por cada herraje que necesitás, con su cantidad."), ferrF.items.map((it, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     style: {
-      border: `1px solid ${C.borde}`,
+      border: "none",
       borderRadius: 10,
       padding: 10,
       marginBottom: 8,
@@ -10553,7 +10616,7 @@ function VistaCarpinteria({
     return /*#__PURE__*/React.createElement("div", {
       key: p.id,
       style: {
-        ...S.card,
+        ...S.cardLista,
         ...(abierto ? {
           borderColor: C.acento,
           borderWidth: 2
@@ -10691,7 +10754,7 @@ function VistaCarpinteria({
           marginBottom: 10,
           overflow: "hidden",
           background: C.input,
-          opacity: ct.estado === "rechazada" ? 0.45 : 1,
+          opacity: ct.estado === "rechazada" || cotizacionesFerr.some(x => x.estado === "aceptada" && x.id !== ct.id) ? 0.45 : 1,
           transition: "opacity .3s"
         }
       }, /*#__PURE__*/React.createElement("div", {
@@ -10809,7 +10872,7 @@ function VistaCarpinteria({
         falta: "la compra",
         comprador: true,
         notif: notif
-      }) : ct.estado === "rechazada" ? /*#__PURE__*/React.createElement("div", {
+      }) : ct.estado === "rechazada" || cotizacionesFerr.some(x => x.estado === "aceptada" && x.id !== ct.id) ? /*#__PURE__*/React.createElement("div", {
         style: {
           marginTop: 10,
           padding: "10px 14px",
@@ -10882,7 +10945,7 @@ function VistaCarpinteria({
   }, "Agregá un renglón por cada producto que necesitás (incluí color/terminación en la descripción), con su cantidad en litros."), pintF.items.map((it, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     style: {
-      border: `1px solid ${C.borde}`,
+      border: "none",
       borderRadius: 10,
       padding: 10,
       marginBottom: 8,
@@ -11150,7 +11213,7 @@ function VistaCarpinteria({
     return /*#__PURE__*/React.createElement("div", {
       key: p.id,
       style: {
-        ...S.card,
+        ...S.cardLista,
         ...(abierto ? {
           borderColor: C.acento,
           borderWidth: 2
@@ -11288,7 +11351,7 @@ function VistaCarpinteria({
           marginBottom: 10,
           overflow: "hidden",
           background: C.input,
-          opacity: ct.estado === "rechazada" ? 0.45 : 1,
+          opacity: ct.estado === "rechazada" || cotizacionesPint.some(x => x.estado === "aceptada" && x.id !== ct.id) ? 0.45 : 1,
           transition: "opacity .3s"
         }
       }, /*#__PURE__*/React.createElement("div", {
@@ -11406,7 +11469,7 @@ function VistaCarpinteria({
         falta: "la compra",
         comprador: true,
         notif: notif
-      }) : ct.estado === "rechazada" ? /*#__PURE__*/React.createElement("div", {
+      }) : ct.estado === "rechazada" || cotizacionesPint.some(x => x.estado === "aceptada" && x.id !== ct.id) ? /*#__PURE__*/React.createElement("div", {
         style: {
           marginTop: 10,
           padding: "10px 14px",
@@ -11744,7 +11807,7 @@ function VistaAserradero({
       usuario: usuario,
       notif: notif,
       para: sel._solicNombre
-    })) : sel.estado === "cancelado" ? /*#__PURE__*/React.createElement("div", {
+    })) : sel.estado === "aceptado" ? /*#__PURE__*/React.createElement(PedidoYaCerrado, null) : sel.estado === "cancelado" ? /*#__PURE__*/React.createElement("div", {
       style: {
         ...S.card,
         color: C.textoSuave,
@@ -11928,7 +11991,7 @@ function VistaAserradero({
         usuario: usuario
       }), /*#__PURE__*/React.createElement("div", {
         style: {
-          border: `1px solid ${C.borde}`,
+          border: "none",
           borderRadius: 10,
           padding: 10,
           marginBottom: 10
@@ -11991,7 +12054,7 @@ function VistaAserradero({
         style: S.input
       })))), /*#__PURE__*/React.createElement("div", {
         style: {
-          border: `1px solid ${C.borde}`,
+          border: "none",
           borderRadius: 10,
           padding: 10,
           marginBottom: 14
@@ -12059,7 +12122,7 @@ function VistaAserradero({
           background: C.suave,
           borderRadius: 10,
           padding: 12,
-          border: `1px solid ${C.borde}`,
+          border: "none",
           marginBottom: 12
         }
       }, /*#__PURE__*/React.createElement("div", {
@@ -12262,7 +12325,7 @@ function VistaAserradero({
     return /*#__PURE__*/React.createElement("div", {
       key: p.id,
       style: {
-        ...S.card,
+        ...S.cardLista,
         cursor: bloqueado ? "not-allowed" : "pointer",
         opacity: bloqueado ? 0.75 : 1,
         transition: "all .15s",
@@ -12403,7 +12466,7 @@ function VistaConversor() {
         background: C.suave,
         borderRadius: 10,
         padding: 16,
-        border: `1px solid ${C.borde}`
+        border: "none"
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: S.row
@@ -12830,6 +12893,10 @@ function VistaFlete({
   };
   const [aceptandoFlete, setAceptandoFlete] = useState(false);
   const aceptarCotFlete = async ct => {
+    if (await hayOtraAceptada("cotizaciones_flete", selPedido.id, ct.id, "aceptada")) {
+      alert(AVISO_YA_ELEGISTE);
+      return;
+    }
     setAceptandoFlete(true);
     try {
       const ahora = new Date().toISOString();
@@ -12968,7 +13035,7 @@ function VistaFlete({
         aceptado: miCot.estado === "aceptada",
         concretada: !!miCot.concretada_at,
         opcionElegida: miCot.opcion_elegida
-      })) : sel.estado === "cancelado" ? /*#__PURE__*/React.createElement("div", {
+      })) : sel.estado === "aceptado" ? /*#__PURE__*/React.createElement(PedidoYaCerrado, null) : sel.estado === "cancelado" ? /*#__PURE__*/React.createElement("div", {
       style: {
         ...S.card,
         color: C.textoSuave,
@@ -13184,7 +13251,7 @@ function VistaFlete({
           style: S.input
         })), /*#__PURE__*/React.createElement("div", {
           style: {
-            border: `1px solid ${C.borde}`,
+            border: "none",
             borderRadius: 10,
             padding: 10,
             marginBottom: 10
@@ -13247,7 +13314,7 @@ function VistaFlete({
           style: S.input
         })))), /*#__PURE__*/React.createElement("div", {
           style: {
-            border: `1px solid ${C.borde}`,
+            border: "none",
             borderRadius: 10,
             padding: 10,
             marginBottom: 14
@@ -13315,7 +13382,7 @@ function VistaFlete({
             background: C.suave,
             borderRadius: 10,
             padding: 12,
-            border: `1px solid ${C.borde}`,
+            border: "none",
             marginBottom: 12
           }
         }, /*#__PURE__*/React.createElement("div", {
@@ -13524,7 +13591,7 @@ function VistaFlete({
       return /*#__PURE__*/React.createElement("div", {
         key: p.id,
         style: {
-          ...S.card,
+          ...S.cardLista,
           cursor: bloqueado ? "not-allowed" : "pointer",
           opacity: bloqueado ? 0.75 : 1,
           transition: "all .15s",
@@ -13755,7 +13822,7 @@ function VistaFlete({
       alignItems: "center",
       gap: 6,
       background: C.suave,
-      border: `1px solid ${C.borde}`,
+      border: "none",
       borderRadius: 10,
       padding: "8px 14px",
       color: C.marron,
@@ -13976,7 +14043,7 @@ function VistaFlete({
           marginBottom: 10,
           overflow: "hidden",
           background: C.input,
-          opacity: ct.estado === "rechazada" ? 0.45 : 1,
+          opacity: ct.estado === "rechazada" || cotizacionesFlete.some(x => x.estado === "aceptada" && x.id !== ct.id) ? 0.45 : 1,
           transition: "opacity .3s"
         }
       }, /*#__PURE__*/React.createElement("div", {
@@ -14088,7 +14155,7 @@ function VistaFlete({
         falta: "el viaje",
         comprador: true,
         notif: notif
-      }) : ct.estado === "rechazada" ? /*#__PURE__*/React.createElement("div", {
+      }) : ct.estado === "rechazada" || cotizacionesFlete.some(x => x.estado === "aceptada" && x.id !== ct.id) ? /*#__PURE__*/React.createElement("div", {
         style: {
           marginTop: 10,
           padding: "10px 14px",
@@ -14407,7 +14474,7 @@ function VistaFerreteria({
       usuario: usuario,
       notif: notif,
       para: sel._solicNombre
-    })) : sel.estado === "cancelado" ? /*#__PURE__*/React.createElement("div", {
+    })) : sel.estado === "aceptado" ? /*#__PURE__*/React.createElement(PedidoYaCerrado, null) : sel.estado === "cancelado" ? /*#__PURE__*/React.createElement("div", {
       style: {
         ...S.card,
         color: C.textoSuave,
@@ -14591,7 +14658,7 @@ function VistaFerreteria({
         usuario: usuario
       }), /*#__PURE__*/React.createElement("div", {
         style: {
-          border: `1px solid ${C.borde}`,
+          border: "none",
           borderRadius: 10,
           padding: 10,
           marginBottom: 10
@@ -14654,7 +14721,7 @@ function VistaFerreteria({
         style: S.input
       })))), /*#__PURE__*/React.createElement("div", {
         style: {
-          border: `1px solid ${C.borde}`,
+          border: "none",
           borderRadius: 10,
           padding: 10,
           marginBottom: 14
@@ -14722,7 +14789,7 @@ function VistaFerreteria({
           background: C.suave,
           borderRadius: 10,
           padding: 12,
-          border: `1px solid ${C.borde}`,
+          border: "none",
           marginBottom: 12
         }
       }, /*#__PURE__*/React.createElement("div", {
@@ -14925,7 +14992,7 @@ function VistaFerreteria({
     return /*#__PURE__*/React.createElement("div", {
       key: p.id,
       style: {
-        ...S.card,
+        ...S.cardLista,
         cursor: bloqueado ? "not-allowed" : "pointer",
         opacity: bloqueado ? 0.75 : 1,
         transition: "all .15s",
@@ -15292,7 +15359,7 @@ function VistaPintureria({
       usuario: usuario,
       notif: notif,
       para: sel._solicNombre
-    })) : sel.estado === "cancelado" ? /*#__PURE__*/React.createElement("div", {
+    })) : sel.estado === "aceptado" ? /*#__PURE__*/React.createElement(PedidoYaCerrado, null) : sel.estado === "cancelado" ? /*#__PURE__*/React.createElement("div", {
       style: {
         ...S.card,
         color: C.textoSuave,
@@ -15476,7 +15543,7 @@ function VistaPintureria({
         usuario: usuario
       }), /*#__PURE__*/React.createElement("div", {
         style: {
-          border: `1px solid ${C.borde}`,
+          border: "none",
           borderRadius: 10,
           padding: 10,
           marginBottom: 10
@@ -15539,7 +15606,7 @@ function VistaPintureria({
         style: S.input
       })))), /*#__PURE__*/React.createElement("div", {
         style: {
-          border: `1px solid ${C.borde}`,
+          border: "none",
           borderRadius: 10,
           padding: 10,
           marginBottom: 14
@@ -15607,7 +15674,7 @@ function VistaPintureria({
           background: C.suave,
           borderRadius: 10,
           padding: 12,
-          border: `1px solid ${C.borde}`,
+          border: "none",
           marginBottom: 12
         }
       }, /*#__PURE__*/React.createElement("div", {
@@ -15810,7 +15877,7 @@ function VistaPintureria({
     return /*#__PURE__*/React.createElement("div", {
       key: p.id,
       style: {
-        ...S.card,
+        ...S.cardLista,
         cursor: bloqueado ? "not-allowed" : "pointer",
         opacity: bloqueado ? 0.75 : 1,
         transition: "all .15s",
@@ -15942,7 +16009,7 @@ function PantallaBienvenida({
       background: C.card,
       borderRadius: 10,
       padding: 24,
-      border: `1px solid ${C.borde}`
+      border: "none"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -16197,7 +16264,7 @@ function PantallaBienvenida({
       background: C.card,
       borderRadius: 10,
       padding: 24,
-      border: `1px solid ${C.borde}`
+      border: "none"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -16251,7 +16318,7 @@ function PantallaBienvenida({
       background: C.card,
       borderRadius: 10,
       padding: 24,
-      border: `1px solid ${C.borde}`
+      border: "none"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -19411,7 +19478,7 @@ function CamposEntregaCot({
   const retiro = cotF.retiro !== undefined ? cotF.retiro : usuario?.direccion || "";
   return /*#__PURE__*/React.createElement("div", {
     style: {
-      border: `1px solid ${C.borde}`,
+      border: "none",
       padding: 10,
       marginBottom: 12
     }
@@ -20502,7 +20569,7 @@ function AdminQuejas() {
   }, "No hay quejas en este filtro.")) : filtradas.map(q => /*#__PURE__*/React.createElement("div", {
     key: q.id,
     style: {
-      ...S.card,
+      ...S.cardLista,
       cursor: "pointer"
     },
     onClick: () => abrir(q)
@@ -21389,14 +21456,15 @@ function MiCuenta({
   };
   const solapaBtn = (id, txt) => ({
     flex: 1,
-    background: solapa === id ? C.acento : "transparent",
+    background: "transparent",
     color: solapa === id ? C.marron : C.textoSuave,
-    border: solapa === id ? "none" : `1px solid ${C.borde}`,
-    borderRadius: 10,
+    border: "none",
+    borderBottom: solapa === id ? `2px solid ${C.marron}` : "2px solid transparent",
+    borderRadius: 0,
     padding: "12px 8px",
     cursor: "pointer",
     fontSize: 16,
-    fontWeight: 700,
+    fontWeight: solapa === id ? 800 : 400,
     fontFamily: "'Lato',sans-serif",
     minHeight: 46
   });
@@ -21486,7 +21554,7 @@ function MiCuenta({
     onChange: e => setTelefono(e.target.value)
   }))), esCliente && /*#__PURE__*/React.createElement("div", {
     style: {
-      border: `1px solid ${C.borde}`,
+      border: "none",
       borderRadius: 10,
       padding: 12,
       marginBottom: 14,
@@ -21586,7 +21654,7 @@ function MiCuenta({
     onChange: e => setDocumento(e.target.value)
   }))), msg(okPriv, "ok"), " ", msg(errPriv, "err"), /*#__PURE__*/React.createElement("div", {
     style: {
-      border: `1px solid ${C.borde}`,
+      border: "none",
       borderRadius: 10,
       padding: 12,
       marginTop: 14,
@@ -21614,7 +21682,7 @@ function MiCuenta({
     }
   }, esCliente ? "Te avisamos por mail cuando una carpintería te envía un presupuesto." : "Te avisamos por mail cuando hay un nuevo pedido para cotizar. Si recibís muchos, podés apagarlo.")), /*#__PURE__*/React.createElement("div", {
     style: {
-      border: `1px solid ${C.borde}`,
+      border: "none",
       borderRadius: 10,
       padding: 12,
       marginTop: 12,
@@ -22801,7 +22869,7 @@ function BuscarTrabajadores({
   }, "Todavía no hay trabajadores cargados en este rubro.")) : filtrados.map(p => /*#__PURE__*/React.createElement("div", {
     key: p.id,
     style: {
-      ...S.card,
+      ...S.cardLista,
       marginBottom: 12,
       ...(p.usuario_id === usuario.id ? {
         borderColor: C.acento,
