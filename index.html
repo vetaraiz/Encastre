@@ -5340,7 +5340,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-23.1";
+const VERSION_APP = "v2026-10-23.2";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -17273,9 +17273,12 @@ async function presupuestoAPdf(nodo) {
     document.body.removeChild(caja);
   }
 }
-function nombreArchivoPresup(numero, empresa) {
+// Carpintería → cliente: "Presupuesto". Aserradero, ferretería, pinturería y flete: "Cotización".
+const palabraDoc = empresa => empresa && empresa.tipo && empresa.tipo !== "carpinteria" ? "Cotización" : "Presupuesto";
+function nombreArchivoPresup(numero, empresa, doc) {
   const limpio = String(empresa || "Encastre").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  return `Presupuesto${numero !== "" && numero != null ? "-" + numero : ""}-${limpio || "Encastre"}.pdf`;
+  const pal = doc === "Cotización" ? "Cotizacion" : "Presupuesto";
+  return `${pal}${numero !== "" && numero != null ? "-" + numero : ""}-${limpio || "Encastre"}.pdf`;
 }
 function bajarBlob(blob, nombre) {
   const url = URL.createObjectURL(blob);
@@ -17306,13 +17309,14 @@ function AccionesPresupuesto({
   empresa,
   cliente,
   total,
-  tiempoEntrega
+  tiempoEntrega,
+  doc = "Presupuesto"
 }) {
   const [ocupado, setOcupado] = useState("");
   const [menu, setMenu] = useState(false);
   const [aviso, setAviso] = useState("");
-  const nombre = nombreArchivoPresup(numero, empresa);
-  const texto = `Presupuesto${numero !== "" && numero != null ? " N° " + numero : ""} de ${empresa || "—"}${cliente ? " para " + cliente : ""}. Total: ${total}${tiempoEntrega ? ". Entrega: " + tiempoEntrega : ""}. Hecho a través de Encastre: www.encastre.com.ar`;
+  const nombre = nombreArchivoPresup(numero, empresa, doc);
+  const texto = `${doc}${numero !== "" && numero != null ? " N° " + numero : ""} de ${empresa || "—"}${cliente ? " para " + cliente : ""}. Total: ${total}${tiempoEntrega ? ". Entrega: " + tiempoEntrega : ""}. Hecho a través de Encastre: www.encastre.com.ar`;
   const hacerPdf = async () => {
     if (!nodoRef.current) throw new Error("sin nodo");
     return presupuestoAPdf(nodoRef.current);
@@ -17620,6 +17624,7 @@ function PresupuestoFormato({
   concretada
 }) {
   const nodoRef = useRef(null);
+  const DOC = palabraDoc(empresa);
   const V = "#4A7C3F"; // verde encabezado
   const o = opts || {};
   const optsCalc = {
@@ -17777,7 +17782,7 @@ function PresupuestoFormato({
       fontWeight: 700,
       fontSize: 20
     }
-  }, "Presupuesto", numero !== "" && numero != null ? ` N° ${numero}` : ""), /*#__PURE__*/React.createElement("div", {
+  }, DOC, numero !== "" && numero != null ? ` N° ${numero}` : ""), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 14,
       alignSelf: "center"
@@ -17893,7 +17898,7 @@ function PresupuestoFormato({
       color: V,
       marginTop: 4
     }
-  }, "✓ Dirección visible porque aceptaste este presupuesto."))), (() => {
+  }, DOC === "Cotización" ? "✓ Dirección visible porque aceptaste esta cotización." : "✓ Dirección visible porque aceptaste este presupuesto."))), (() => {
     const bloque = (filas, calc, cab, key, apagada) => /*#__PURE__*/React.createElement("div", {
       key: key,
       style: {
@@ -18047,13 +18052,14 @@ function PresupuestoFormato({
       textAlign: "center",
       fontWeight: 700
     }
-  }, "Presupuesto hecho a través de Encastre · www.encastre.com.ar")), !sinAcciones && /*#__PURE__*/React.createElement(AccionesPresupuesto, {
+  }, DOC === "Cotización" ? "Cotización hecha a través de Encastre · www.encastre.com.ar" : "Presupuesto hecho a través de Encastre · www.encastre.com.ar")), !sinAcciones && /*#__PURE__*/React.createElement(AccionesPresupuesto, {
     nodoRef: nodoRef,
     numero: numero,
     empresa: empresa.nombre,
     cliente: cliente.nombre,
     total: fmtPeso(calc.total),
-    tiempoEntrega: tiempoEntrega
+    tiempoEntrega: tiempoEntrega,
+    doc: DOC
   }));
 }
 function FlowStep({
