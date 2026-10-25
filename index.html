@@ -3126,6 +3126,19 @@ function Badge9({
 
 // Fila de "solapas" conectadas y redondeadas arriba (formato unificado de tabs en toda la app)
 // Filtro de estado como lista desplegable (reemplaza las solapas Para cotizar / Cotizados / etc.)
+// Resumen de un pedido para las tarjetas de las listas: medidas y material del primer mueble
+function resumenPedido(p) {
+  const it = p.items && p.items[0] || p;
+  const dims = [it.alto, it.ancho, it.profundidad].filter(v => v != null && String(v).trim() !== "" && Number(v) > 0);
+  const mat = MATS.find(m => m.id === (it.material || p.material));
+  return [dims.length ? dims.join(" × ") + " cm" : "", mat ? mat.label + (it.especie ? " " + it.especie : "") : ""].filter(Boolean).join(" · ");
+}
+// Ubicación sin repetir: "Villa Devoto, CABA" en vez de "Villa Devoto, Ciudad Autónoma de Buenos Aires, Ciudad Autónoma de Buenos Aires"
+function ubicTexto(p) {
+  const norm = v => String(v || "").replace(/Ciudad (Autónoma )?de Buenos Aires/i, "CABA").trim();
+  const partes = [p.barrio, p.ciudad, p.provincia].map(norm).filter(Boolean);
+  return partes.filter((v, i) => partes.indexOf(v) === i).join(", ");
+}
 function FiltroDesplegable({
   opciones,
   activo,
@@ -3422,7 +3435,7 @@ const S = {
     background: v === "gold" ? `${C.acento} url(${MADERA_ROBLE}) center/cover` : v === "dark" ? `${C.marron} url(${MADERA_CEDRO_BTN}) center/cover` : v === "red" ? C.rojo : "transparent",
     color: v === "ghost" || v === "link" ? C.marron : v === "gold" ? "#2D2016" : C.crema,
     textShadow: v === "gold" ? "0 1px 0 #ffffff66" : v === "dark" ? "0 1px 2px #00000088" : "none",
-    border: v === "ghost" ? `2px solid ${C.marron}` : "none",
+    border: "none",
     borderRadius: v === "link" ? 0 : 10,
     padding: v === "link" ? "4px 2px" : "13px 24px",
     cursor: "pointer",
@@ -5342,7 +5355,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-25.3";
+const VERSION_APP = "v2026-10-25.5";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -7863,7 +7876,7 @@ function VistaCliente({
         fontSize: 17,
         color: C.textoSuave
       }
-    }, p.alto, "×", p.ancho, "×", p.profundidad, " cm · ", mat?.label, " · ", new Date(p.created_at).toLocaleDateString("es-AR"), p.items && p.items.length > 1 ? ` · +${p.items.length - 1} mueble${p.items.length > 2 ? "s" : ""} más` : ""), p.fecha_limite && /*#__PURE__*/React.createElement(AvisoVence, {
+    }, [resumenPedido(p), new Date(p.created_at).toLocaleDateString("es-AR")].filter(Boolean).join(" · "), p.items && p.items.length > 1 ? ` · +${p.items.length - 1} mueble${p.items.length > 2 ? "s" : ""} más` : ""), p.fecha_limite && /*#__PURE__*/React.createElement(AvisoVence, {
       fechaLimite: p.fecha_limite
     })), /*#__PURE__*/React.createElement("div", {
       style: {
@@ -9814,13 +9827,13 @@ function VistaCarpinteria({
           color: C.textoSuave,
           marginTop: 2
         }
-      }, "📍 ", [p.barrio, p.ciudad, p.provincia].filter(Boolean).join(", ")), /*#__PURE__*/React.createElement("div", {
+      }, "📍 ", ubicTexto(p)), /*#__PURE__*/React.createElement("div", {
         style: {
           fontSize: 17,
           color: C.textoSuave,
           marginTop: 3
         }
-      }, p.alto, "×", p.ancho, "×", p.profundidad, "cm · ", mat?.label, " · ", new Date(p.created_at).toLocaleDateString("es-AR"), p.items && p.items.length > 1 ? ` · +${p.items.length - 1} mueble${p.items.length > 2 ? "s" : ""} más` : ""), p.fecha_limite && /*#__PURE__*/React.createElement("div", {
+      }, [resumenPedido(p), new Date(p.created_at).toLocaleDateString("es-AR")].filter(Boolean).join(" · "), p.items && p.items.length > 1 ? ` · +${p.items.length - 1} mueble${p.items.length > 2 ? "s" : ""} más` : ""), p.fecha_limite && /*#__PURE__*/React.createElement("div", {
         style: {
           marginTop: 4
         }
@@ -12556,7 +12569,7 @@ function VistaAserradero({
         color: C.textoSuave,
         marginTop: 2
       }
-    }, "📍 ", [p.barrio, p.ciudad, p.provincia].filter(Boolean).join(", ")), /*#__PURE__*/React.createElement("div", {
+    }, "📍 ", ubicTexto(p)), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 17,
         color: C.textoSuave,
@@ -13831,7 +13844,7 @@ function VistaFlete({
           color: C.textoSuave,
           marginTop: 2
         }
-      }, "📍 Origen: ", [p.barrio, p.ciudad, p.provincia].filter(Boolean).join(", ")), /*#__PURE__*/React.createElement("div", {
+      }, "📍 Origen: ", ubicTexto(p)), /*#__PURE__*/React.createElement("div", {
         style: {
           fontSize: 17,
           color: C.textoSuave,
@@ -15248,7 +15261,7 @@ function VistaFerreteria({
         color: C.textoSuave,
         marginTop: 2
       }
-    }, "📍 ", [p.barrio, p.ciudad, p.provincia].filter(Boolean).join(", ")), /*#__PURE__*/React.createElement("div", {
+    }, "📍 ", ubicTexto(p)), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 17,
         color: C.textoSuave,
@@ -16141,7 +16154,7 @@ function VistaPintureria({
         color: C.textoSuave,
         marginTop: 2
       }
-    }, "📍 ", [p.barrio, p.ciudad, p.provincia].filter(Boolean).join(", ")), /*#__PURE__*/React.createElement("div", {
+    }, "📍 ", ubicTexto(p)), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 17,
         color: C.textoSuave,
@@ -17870,7 +17883,9 @@ function PresupuestoFormato({
     ...td,
     textAlign: "right",
     fontFamily: "monospace",
-    whiteSpace: "nowrap"
+    whiteSpace: "nowrap",
+    padding: "8px 6px",
+    fontSize: 14
   };
   const dato = (l, v) => v ? /*#__PURE__*/React.createElement("div", {
     style: {
@@ -18112,7 +18127,7 @@ function PresupuestoFormato({
     style: {
       width: "100%",
       borderCollapse: "collapse",
-      minWidth: 420
+      minWidth: 0
     }
   }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
     style: th
@@ -23389,8 +23404,7 @@ function PerfilTrabajador({
     style: {
       ...S.btn("ghost"),
       fontSize: 14,
-      color: C.error,
-      border: `1px solid ${C.error}`
+      color: C.error
     },
     disabled: borrando,
     onClick: desinscribirse
