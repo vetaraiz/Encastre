@@ -5295,7 +5295,8 @@ function fechaHoraChat(iso) {
   const d = new Date(iso);
   const hora = d.toLocaleTimeString("es-AR", {
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
+    hour12: false
   });
   const hoy = new Date();
   const ayer = new Date();
@@ -5369,7 +5370,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-25.6";
+const VERSION_APP = "v2026-10-25.7";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();

@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "ar.com.encastre.app",
+      "sha256_cert_fingerprints": ["11:7E:F3:4E:A3:F9:00:C9:BD:D0:CD:7C:A6:F4:7C:AA:A0:A6:FA:AD:B6:6C:49:76:70:C4:1B:EA:73:5C:8E:7D"]
+    }
+  }
+]
