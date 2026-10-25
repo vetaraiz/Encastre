@@ -2039,6 +2039,7 @@ const EC = {
   pendiente: C.acento,
   presupuestado: C.azul,
   aceptado: "#7E3A22",
+  terminado: "#5A4A3A",
   cerrado: "#8A7A6A",
   rechazado: "#8A7A6A",
   enviada: C.acento,
@@ -2091,6 +2092,7 @@ const EL = {
   pendiente: "Pendiente",
   presupuestado: "Presupuestado",
   aceptado: "Seleccionado · falta concretar",
+  terminado: "✔ Terminado",
   cerrado: "No seleccionado",
   rechazado: "No seleccionado",
   enviada: "Enviada",
@@ -5340,7 +5342,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-25.2";
+const VERSION_APP = "v2026-10-25.3";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -7803,19 +7805,22 @@ function VistaCliente({
   }, "➕ Crear primer pedido")), pedidos.length > 0 && (() => {
     const venc = p => p.fecha_limite && new Date(p.fecha_limite) < new Date() && p.estado !== "aceptado";
     const cuenta = {
-      todos: pedidos.length,
+      todos: pedidos.filter(p => !p.concretado_at).length,
       abierto: pedidos.filter(p => !venc(p) && p.estado !== "aceptado").length,
-      aceptado: pedidos.filter(p => p.estado === "aceptado").length,
-      vencido: pedidos.filter(p => venc(p)).length
+      aceptado: pedidos.filter(p => p.estado === "aceptado" && !p.concretado_at).length,
+      vencido: pedidos.filter(p => venc(p)).length,
+      terminado: pedidos.filter(p => p.concretado_at).length
     };
     return /*#__PURE__*/React.createElement(FiltroDesplegable, {
-      opciones: [["todos", "Todos"], ["abierto", "Abiertos"], ["aceptado", "Aceptados"], ["vencido", "Vencidos"]],
+      opciones: [["todos", "En curso"], ["abierto", "Abiertos"], ["aceptado", "Aceptados"], ["vencido", "Vencidos"], ["terminado", "✔ Terminados"]],
       activo: filtro,
       cuenta: cuenta,
       onChange: setFiltro
     });
   })(), pedidos.filter(p => {
     const venc = p.fecha_limite && new Date(p.fecha_limite) < new Date() && p.estado !== "aceptado";
+    if (filtro === "terminado") return !!p.concretado_at && p.estado !== "eliminado";
+    if (p.concretado_at) return false;
     if (filtro === "todos") return true;
     if (p.estado === "eliminado") return false;
     if (filtro === "vencido") return venc;
@@ -7867,7 +7872,7 @@ function VistaCliente({
         gap: 8
       }
     }, /*#__PURE__*/React.createElement(Badge, {
-      e: p.estado
+      e: p.concretado_at ? "terminado" : p.estado
     }), /*#__PURE__*/React.createElement("span", {
       style: {
         color: C.textoSuave,
@@ -8186,6 +8191,7 @@ function VistaCarpinteria({
     setArchivandoSel(false);
   };
   const [tab, setTab] = useNavState(tabInicial || "aserradero");
+  const [verTerm, setVerTerm] = useState("curso");
   const [pedidos, setPedidos] = useState([]);
   const [sel, setSel] = useNavState(null);
   const [calcAbierto, setCalcAbierto] = useState(false);
@@ -9607,13 +9613,14 @@ function VistaCarpinteria({
     const cuenta = {
       cotizar: pedidos.filter(p => p.estado !== "aceptado" && !venc(p) && !p._miEstado).length,
       cotizados: pedidos.filter(p => p._miEstado && p.estado !== "aceptado").length,
-      elegidos: pedidos.filter(p => p._miEstado === "aceptado").length,
-      cerrados: pedidos.filter(p => p.estado === "aceptado").length,
+      elegidos: pedidos.filter(p => p._miEstado === "aceptado" && !p.concretado_at).length,
+      terminados: pedidos.filter(p => p._miEstado === "aceptado" && p.concretado_at).length,
+      cerrados: pedidos.filter(p => p.estado === "aceptado" && p._miEstado !== "aceptado").length,
       vencido: pedidos.filter(p => venc(p) && p.estado !== "aceptado" && !p._miEstado).length,
-      todos: pedidos.length
+      todos: pedidos.filter(p => !(p._miEstado === "aceptado" && p.concretado_at)).length
     };
     return /*#__PURE__*/React.createElement(FiltroDesplegable, {
-      opciones: [["todos", "Todos"], ["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["elegidos", "Elegidos (me aceptaron)"], ["cerrados", "Cerrados"], ["vencido", "Vencidos"]],
+      opciones: [["todos", "En curso"], ["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["elegidos", "Elegidos (me aceptaron)"], ["cerrados", "Adjudicados a otros"], ["vencido", "Vencidos"], ["terminados", "✔ Terminados"]],
       activo: filtroCarp,
       cuenta: cuenta,
       onChange: setFiltroCarp
@@ -9631,9 +9638,12 @@ function VistaCarpinteria({
       if (archivadosPed.has(p.id)) return false;
       if (filtroUbicProv && p.provincia !== filtroUbicProv) return false;
       if (filtroUbicCiu && p.ciudad !== filtroUbicCiu) return false;
+      const terminado = p._miEstado === "aceptado" && !!p.concretado_at;
+      if (filtroCarp === "terminados") return terminado;
+      if (terminado) return false;
       if (filtroCarp === "cotizar") return p.estado !== "aceptado" && !venc(p) && !p._miEstado;
       if (filtroCarp === "cotizados") return p._miEstado && p.estado !== "aceptado";
-      if (filtroCarp === "cerrados") return p.estado === "aceptado";
+      if (filtroCarp === "cerrados") return p.estado === "aceptado" && p._miEstado !== "aceptado";
       if (filtroCarp === "elegidos") return p._miEstado === "aceptado";
       if (filtroCarp === "vencido") return venc(p) && p.estado !== "aceptado" && !p._miEstado;
       return true;
@@ -9674,7 +9684,11 @@ function VistaCarpinteria({
           fg: "#fff"
         };
       } else if (p.estado === "aceptado") {
-        et = p._miEstado === "aceptado" ? {
+        et = p._miEstado === "aceptado" && p.concretado_at ? {
+          t: "✔ Terminado",
+          bg: "#5A4A3A",
+          fg: "#fff"
+        } : p._miEstado === "aceptado" ? {
           t: "Aceptado ✓",
           bg: C.verde,
           fg: "#fff"
@@ -10135,7 +10149,15 @@ function VistaCarpinteria({
       fontSize: 20,
       marginBottom: 12
     }
-  }, "📋 Mis pedidos a aserraderos (", misPedidosAserr.length, ")"), misPedidosAserr.filter(p => p.estado !== "eliminado").map(p => {
+  }, "📋 Mis pedidos a aserraderos (", misPedidosAserr.length, ")"), /*#__PURE__*/React.createElement(FiltroDesplegable, {
+    opciones: [["curso", "En curso"], ["terminados", "✔ Terminados"]],
+    activo: verTerm,
+    cuenta: {
+      curso: misPedidosAserr.filter(p => p.estado !== "eliminado" && !p.concretado_at).length,
+      terminados: misPedidosAserr.filter(p => p.estado !== "eliminado" && p.concretado_at).length
+    },
+    onChange: setVerTerm
+  }), misPedidosAserr.filter(p => p.estado !== "eliminado").filter(p => verTerm === "terminados" ? !!p.concretado_at : !p.concretado_at).map(p => {
     const abierto = selAserr && selAserr.id === p.id;
     return /*#__PURE__*/React.createElement("div", {
       key: p.id,
@@ -10732,7 +10754,15 @@ function VistaCarpinteria({
       fontSize: 20,
       marginBottom: 12
     }
-  }, "📋 Mis pedidos a ferreterías (", misPedidosFerreria.length, ")"), misPedidosFerreria.filter(p => p.estado !== "eliminado").map(p => {
+  }, "📋 Mis pedidos a ferreterías (", misPedidosFerreria.length, ")"), /*#__PURE__*/React.createElement(FiltroDesplegable, {
+    opciones: [["curso", "En curso"], ["terminados", "✔ Terminados"]],
+    activo: verTerm,
+    cuenta: {
+      curso: misPedidosFerreria.filter(p => p.estado !== "eliminado" && !p.concretado_at).length,
+      terminados: misPedidosFerreria.filter(p => p.estado !== "eliminado" && p.concretado_at).length
+    },
+    onChange: setVerTerm
+  }), misPedidosFerreria.filter(p => p.estado !== "eliminado").filter(p => verTerm === "terminados" ? !!p.concretado_at : !p.concretado_at).map(p => {
     const abierto = selFerr && selFerr.id === p.id;
     return /*#__PURE__*/React.createElement("div", {
       key: p.id,
@@ -11329,7 +11359,15 @@ function VistaCarpinteria({
       fontSize: 20,
       marginBottom: 12
     }
-  }, "📋 Mis pedidos a pinturerías (", misPedidosPint.length, ")"), misPedidosPint.filter(p => p.estado !== "eliminado").map(p => {
+  }, "📋 Mis pedidos a pinturerías (", misPedidosPint.length, ")"), /*#__PURE__*/React.createElement(FiltroDesplegable, {
+    opciones: [["curso", "En curso"], ["terminados", "✔ Terminados"]],
+    activo: verTerm,
+    cuenta: {
+      curso: misPedidosPint.filter(p => p.estado !== "eliminado" && !p.concretado_at).length,
+      terminados: misPedidosPint.filter(p => p.estado !== "eliminado" && p.concretado_at).length
+    },
+    onChange: setVerTerm
+  }), misPedidosPint.filter(p => p.estado !== "eliminado").filter(p => verTerm === "terminados" ? !!p.concretado_at : !p.concretado_at).map(p => {
     const abierto = selPint && selPint.id === p.id;
     return /*#__PURE__*/React.createElement("div", {
       key: p.id,
@@ -12330,14 +12368,18 @@ function VistaAserradero({
   const cuenta = {
     cotizar: pedidos.filter(p => !p._miEstado && !estaVencido(p)).length,
     cotizados: pedidos.filter(p => p._miEstado).length,
-    elegidos: pedidos.filter(p => p._miEstado === "aceptada").length,
+    elegidos: pedidos.filter(p => p._miEstado === "aceptada" && !p.concretado_at).length,
+    terminados: pedidos.filter(p => p._miEstado === "aceptada" && p.concretado_at).length,
     vencido: pedidos.filter(p => estaVencido(p) && !p._miEstado).length,
-    todos: pedidos.length
+    todos: pedidos.filter(p => !(p._miEstado === "aceptada" && p.concretado_at)).length
   };
   const lista = pedidos.filter(p => {
     if (arch.archivados.has(p.id)) return false;
     if (filtroUbicProv && p.provincia !== filtroUbicProv) return false;
     if (filtroUbicCiu && p.ciudad !== filtroUbicCiu) return false;
+    const terminado = p._miEstado === "aceptada" && !!p.concretado_at;
+    if (filtro === "terminados") return terminado;
+    if (terminado) return false;
     if (filtro === "cotizar") return !p._miEstado && !estaVencido(p);
     if (filtro === "cotizados") return !!p._miEstado;
     if (filtro === "elegidos") return p._miEstado === "aceptada";
@@ -12372,7 +12414,7 @@ function VistaAserradero({
     },
     onClick: onIrASuscripcion
   }, "💳 Activar suscripción")), /*#__PURE__*/React.createElement(FiltroDesplegable, {
-    opciones: [["todos", "Todos"], ["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["elegidos", "Elegidos (me aceptaron)"], ["vencido", "Vencidos"]],
+    opciones: [["todos", "En curso"], ["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["elegidos", "Elegidos (me aceptaron)"], ["vencido", "Vencidos"], ["terminados", "✔ Terminados"]],
     activo: filtro,
     cuenta: cuenta,
     onChange: setFiltro
@@ -12421,6 +12463,10 @@ function VistaAserradero({
     } : p.estado === "cancelado" ? {
       t: "❌ Cancelado",
       bg: "#8A7A6A",
+      fg: "#fff"
+    } : p._miEstado === "aceptada" && p.concretado_at ? {
+      t: "✔ Terminado",
+      bg: "#5A4A3A",
       fg: "#fff"
     } : p._miEstado === "aceptada" ? {
       t: "✅ Te eligieron",
@@ -12947,6 +12993,7 @@ function VistaFlete({
     barrio: usuario.barrio || ""
   });
   const [misPedidos, setMisPedidos] = useState([]);
+  const [verTerm, setVerTerm] = useState("curso");
   const [selPedido, setSelPedido] = useNavState(null);
   const [cotizacionesFlete, setCotizacionesFlete] = useState([]);
   const [fleteAbierto, setFleteAbierto] = useState(null);
@@ -13590,14 +13637,18 @@ function VistaFlete({
     const cuenta = {
       cotizar: pedidos.filter(p => !p._miEstado && !estaVencido(p)).length,
       cotizados: pedidos.filter(p => p._miEstado).length,
-      elegidos: pedidos.filter(p => p._miEstado === "aceptada").length,
+      elegidos: pedidos.filter(p => p._miEstado === "aceptada" && !p.concretado_at).length,
+      terminados: pedidos.filter(p => p._miEstado === "aceptada" && p.concretado_at).length,
       vencido: pedidos.filter(p => estaVencido(p) && !p._miEstado).length,
-      todos: pedidos.length
+      todos: pedidos.filter(p => !(p._miEstado === "aceptada" && p.concretado_at)).length
     };
     const lista = pedidos.filter(p => {
     if (arch.archivados.has(p.id)) return false;
       if (filtroUbicProv && p.provincia !== filtroUbicProv) return false;
       if (filtroUbicCiu && p.ciudad !== filtroUbicCiu) return false;
+      const terminado = p._miEstado === "aceptada" && !!p.concretado_at;
+      if (filtro === "terminados") return terminado;
+      if (terminado) return false;
       if (filtro === "cotizar") return !p._miEstado && !estaVencido(p);
       if (filtro === "cotizados") return !!p._miEstado;
       if (filtro === "elegidos") return p._miEstado === "aceptada";
@@ -13632,7 +13683,7 @@ function VistaFlete({
       },
       onClick: onIrASuscripcion
     }, "💳 Activar suscripción")), /*#__PURE__*/React.createElement(FiltroDesplegable, {
-      opciones: [["todos", "Todos"], ["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["elegidos", "Elegidos (me aceptaron)"], ["vencido", "Vencidos"]],
+      opciones: [["todos", "En curso"], ["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["elegidos", "Elegidos (me aceptaron)"], ["vencido", "Vencidos"], ["terminados", "✔ Terminados"]],
       activo: filtro,
       cuenta: cuenta,
       onChange: setFiltro
@@ -13687,6 +13738,10 @@ function VistaFlete({
       } : p.estado === "cancelado" ? {
       t: "❌ Cancelado",
       bg: "#8A7A6A",
+      fg: "#fff"
+    } : p._miEstado === "aceptada" && p.concretado_at ? {
+      t: "✔ Terminado",
+      bg: "#5A4A3A",
       fg: "#fff"
     } : p._miEstado === "aceptada" ? {
       t: "✅ Te eligieron",
@@ -14033,7 +14088,15 @@ function VistaFlete({
       fontSize: 20,
       marginBottom: 12
     }
-  }, "📋 Mis pedidos de flete (", misPedidos.length, ")"), misPedidos.filter(p => p.estado !== "eliminado").map(p => {
+  }, "📋 Mis pedidos de flete (", misPedidos.length, ")"), /*#__PURE__*/React.createElement(FiltroDesplegable, {
+    opciones: [["curso", "En curso"], ["terminados", "✔ Terminados"]],
+    activo: verTerm,
+    cuenta: {
+      curso: misPedidos.filter(p => p.estado !== "eliminado" && !p.concretado_at).length,
+      terminados: misPedidos.filter(p => p.estado !== "eliminado" && p.concretado_at).length
+    },
+    onChange: setVerTerm
+  }), misPedidos.filter(p => p.estado !== "eliminado").filter(p => verTerm === "terminados" ? !!p.concretado_at : !p.concretado_at).map(p => {
     const abierto = selPedido && selPedido.id === p.id;
     return /*#__PURE__*/React.createElement("div", {
       key: p.id,
@@ -14997,14 +15060,18 @@ function VistaFerreteria({
   const cuenta = {
     cotizar: pedidos.filter(p => !p._miEstado && !estaVencido(p)).length,
     cotizados: pedidos.filter(p => p._miEstado).length,
-    elegidos: pedidos.filter(p => p._miEstado === "aceptada").length,
+    elegidos: pedidos.filter(p => p._miEstado === "aceptada" && !p.concretado_at).length,
+    terminados: pedidos.filter(p => p._miEstado === "aceptada" && p.concretado_at).length,
     vencido: pedidos.filter(p => estaVencido(p) && !p._miEstado).length,
-    todos: pedidos.length
+    todos: pedidos.filter(p => !(p._miEstado === "aceptada" && p.concretado_at)).length
   };
   const lista = pedidos.filter(p => {
     if (arch.archivados.has(p.id)) return false;
     if (filtroUbicProv && p.provincia !== filtroUbicProv) return false;
     if (filtroUbicCiu && p.ciudad !== filtroUbicCiu) return false;
+    const terminado = p._miEstado === "aceptada" && !!p.concretado_at;
+    if (filtro === "terminados") return terminado;
+    if (terminado) return false;
     if (filtro === "cotizar") return !p._miEstado && !estaVencido(p);
     if (filtro === "cotizados") return !!p._miEstado;
     if (filtro === "elegidos") return p._miEstado === "aceptada";
@@ -15039,7 +15106,7 @@ function VistaFerreteria({
     },
     onClick: onIrASuscripcion
   }, "💳 Activar suscripción")), /*#__PURE__*/React.createElement(FiltroDesplegable, {
-    opciones: [["todos", "Todos"], ["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["elegidos", "Elegidos (me aceptaron)"], ["vencido", "Vencidos"]],
+    opciones: [["todos", "En curso"], ["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["elegidos", "Elegidos (me aceptaron)"], ["vencido", "Vencidos"], ["terminados", "✔ Terminados"]],
     activo: filtro,
     cuenta: cuenta,
     onChange: setFiltro
@@ -15088,6 +15155,10 @@ function VistaFerreteria({
     } : p.estado === "cancelado" ? {
       t: "❌ Cancelado",
       bg: "#8A7A6A",
+      fg: "#fff"
+    } : p._miEstado === "aceptada" && p.concretado_at ? {
+      t: "✔ Terminado",
+      bg: "#5A4A3A",
       fg: "#fff"
     } : p._miEstado === "aceptada" ? {
       t: "✅ Te eligieron",
@@ -15882,14 +15953,18 @@ function VistaPintureria({
   const cuenta = {
     cotizar: pedidos.filter(p => !p._miEstado && !estaVencido(p)).length,
     cotizados: pedidos.filter(p => p._miEstado).length,
-    elegidos: pedidos.filter(p => p._miEstado === "aceptada").length,
+    elegidos: pedidos.filter(p => p._miEstado === "aceptada" && !p.concretado_at).length,
+    terminados: pedidos.filter(p => p._miEstado === "aceptada" && p.concretado_at).length,
     vencido: pedidos.filter(p => estaVencido(p) && !p._miEstado).length,
-    todos: pedidos.length
+    todos: pedidos.filter(p => !(p._miEstado === "aceptada" && p.concretado_at)).length
   };
   const lista = pedidos.filter(p => {
     if (arch.archivados.has(p.id)) return false;
     if (filtroUbicProv && p.provincia !== filtroUbicProv) return false;
     if (filtroUbicCiu && p.ciudad !== filtroUbicCiu) return false;
+    const terminado = p._miEstado === "aceptada" && !!p.concretado_at;
+    if (filtro === "terminados") return terminado;
+    if (terminado) return false;
     if (filtro === "cotizar") return !p._miEstado && !estaVencido(p);
     if (filtro === "cotizados") return !!p._miEstado;
     if (filtro === "elegidos") return p._miEstado === "aceptada";
@@ -15924,7 +15999,7 @@ function VistaPintureria({
     },
     onClick: onIrASuscripcion
   }, "💳 Activar suscripción")), /*#__PURE__*/React.createElement(FiltroDesplegable, {
-    opciones: [["todos", "Todos"], ["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["elegidos", "Elegidos (me aceptaron)"], ["vencido", "Vencidos"]],
+    opciones: [["todos", "En curso"], ["cotizar", "Para cotizar"], ["cotizados", "Cotizados"], ["elegidos", "Elegidos (me aceptaron)"], ["vencido", "Vencidos"], ["terminados", "✔ Terminados"]],
     activo: filtro,
     cuenta: cuenta,
     onChange: setFiltro
@@ -15973,6 +16048,10 @@ function VistaPintureria({
     } : p.estado === "cancelado" ? {
       t: "❌ Cancelado",
       bg: "#8A7A6A",
+      fg: "#fff"
+    } : p._miEstado === "aceptada" && p.concretado_at ? {
+      t: "✔ Terminado",
+      bg: "#5A4A3A",
       fg: "#fff"
     } : p._miEstado === "aceptada" ? {
       t: "✅ Te eligieron",
