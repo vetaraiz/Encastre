@@ -5340,7 +5340,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-23.3";
+const VERSION_APP = "v2026-10-25.2";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -6892,10 +6892,11 @@ function TipsSeguridad({
 }
 function VistaCliente({
   usuario,
-  notif
+  notif,
+  vistaInicial
 }) {
   const [pedidos, setPedidos] = useState([]);
-  const [vista, setVista] = useNavState("lista");
+  const [vista, setVista] = useNavState(vistaInicial || "lista");
   const [borradorCli, setBorradorCli] = useState(null);
   const [editCli, setEditCli] = useState(null);
   const editarPedidoCli = (p, nuevo) => {
@@ -7969,11 +7970,131 @@ function CapaPresupuestador({
   // Se dibuja directo en <body> para que ningún contenedor la recorte
   return ReactDOM.createPortal ? ReactDOM.createPortal(capa, document.body) : capa;
 }
+// ─── PANTALLA DE INICIO: elegir a qué "carpeta" entrar ──────────────────────
+function PantallaInicio({
+  usuario,
+  onIr
+}) {
+  const b = useBadges(usuario);
+  const t = usuario.tipo;
+  const nPed = t === "carpinteria" || t === "cliente" ? b.pedidos : b[t] || 0;
+  const OPC = {
+    carpinteria: [["carp:pedidos", "🪑", "Pedidos de clientes", "Pedidos de muebles para presupuestar", b.pedidos], ["carp:aserradero", "🌲", "Aserraderos", "Pedí madera y compará cotizaciones", b.aserradero], ["carp:ferreteria", "🔩", "Ferreterías", "Herrajes y accesorios", b.ferreteria], ["carp:pintureria", "🖌️", "Pinturerías", "Pinturas, lacas y barnices", b.pintureria], ["flete", "🚚", "Fletes", "Pedí un flete para tus entregas", b.flete], ["bolsa", "🧰", "Bolsa de trabajo", "Encontrá gente para tu taller"], ["cuenta", "👤", "Mi cuenta", "Tus datos, tu logo y tu suscripción"]],
+    cliente: [["cli:nuevo", "✏️", "Nuevo pedido", "Contá qué mueble necesitás"], ["cli:lista", "📋", "Mis pedidos", "Los presupuestos que te mandaron", b.pedidos], ["cuenta", "👤", "Mi cuenta", "Tus datos"]],
+    flete: [["principal", "🚚", "Pedidos de flete", "Viajes para cotizar", nPed], ["cuenta", "👤", "Mi cuenta", "Tus datos y tu logo"], ["suscripcion", "💳", "Suscripción", "Tu plan y tus pagos"]],
+    trabajador: [["principal", "🧰", "Bolsa de trabajo", "Tu perfil y las búsquedas"], ["cuenta", "👤", "Mi cuenta", "Tus datos"]]
+  };
+  const proveedor = [["principal", "📥", "Pedidos para cotizar", "Lo que piden las carpinterías", nPed], ["flete", "🚚", "Mis fletes", "Pedí un flete para tus entregas", b.flete], ["bolsa", "🧰", "Bolsa de trabajo", "Encontrá gente para tu negocio"], ["cuenta", "👤", "Mi cuenta", "Tus datos, tu logo y tu suscripción"]];
+  const lista = OPC[t] || proveedor;
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 520,
+      margin: "0 auto",
+      paddingTop: 6
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      marginBottom: 18
+    }
+  }, /*#__PURE__*/React.createElement("img", {
+    src: LOGO_B64,
+    alt: "",
+    style: {
+      width: 84,
+      height: 84,
+      objectFit: "contain",
+      borderRadius: 16
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: "'Lato',sans-serif",
+      fontWeight: 800,
+      fontSize: 22,
+      color: C.marron,
+      marginTop: 8
+    }
+  }, "Hola, ", usuario.nombre || ""), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 16,
+      color: C.textoSuave,
+      marginTop: 2
+    }
+  }, "¿A dónde querés entrar?")), lista.map(([id, ic, tit, sub, n], i) => /*#__PURE__*/React.createElement("button", {
+    key: id,
+    type: "button",
+    onClick: () => onIr(id),
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 14,
+      width: "100%",
+      textAlign: "left",
+      background: i === 0 ? "#7E3A2214" : "transparent",
+      border: "none",
+      borderRadius: 12,
+      padding: "12px 10px",
+      marginBottom: 4,
+      cursor: "pointer",
+      fontFamily: "'Lato',sans-serif",
+      minHeight: 64
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 42,
+      height: 42,
+      borderRadius: 10,
+      background: "#FFFBF5",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 22,
+      flexShrink: 0,
+      boxShadow: "0 1px 3px #5A4A3A22"
+    }
+  }, ic), /*#__PURE__*/React.createElement("span", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: "block",
+      fontSize: 17,
+      fontWeight: 800,
+      color: C.marron
+    }
+  }, tit), /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: "block",
+      fontSize: 14,
+      color: C.textoSuave,
+      fontWeight: 400
+    }
+  }, sub)), n > 0 && /*#__PURE__*/React.createElement("span", {
+    style: {
+      background: C.verde,
+      color: "#fff",
+      borderRadius: 999,
+      fontSize: 13,
+      fontWeight: 800,
+      padding: "3px 9px",
+      flexShrink: 0
+    }
+  }, n > 9 ? "9+" : n), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: C.textoSuave,
+      fontSize: 22,
+      flexShrink: 0
+    }
+  }, "›"))));
+}
 function VistaCarpinteria({
   usuario,
   notif,
   bloqueadoClientes,
-  onIrASuscripcion
+  onIrASuscripcion,
+  tabInicial
 }) {
   const badges = useBadges(usuario);
   const [archivadosCot, setArchivadosCot] = useState(new Set());
@@ -8064,7 +8185,7 @@ function VistaCarpinteria({
     }
     setArchivandoSel(false);
   };
-  const [tab, setTab] = useNavState("aserradero");
+  const [tab, setTab] = useNavState(tabInicial || "aserradero");
   const [pedidos, setPedidos] = useState([]);
   const [sel, setSel] = useNavState(null);
   const [calcAbierto, setCalcAbierto] = useState(false);
@@ -23532,7 +23653,8 @@ function App() {
   });
   const [sesion, setSesion] = useState(null);
   aplicarTema(sesion?.usuario?.tipo);
-  const [navTab, setNavTab] = useState("principal");
+  const [navTab, setNavTab] = useState("inicio");
+  const [subInicio, setSubInicio] = useState(null);
   const [notifMsg, setNotifMsg] = useState("");
   const [mostrarBienvenida, setMostrarBienvenida] = useState(true);
   const [menuAbierto, setMenuAbierto] = useState(false);
@@ -23750,6 +23872,38 @@ function App() {
   };
 
   // Volver a la pantalla principal cerrando todo lo que esté abierto encima
+  // Desde la pantalla de Inicio: abre la carpeta elegida
+  const irDesdeInicio = id => {
+    if (id === "cuenta") return cambiarPantalla({
+      enMiCuenta: true,
+      cuentaTab: "privado"
+    });
+    if (id === "suscripcion") return cambiarPantalla({
+      enMiCuenta: true,
+      cuentaTab: "suscripcion"
+    });
+    if (id === "manual") return cambiarPantalla({
+      enManual: true
+    });
+    if (id.startsWith("carp:") || id.startsWith("cli:")) {
+      setSubInicio(id.split(":")[1]);
+      return cambiarPantalla({
+        navTab: "principal"
+      });
+    }
+    setSubInicio(null);
+    cambiarPantalla({
+      navTab: id
+    });
+  };
+  const irAInicio = () => {
+    cambiarPantalla({
+      navTab: "inicio"
+    });
+    try {
+      window.dispatchEvent(new CustomEvent("encastre-ir-principal"));
+    } catch {}
+  };
   const irAPrincipal = id => {
     cambiarPantalla({
       navTab: id
@@ -24271,12 +24425,44 @@ function App() {
     "aria-hidden": "true"
   }, /*#__PURE__*/React.createElement("path", {
     d: "M4 6h16M4 12h16M4 18h16"
+  }))), /*#__PURE__*/React.createElement("button", {
+    "aria-label": "Inicio",
+    title: "Inicio",
+    onClick: irAInicio,
+    style: {
+      background: navTab === "inicio" && !enMiCuenta && !enManual && !enContacto && !enPapelera ? `${TEMA.txt}22` : "transparent",
+      color: TEMA.txt,
+      border: `1px solid ${TEMA.txt}66`,
+      borderRadius: 10,
+      padding: "6px 9px",
+      minHeight: 40,
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: 24,
+    height: 24,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2.4,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": "true"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M3 11.5 12 4l9 7.5M5.5 9.8V20h13V9.8"
   }))), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 18,
       color: TEMA.txt,
       fontWeight: 700,
       whiteSpace: "nowrap",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      minWidth: 0,
       fontFamily: "'Lato',sans-serif"
     }
   }, usuario.nombre), false && /*#__PURE__*/React.createElement("button", {
@@ -24590,12 +24776,17 @@ function App() {
     }
   }, l, /*#__PURE__*/React.createElement(Badge9, {
     n: n
-  })))), navTab === "principal" && usuario.tipo === "cliente" && /*#__PURE__*/React.createElement(VistaCliente, {
+  })))), navTab === "inicio" && /*#__PURE__*/React.createElement(PantallaInicio, {
     usuario: usuario,
-    notif: setNotifMsg
+    onIr: irDesdeInicio
+  }), navTab === "principal" && usuario.tipo === "cliente" && /*#__PURE__*/React.createElement(VistaCliente, {
+    usuario: usuario,
+    notif: setNotifMsg,
+    vistaInicial: subInicio === "nuevo" ? "nuevo" : "lista"
   }), navTab === "principal" && usuario.tipo === "carpinteria" && /*#__PURE__*/React.createElement(VistaCarpinteria, {
     usuario: usuario,
     notif: setNotifMsg,
+    tabInicial: ["pedidos", "aserradero", "ferreteria", "pintureria"].includes(subInicio) ? subInicio : "pedidos",
     bloqueadoClientes: suscInfo.vencida,
     onIrASuscripcion: () => cambiarPantalla({
       enMiCuenta: true,
