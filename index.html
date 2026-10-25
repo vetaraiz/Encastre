@@ -2192,11 +2192,25 @@ function useBadges(usuario) {
     if (comoProveedor) {
       const [tabla, tipo] = comoProveedor;
       try {
-        const ps = await db.select(tabla, "?select=id");
+        // Solo cuentan los pedidos que todavía se pueden cotizar: no cancelados, eliminados,
+        // adjudicados, vencidos, terminados ni archivados por este usuario (los mismos que la lista muestra como nuevos)
+        let todos;
+        try {
+          todos = await db.select(tabla, "?select=id,estado,fecha_limite,concretado_at");
+        } catch {
+          todos = await db.select(tabla, "?select=id,estado,fecha_limite");
+        }
+        const ps = (todos || []).filter(p => !["eliminado", "cancelado", "aceptado"].includes(p.estado) && !estaVencido(p) && !p.concretado_at);
         if (ps.length) {
           const vistas = await db.select("vistas_pedido", `?usuario_id=eq.${usuario.id}&tipo_pedido=eq.${tipo}&select=pedido_id`);
           const yaVistos = new Set(vistas.map(v => v.pedido_id));
-          const sinVer = ps.filter(p => !yaVistos.has(p.id)).length;
+          let archivados = new Set();
+          try {
+            const tipoArch = usuario.tipo === "carpinteria" ? "pedido_cliente" : "pedido_" + usuario.tipo;
+            const ar = await db.select("elementos_archivados", `?usuario_id=eq.${usuario.id}&tipo_elemento=eq.${tipoArch}&select=elemento_id`);
+            archivados = new Set((ar || []).map(x => x.elemento_id));
+          } catch {}
+          const sinVer = ps.filter(p => !yaVistos.has(p.id) && !archivados.has(p.id)).length;
           const clave = usuario.tipo === "carpinteria" ? "pedidos" : usuario.tipo;
           cuenta[clave] += sinVer;
         }
@@ -5355,7 +5369,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-25.5";
+const VERSION_APP = "v2026-10-25.6";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
