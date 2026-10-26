@@ -1625,11 +1625,35 @@ const db = {
     this.ses = null;
   },
   // Devuelve el token a usar. Si el del usuario está por vencer, lo renueva solo.
+  // La sesión solo se cierra si Supabase dice que la renovación ya no es válida.
+  // Si falla la conexión (celu recién despierto, sin señal), se conserva y se reintenta en la próxima consulta.
+  _renovando: null,
+  _esperarHasta: 0,
   async tokenActual() {
     if (!this.ses || !this.ses.token) return SUPABASE_KEY;
     const porVencer = this.ses.expira && Date.now() > this.ses.expira - 120000;
     if (!porVencer) return this.ses.token;
+    // Si recién falló por falta de conexión, se espera unos segundos antes de reintentar
+    if (this._esperarHasta && Date.now() < this._esperarHasta) return this.ses.token;
+    // Una sola renovación a la vez: al abrir la app se piden muchas cosas juntas y todas esperan la misma
+    if (!this._renovando) this._renovando = this._renovar().finally(() => {
+      this._renovando = null;
+    });
+    return this._renovando;
+  },
+  _guardarSesion() {
     try {
+      const g = JSON.parse(localStorage.getItem("encastre_sesion") || "null");
+      if (g) {
+        g.token = this.ses.token;
+        g.refresh = this.ses.refresh;
+        g.expira = this.ses.expira;
+        localStorage.setItem("encastre_sesion", JSON.stringify(g));
+      }
+    } catch {}
+  },
+  async _renovar() {
+    const pedir = async refresh => {
       const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
         method: "POST",
         headers: {
@@ -1637,29 +1661,62 @@ const db = {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          refresh_token: this.ses.refresh
+          refresh_token: refresh
         })
       });
-      const d = await r.json();
-      if (r.ok && d.access_token) {
+      const d = await r.json().catch(() => ({}));
+      return {
+        r,
+        d
+      };
+    };
+    let res;
+    try {
+      res = await pedir(this.ses.refresh);
+    } catch {
+      // Sin conexión: no se cierra la sesión
+      this._esperarHasta = Date.now() + 10000;
+      return this.ses ? this.ses.token : SUPABASE_KEY;
+    }
+    if (res.r.ok && res.d.access_token) {
+      this.ses = {
+        token: res.d.access_token,
+        refresh: res.d.refresh_token || this.ses.refresh,
+        expira: Date.now() + (res.d.expires_in || 3600) * 1000
+      };
+      this._guardarSesion();
+      return this.ses.token;
+    }
+    // Error del servidor o límite de pedidos: tampoco se cierra
+    if (res.r.status >= 500 || res.r.status === 429) {
+      this._esperarHasta = Date.now() + 10000;
+      return this.ses.token;
+    }
+    // Puede que otra pestaña o la app instalada ya la haya renovado: se usa esa
+    try {
+      const g = JSON.parse(localStorage.getItem("encastre_sesion") || "null");
+      if (g && g.refresh && g.refresh !== this.ses.refresh) {
         this.ses = {
-          token: d.access_token,
-          refresh: d.refresh_token || this.ses.refresh,
-          expira: Date.now() + (d.expires_in || 3600) * 1000
+          token: g.token,
+          refresh: g.refresh,
+          expira: g.expira || 0
         };
-        try {
-          const g = JSON.parse(localStorage.getItem("encastre_sesion") || "null");
-          if (g) {
-            g.token = this.ses.token;
-            g.refresh = this.ses.refresh;
-            g.expira = this.ses.expira;
-            localStorage.setItem("encastre_sesion", JSON.stringify(g));
-          }
-        } catch {}
-        return this.ses.token;
+        if (this.ses.expira && Date.now() < this.ses.expira - 120000) return this.ses.token;
+        const otra = await pedir(this.ses.refresh);
+        if (otra.r.ok && otra.d.access_token) {
+          this.ses = {
+            token: otra.d.access_token,
+            refresh: otra.d.refresh_token || this.ses.refresh,
+            expira: Date.now() + (otra.d.expires_in || 3600) * 1000
+          };
+          this._guardarSesion();
+          return this.ses.token;
+        }
       }
-    } catch {}
-    // No se pudo renovar: volvemos a anónimo y avisamos a la app para que pida login de nuevo.
+    } catch {
+      return this.ses ? this.ses.token : SUPABASE_KEY;
+    }
+    // Supabase rechazó la renovación: recién ahí se pide entrar de nuevo
     this.ses = null;
     try {
       window.dispatchEvent(new Event("encastre-sesion-vencida"));
@@ -1918,8 +1975,8 @@ const db = {
     return data;
   },
   async crearPago(preview) {
-    const tk = this.ses?.token;
-    if (!tk) throw new Error("Sesión inválida");
+    const tk = this.ses?.token ? await this.tokenActual() : null;
+    if (!tk || tk === SUPABASE_KEY) throw new Error("Sesión inválida");
     const r = await fetch(`${SUPABASE_URL}/functions/v1/crear-pago`, {
       method: "POST",
       headers: {
@@ -5386,7 +5443,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-26.2";
+const VERSION_APP = "v2026-10-26.3";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
