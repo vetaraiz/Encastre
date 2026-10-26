@@ -2159,11 +2159,27 @@ function useBadges(usuario) {
         if (t === "aserradero") cuenta.aserradero++;else if (t === "ferreteria") cuenta.ferreteria++;else if (t === "pintureria") cuenta.pintureria++;else if (t === "flete") cuenta.flete++;else cuenta.pedidos++; // chat del circuito cliente↔carpintería
       });
     } catch {}
+    // Mis pedidos que siguen abiertos: los cancelados, borrados (Papelera), adjudicados o terminados no cuentan,
+    // porque ya no se ven en la lista y el número quedaría trabado
+    const misPedidosAbiertos = async (tabla, campoDueño) => {
+      let ps;
+      try {
+        ps = await db.select(tabla, `?${campoDueño}=eq.${usuario.id}&select=id,estado,concretado_at`);
+      } catch {
+        ps = await db.select(tabla, `?${campoDueño}=eq.${usuario.id}&select=id,estado`);
+      }
+      let papelera = new Set();
+      try {
+        const ar = await db.select("elementos_archivados", `?usuario_id=eq.${usuario.id}&tipo_elemento=eq.${ARCH_MIS_PEDIDOS[tabla]}&select=elemento_id`);
+        papelera = new Set((ar || []).map(x => x.elemento_id));
+      } catch {}
+      return (ps || []).filter(p => !["eliminado", "cancelado", "aceptado"].includes(p.estado) && !p.concretado_at && !papelera.has(p.id));
+    };
     // Paso 2 - Cotizaciones sin abrir en los pedidos que YO hice
     const rubros = [["pedidos_aserradero", "cotizaciones_aserradero", "visto_carpinteria", "carpinteria_id", "aserradero"], ["pedidos_ferreteria", "cotizaciones_ferreteria", "visto_carpinteria", "carpinteria_id", "ferreteria"], ["pedidos_pintureria", "cotizaciones_pintureria", "visto_carpinteria", "carpinteria_id", "pintureria"], ["pedidos_flete", "cotizaciones_flete", "visto_solicitante", "solicitante_id", "flete"]];
     for (const [tPed, tCot, campo, dueño, clave] of rubros) {
       try {
-        const ps = await db.select(tPed, `?${dueño}=eq.${usuario.id}&select=id`);
+        const ps = await misPedidosAbiertos(tPed, dueño);
         if (!ps.length) continue;
         const ids = ps.map(p => p.id).join(",");
         const cs = await db.select(tCot, `?pedido_id=in.(${ids})&${campo}=eq.false&select=id`);
@@ -2173,7 +2189,7 @@ function useBadges(usuario) {
     // Paso 3 - Presupuestos sin ver, para el cliente que pidio a carpinterias
     if (usuario.tipo === "cliente") {
       try {
-        const ps = await db.select("pedidos", `?cliente_id=eq.${usuario.id}&select=id`);
+        const ps = await misPedidosAbiertos("pedidos", "cliente_id");
         if (ps.length) {
           const ids = ps.map(p => p.id).join(",");
           const prs = await db.select("presupuestos", `?pedido_id=in.(${ids})&visto_cliente=eq.false&select=id`);
@@ -5370,7 +5386,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-25.7";
+const VERSION_APP = "v2026-10-26.1";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
