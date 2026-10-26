@@ -5386,7 +5386,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-26.1";
+const VERSION_APP = "v2026-10-26.2";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -23884,7 +23884,7 @@ function App() {
   // Navegación tipo navegador: cada pantalla (Mi cuenta, Manual, Contacto, Papelera, y las solapas principal/flete/bolsa/conversor)
   // queda registrada en el historial del navegador, para poder usar "← Atrás" / "Adelante →" (propios o del navegador) entre ellas.
   const aplicarPantalla = desc => {
-    setNavTab(desc.navTab || "principal");
+    setNavTab(desc.navTab || "inicio");
     setEnMiCuenta(!!desc.enMiCuenta);
     setEnContacto(!!desc.enContacto);
     setEnPapelera(!!desc.enPapelera);
@@ -24146,7 +24146,9 @@ function App() {
     try {
       localStorage.setItem("encastre_sesion", JSON.stringify(s));
     } catch {}
-    setNavTab("principal");
+    // Al entrar se arranca siempre en la pantalla de Inicio (la de elegir a dónde ir);
+    // si recién mandó un pedido armado sin cuenta, va directo a la lista para verlo
+    setNavTab(enviado ? "principal" : "inicio");
     if (enviado) setTimeout(() => setNotifMsg("✅ ¡Tu pedido fue enviado a todas las carpinterías! Lo ves en \"Mis pedidos\"."), 300);
   };
   const darDeBaja = async () => {
