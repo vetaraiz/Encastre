@@ -1611,6 +1611,33 @@ const VAPID_PUBLIC = "BFVBdnRep1UDfTImbVyZhEf_AaYAd14HsruwDy3NO4cmUAJjadZke-4M9u
 // Lanzamiento extendido a 3 meses (hasta el 26/12). Antes: primeros 30 días solo para profesionales, gratis. El 26/10 abre consumidor final y empieza a cobrarse a aserradero/ferretería/pinturería/flete.
 const FECHA_LANZAMIENTO = new Date("2026-09-26T00:00:00-03:00");
 const FECHA_FIN_PROMO = new Date("2026-12-26T00:00:00-03:00");
+// Prueba gratis de cada proveedor: cuenta desde su propio registro (decisión de Ana, 29-oct-2026).
+// FECHA_FIN_PROMO queda solo como respaldo para cuentas viejas sin fila en "suscripciones".
+const DIAS_PRUEBA = 45;
+// Link del mail de vencimiento (https://encastre.com.ar/?pagar=1): se guarda para abrir Mi cuenta → Suscripción
+// con el precio a la vista (también si primero tiene que ingresar) y se saca de la dirección.
+(function () {
+  try {
+    const u = new URL(window.location.href);
+    if (u.searchParams.get("pagar") === "1") {
+      sessionStorage.setItem("encastre_pagar", "1");
+      u.searchParams.delete("pagar");
+      window.history.replaceState(window.history.state, "", u.pathname + u.search + u.hash);
+    }
+  } catch {}
+})();
+function pagarPendiente() {
+  try {
+    return sessionStorage.getItem("encastre_pagar") === "1";
+  } catch {
+    return false;
+  }
+}
+function borrarPagarPendiente() {
+  try {
+    sessionStorage.removeItem("encastre_pagar");
+  } catch {}
+}
 const db = {
   // Sesión del usuario logueado. Si es null, se usa la clave anónima (como antes).
   ses: null,
@@ -4676,8 +4703,9 @@ function AuthScreen({
             const idNuevo = nuevoUsuario && nuevoUsuario[0] && nuevoUsuario[0].id || null;
             if (idNuevo) {
               try {
+                // Prueba gratis desde el registro de cada uno (DIAS_PRUEBA), sin fecha fija para todos.
                 const vencPrueba = new Date();
-                vencPrueba.setDate(vencPrueba.getDate() + 90);
+                vencPrueba.setDate(vencPrueba.getDate() + DIAS_PRUEBA);
                 await db.insert("suscripciones", {
                   usuario_id: idNuevo,
                   estado: "prueba",
@@ -5457,7 +5485,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-28.1";
+const VERSION_APP = "v2026-10-29.2";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -16508,12 +16536,12 @@ function PantallaBienvenida({
       icon: "🌲🖌️🔩",
       title: "Aserradero, ferretería y pinturería",
       color: C.medio,
-      lines: ["Lanzamiento gratis por 3 meses (hasta el 26/12). Después, $10.000 por mes."]
+      lines: ["45 días gratis desde que te registrás. Después, $10.000 por mes."]
     }, {
       icon: "🚚",
       title: "Flete",
       color: C.medio,
-      lines: ["Lanzamiento gratis por 3 meses (hasta el 26/12). Después, $7.000 por mes."]
+      lines: ["45 días gratis desde que te registrás. Después, $7.000 por mes."]
     }, {
       icon: "🧰",
       title: "Trabajador/a",
@@ -18581,13 +18609,13 @@ const FLUJOS = {
         lines: ["Elegiste «Carpintería» como tipo de usuario.", "Completaste nombre, email, teléfono y contraseña.", "Cargaste tu provincia y tu localidad."]
       }, {
         type: "arrow",
-        label: "3 meses gratis"
+        label: "45 días gratis"
       }, {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "3 meses gratis",
-        lines: ["Tenés 3 meses (90 días) de prueba sin costo para usar Encastre como carpintería.", "Durante esos 3 meses usás todo sin restricciones: pedidos de clientes, pedidos a aserradero/ferretería/pinturería, chat, etc."]
+        title: "45 días gratis",
+        lines: ["Tenés 45 días de prueba sin costo, contados desde el día en que te registraste.", "Durante esos 45 días usás todo sin restricciones: pedidos de clientes, pedidos a aserradero/ferretería/pinturería, chat, etc."]
       }, {
         type: "arrow"
       }, {
@@ -18602,7 +18630,7 @@ const FLUJOS = {
         type: "step",
         n: 4,
         icon: "💳",
-        title: "Después de los 3 meses",
+        title: "Después de los 45 días",
         lines: ["La suscripción mensual cuesta $10.000 fijos.", "Si no pagás, seguís usando Encastre con normalidad — pedir a aserradero, ferretería, pinturería, chat, etc. Lo único que se bloquea es «Pedidos de clientes»: los pedidos nuevos siguen apareciendo en tu lista, pero no podés abrirlos ni cotizarlos hasta pagar.", "Apenas pagás, se desbloquea automáticamente.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja mi cuenta».", "Te podés dar de baja cuando quieras, sin trámites: menú (⋮) → «Mi cuenta» → «Dar de baja»."]
       }]
     },
@@ -18857,13 +18885,13 @@ const FLUJOS = {
         lines: ["Elegiste «Aserradero» como tipo de usuario.", "Completaste nombre, email, teléfono y contraseña.", "Cargaste tu provincia y tu localidad."]
       }, {
         type: "arrow",
-        label: "3 meses de lanzamiento gratis"
+        label: "45 días gratis"
       }, {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "3 meses gratis",
-        lines: ["Durante los 3 meses de lanzamiento (hasta el 26/12) usás Encastre sin costo."]
+        title: "45 días gratis",
+        lines: ["Durante los 45 días siguientes a tu registro usás Encastre sin costo."]
       }, {
         type: "arrow"
       }, {
@@ -18878,8 +18906,8 @@ const FLUJOS = {
         type: "step",
         n: 4,
         icon: "💳",
-        title: "Después del 26/12",
-        lines: ["La suscripción mensual cuesta $10.000 fijos.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».", "Sin suscripción activa después de esa fecha, la cuenta queda bloqueada hasta que pagues."]
+        title: "Después de los 45 días",
+        lines: ["La suscripción mensual cuesta $10.000 fijos.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».", "Sin suscripción activa, no podés recibir ni cotizar pedidos nuevos hasta que pagues. El resto de Encastre lo seguís usando igual."]
       }]
     },
     practico: {
@@ -18973,13 +19001,13 @@ const FLUJOS = {
         lines: ["Elegiste «Ferretería» como tipo de usuario.", "Completaste nombre, email, teléfono y contraseña.", "Cargaste tu provincia y tu localidad."]
       }, {
         type: "arrow",
-        label: "3 meses de lanzamiento gratis"
+        label: "45 días gratis"
       }, {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "3 meses gratis",
-        lines: ["Durante los 3 meses de lanzamiento (hasta el 26/12) usás Encastre sin costo."]
+        title: "45 días gratis",
+        lines: ["Durante los 45 días siguientes a tu registro usás Encastre sin costo."]
       }, {
         type: "arrow"
       }, {
@@ -18994,8 +19022,8 @@ const FLUJOS = {
         type: "step",
         n: 4,
         icon: "💳",
-        title: "Después del 26/12",
-        lines: ["La suscripción mensual cuesta $10.000 fijos.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».", "Sin suscripción activa después de esa fecha, la cuenta queda bloqueada hasta que pagues."]
+        title: "Después de los 45 días",
+        lines: ["La suscripción mensual cuesta $10.000 fijos.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».", "Sin suscripción activa, no podés recibir ni cotizar pedidos nuevos hasta que pagues. El resto de Encastre lo seguís usando igual."]
       }]
     },
     practico: {
@@ -19089,13 +19117,13 @@ const FLUJOS = {
         lines: ["Elegiste «Pinturería» como tipo de usuario.", "Completaste nombre, email, teléfono y contraseña.", "Cargaste tu provincia y tu localidad."]
       }, {
         type: "arrow",
-        label: "3 meses de lanzamiento gratis"
+        label: "45 días gratis"
       }, {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "3 meses gratis",
-        lines: ["Durante los 3 meses de lanzamiento (hasta el 26/12) usás Encastre sin costo."]
+        title: "45 días gratis",
+        lines: ["Durante los 45 días siguientes a tu registro usás Encastre sin costo."]
       }, {
         type: "arrow"
       }, {
@@ -19110,8 +19138,8 @@ const FLUJOS = {
         type: "step",
         n: 4,
         icon: "💳",
-        title: "Después del 26/12",
-        lines: ["La suscripción mensual cuesta $10.000 fijos.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».", "Sin suscripción activa después de esa fecha, la cuenta queda bloqueada hasta que pagues."]
+        title: "Después de los 45 días",
+        lines: ["La suscripción mensual cuesta $10.000 fijos.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».", "Sin suscripción activa, no podés recibir ni cotizar pedidos nuevos hasta que pagues. El resto de Encastre lo seguís usando igual."]
       }]
     },
     practico: {
@@ -19205,13 +19233,13 @@ const FLUJOS = {
         lines: ["Elegiste «Flete» como tipo de usuario.", "Completaste nombre, email, teléfono y contraseña.", "Cargaste tu provincia y tu localidad."]
       }, {
         type: "arrow",
-        label: "3 meses de lanzamiento gratis"
+        label: "45 días gratis"
       }, {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "3 meses gratis",
-        lines: ["Durante los 3 meses de lanzamiento (hasta el 26/12) usás Encastre sin costo."]
+        title: "45 días gratis",
+        lines: ["Durante los 45 días siguientes a tu registro usás Encastre sin costo."]
       }, {
         type: "arrow"
       }, {
@@ -19226,8 +19254,8 @@ const FLUJOS = {
         type: "step",
         n: 4,
         icon: "💳",
-        title: "Después del 26/12",
-        lines: ["La suscripción mensual cuesta $7.000 fijos.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».", "Sin suscripción activa después de esa fecha, la cuenta queda bloqueada hasta que pagues."]
+        title: "Después de los 45 días",
+        lines: ["La suscripción mensual cuesta $7.000 fijos.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».", "Sin suscripción activa, no podés recibir ni cotizar pedidos nuevos hasta que pagues. El resto de Encastre lo seguís usando igual."]
       }]
     },
     practico: {
@@ -21393,7 +21421,7 @@ function AdminNumeros() {
       color: C.textoSuave,
       marginTop: 4
     }
-  }, "Actualizado: ", datos.cuando.toLocaleString("es-AR"), ". Lanzamiento gratis para proveedores hasta el ", FECHA_FIN_PROMO.toLocaleDateString("es-AR"), "."));
+  }, "Actualizado: ", datos.cuando.toLocaleString("es-AR"), ". Prueba gratis: ", DIAS_PRUEBA, " días desde el registro de cada proveedor."));
 }
 function AdminMovimientos() {
   const [circuito, setCircuito] = useState("cliente");
@@ -21923,7 +21951,9 @@ function MiCuenta({
   onCerrar,
   onActualizar,
   onDarDeBaja,
-  tabInicial
+  tabInicial,
+  abrirPrecio,
+  onPrecioAbierto
 }) {
   const esCliente = usuario.tipo === "cliente";
   const [solapa, setSolapa] = useState(tabInicial || "privado");
@@ -22003,6 +22033,13 @@ function MiCuenta({
     }
     setCargandoPreview(false);
   };
+  // Vino del link del mail (?pagar=1): abre la solapa de suscripción con el precio a la vista
+  useEffect(() => {
+    if (!abrirPrecio || esCliente) return;
+    if (onPrecioAbierto) onPrecioAbierto();
+    setSolapa("suscripcion");
+    verPrecio();
+  }, [abrirPrecio]);
   const pagar = async () => {
     setPagando(true);
     setErrSusc("");
@@ -23867,7 +23904,8 @@ function App() {
   const [navTab, setNavTab] = useState("inicio");
   const [subInicio, setSubInicio] = useState(null);
   const [notifMsg, setNotifMsg] = useState("");
-  const [mostrarBienvenida, setMostrarBienvenida] = useState(true);
+  const [mostrarBienvenida, setMostrarBienvenida] = useState(() => !pagarPendiente());
+  const [abrirPrecio, setAbrirPrecio] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [fletesModal, setFletesModal] = useState(false);
   const [enMiCuenta, setEnMiCuenta] = useState(false);
@@ -24026,22 +24064,17 @@ function App() {
       });
       return;
     }
-    // Aserradero/ferretería/pinturería/flete son gratis durante el lanzamiento (hasta FECHA_FIN_PROMO, 3 meses); recién ahí empieza a importar si tienen suscripción activa.
-    if (GRUPO_PAGA_LUEGO.includes(usu.tipo) && new Date() < FECHA_FIN_PROMO) {
-      const diasRestantes = Math.ceil((FECHA_FIN_PROMO - new Date()) / 86400000);
-      setSuscInfo({
-        cargando: false,
-        vencida: false,
-        diasRestantes,
-        estado: "prueba"
-      });
-      return;
-    }
+    // Cada proveedor vence según su propia fecha (prueba de DIAS_PRUEBA desde el registro, o lo que haya pagado).
+    // Respaldo: aserradero/ferretería/pinturería/flete viejos sin fila en "suscripciones" siguen gratis hasta FECHA_FIN_PROMO.
     let cancelado = false;
     (async () => {
       try {
         const filas = await db.select("suscripciones", `?usuario_id=eq.${usu.id}&order=creado_en.desc&limit=1`);
-        const fila = filas[0];
+        let fila = filas[0];
+        if (!fila && GRUPO_PAGA_LUEGO.includes(usu.tipo)) fila = {
+          estado: "prueba",
+          fecha_vencimiento: FECHA_FIN_PROMO.toISOString()
+        };
         const vencida = fila ? new Date(fila.fecha_vencimiento) < new Date() : true;
         const diasRestantes = fila ? Math.ceil((new Date(fila.fecha_vencimiento) - new Date()) / 86400000) : null;
         if (!cancelado) setSuscInfo({
@@ -24064,6 +24097,18 @@ function App() {
     };
   }, [sesion?.usuario?.id, sesion?.usuario?.tipo]);
   const [avisoDiasCerrado, setAvisoDiasCerrado] = useState(false);
+  useEffect(() => {
+    const usu = sesion?.usuario;
+    if (!usu || suscInfo.cargando || !pagarPendiente()) return;
+    borrarPagarPendiente();
+    if (!["carpinteria", "aserradero", "ferreteria", "pintureria", "flete"].includes(usu.tipo)) return;
+    setAvisoDiasCerrado(true);
+    setAbrirPrecio(true);
+    cambiarPantalla({
+      enMiCuenta: true,
+      cuentaTab: "suscripcion"
+    });
+  }, [sesion?.usuario?.id, suscInfo.cargando]);
   const cerrarAvisoDias = async () => {
     setAvisoDiasCerrado(true);
     if (sesion?.usuario && !sesion.usuario.vio_pantalla_prueba) {
@@ -24951,7 +24996,9 @@ function App() {
     onCerrar: () => window.history.back(),
     onActualizar: actualizarUsuario,
     onDarDeBaja: darDeBaja,
-    tabInicial: cuentaTab
+    tabInicial: cuentaTab,
+    abrirPrecio: abrirPrecio,
+    onPrecioAbierto: () => setAbrirPrecio(false)
   }) : enContacto ? /*#__PURE__*/React.createElement(ContactoUnificado, {
     usuario: usuario,
     onCerrar: () => window.history.back()
