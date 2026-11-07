@@ -1614,6 +1614,11 @@ const FECHA_FIN_PROMO = new Date("2026-12-26T00:00:00-03:00");
 // Prueba gratis de cada proveedor: cuenta desde su propio registro (decisión de Ana, 29-oct-2026).
 // FECHA_FIN_PROMO queda solo como respaldo para cuentas viejas sin fila en "suscripciones".
 const DIAS_PRUEBA = 45;
+// Cobro liberado TEMPORALMENTE (Ana, 07-nov-2026): durante la segunda ronda de verificación de Google Play
+// nadie queda bloqueado por falta de pago y no aparece la pantalla de "te quedan X días".
+// Las fechas de vencimiento se siguen guardando igual. El cobro vuelve SOLO a partir de COBRO_LIBRE_HASTA.
+const COBRO_LIBRE_HASTA = new Date("2026-12-01T00:00:00-03:00");
+const COBRO_ACTIVO = new Date() >= COBRO_LIBRE_HASTA;
 // Link del mail de vencimiento (https://encastre.com.ar/?pagar=1): se guarda para abrir Mi cuenta → Suscripción
 // con el precio a la vista (también si primero tiene que ingresar) y se saca de la dirección.
 (function () {
@@ -5485,7 +5490,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-11-01.1";
+const VERSION_APP = "v2026-11-07.2";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -21998,7 +22003,7 @@ function MiCuenta({
       setCargandoSusc(false);
     })();
   }, []);
-  const vencidaSusc = susc && new Date(susc.fecha_vencimiento) < new Date();
+  const vencidaSusc = COBRO_ACTIVO && susc && new Date(susc.fecha_vencimiento) < new Date();
   const [confirmarPago, setConfirmarPago] = useState(null);
   const [cargandoPreview, setCargandoPreview] = useState(false);
   const verPrecio = async () => {
@@ -22883,7 +22888,13 @@ function MiCuenta({
       fontSize: 15,
       color: C.textoSuave
     }
-  }, "Cargando...") : /*#__PURE__*/React.createElement("div", null, susc && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, "Cargando...") : /*#__PURE__*/React.createElement("div", null, !COBRO_ACTIVO && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 16,
+      color: C.exito,
+      marginBottom: 14
+    }
+  }, "🎁 Hasta el ", new Date(COBRO_LIBRE_HASTA - 86400000).toLocaleDateString("es-AR"), " usás Encastre gratis, sin bloqueos."), COBRO_ACTIVO && susc && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 16,
       marginBottom: 6
@@ -22898,7 +22909,7 @@ function MiCuenta({
       color: C.textoSuave,
       marginBottom: 16
     }
-  }, vencidaSusc ? "Venció el " : "Vence el ", new Date(susc.fecha_vencimiento).toLocaleDateString("es-AR"))), (!susc || vencidaSusc) && /*#__PURE__*/React.createElement("div", {
+  }, vencidaSusc ? "Venció el " : "Vence el ", new Date(susc.fecha_vencimiento).toLocaleDateString("es-AR"))), COBRO_ACTIVO && (!susc || vencidaSusc) && /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 14,
       color: C.error,
@@ -24039,7 +24050,7 @@ function App() {
     const usu = sesion?.usuario;
     const GRUPO_PAGA_LUEGO = ["aserradero", "ferreteria", "pintureria", "flete"];
     const esProveedorPago = usu && (usu.tipo === "carpinteria" || GRUPO_PAGA_LUEGO.includes(usu.tipo));
-    if (!usu || !esProveedorPago) {
+    if (!usu || !esProveedorPago || !COBRO_ACTIVO) {
       setSuscInfo({
         cargando: false,
         vencida: false
