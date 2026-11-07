@@ -5485,7 +5485,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-10-29.2";
+const VERSION_APP = "v2026-11-01.1";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -13980,13 +13980,7 @@ function VistaFlete({
           color: C.texto,
           marginTop: 3
         }
-      }, p.origen, " → ", p.destino), (p.ciudad || p.provincia) && /*#__PURE__*/React.createElement("div", {
-        style: {
-          fontSize: 15,
-          color: C.textoSuave,
-          marginTop: 2
-        }
-      }, "📍 Origen: ", ubicTexto(p)), /*#__PURE__*/React.createElement("div", {
+      }, p.origen, " → ", p.destino), /*#__PURE__*/React.createElement("div", {
         style: {
           fontSize: 17,
           color: C.textoSuave,
@@ -14037,6 +14031,13 @@ function VistaFlete({
       ...f,
       origen: v
     })),
+    // Al elegir una dirección sugerida, la provincia y la localidad del pedido salen de ahí (para el filtro de los fletes)
+    onElegir: x => x.provincia && setPedF(f => ({
+      ...f,
+      provincia: x.provincia,
+      ciudad: x.provinciaId === "02" ? "Ciudad de Buenos Aires" : x.localidad || "",
+      barrio: ""
+    })),
     placeholder: "Calle y altura (ej: Cuenca 3000)",
     style: {
       ...S.input,
@@ -14061,30 +14062,6 @@ function VistaFlete({
     activo: intFl,
     lista: [[!pedF.origen, "el origen"], [!pedF.destino, "el destino"]]
   }), /*#__PURE__*/React.createElement(Divider, null), /*#__PURE__*/React.createElement("div", {
-    style: S.secTitle
-  }, "📍 Ubicación de origen"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 15,
-      color: C.textoSuave,
-      marginBottom: 8
-    }
-  }, "Para que los fletes cercanos encuentren tu pedido. Se precarga con tu ubicación de cuenta; cambiala si hace falta."), /*#__PURE__*/React.createElement(SelectorUbicacion, {
-    provincia: pedF.provincia,
-    ciudad: pedF.ciudad,
-    onProvincia: v => setPedF(f => ({
-      ...f,
-      provincia: v
-    })),
-    onCiudad: v => setPedF(f => ({
-      ...f,
-      ciudad: v
-    })),
-    barrio: pedF.barrio,
-    onBarrio: v => setPedF(f => ({
-      ...f,
-      barrio: v
-    }))
-  }), /*#__PURE__*/React.createElement("div", {
     style: {
       ...S.row,
       marginTop: 10
@@ -17432,6 +17409,7 @@ function aplicarTema(tipo) {
 function CampoDireccion({
   value,
   onChange,
+  onElegir,
   placeholder,
   style
 }) {
@@ -17464,6 +17442,9 @@ function CampoDireccion({
             return partes.filter((v, i) => v && partes.indexOf(v) === i).join(", ");
           })(),
           detalle: x.nomenclatura || "",
+          provincia: x.provincia && x.provincia.nombre || "",
+          provinciaId: x.provincia && x.provincia.id || "",
+          localidad: x.localidad_censal && x.localidad_censal.nombre || x.departamento && x.departamento.nombre || "",
           lat: x.ubicacion && x.ubicacion.lat,
           lon: x.ubicacion && x.ubicacion.lon
         })).filter(x => x.texto);
@@ -17478,6 +17459,7 @@ function CampoDireccion({
   useEffect(() => () => clearTimeout(timer.current), []);
   const elegir = x => {
     onChange(x.texto);
+    if (onElegir) onElegir(x);
     setPunto(x.lat != null && x.lon != null ? {
       lat: x.lat,
       lon: x.lon
