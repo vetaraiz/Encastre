@@ -116,9 +116,14 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
       </label>
       <label class="campo" id="lSeccion">Sección<select id="seccion"></select></label>
       <label class="campo" id="lLargo">Largo<select id="largo"></select></label>
+      <label class="campo sPlaca" style="grid-column:1/-1">Medida de la placa<select id="placaMedida"></select></label>
+      <label class="campo sPlaca">Largo de la placa (mm)<input id="placaL" type="number"></label>
+      <label class="campo sPlaca">Ancho de la placa (mm)<input id="placaA" type="number"></label>
+      <label class="campo sPlaca">Espesor (mm)<input id="placaE" type="number" step="0.5"></label>
       <label class="campo">Precio ($)<input id="precio" type="number"></label>
     </div>
     <p class="nota" id="notaMadera"></p>
+    <p class="nota oculto" id="avisoPlaca" style="color:var(--warn);font-weight:700"></p>
   </section>
 
   <!-- 3. EL PRESUPUESTO -->
@@ -144,23 +149,28 @@ const cincoMil=n=>Math.ceil((n||0)/5000)*5000;      // total: a $5.000, para arr
 const coma=v=>String(v).replace(".",",");
 
 /* ---------- datos fijos ---------- */
+// Material = qué madera o qué placa. Las medidas de la placa (largo × ancho × espesor) se eligen aparte,
+// porque cada material viene en varias medidas (ej.: tablero de pino 3000 × 1200 en 20, 30 y 40 mm).
+// placas: [largo, ancho, espesor, precio de referencia propio (opcional)]
+const TAB_MACIZO=[[3000,1200,20],[3000,1200,30],[3000,1200,40]];
 const MATS=[
-  {id:"mdf_mel",nombre:"MDF melamina blanco 18 mm",tipo:"placa",esp:18,placa:[2600,1830],precio:99331,servicio:true},
-  {id:"agl_mel",nombre:"Aglomerado melamina 18 mm",tipo:"placa",esp:18,placa:[2600,1830],servicio:true},
-  {id:"mdf_crudo",nombre:"MDF crudo 18 mm",tipo:"placa",esp:18,placa:[2600,1830]},
-  {id:"agl_crudo",nombre:"Aglomerado crudo 18 mm",tipo:"placa",esp:18,placa:[2600,1830]},
-  {id:"fenolico",nombre:"Fenólico 18 mm",tipo:"placa",esp:18,placa:[2440,1220]},
-  {id:"pino_tab",nombre:"Tablero de pino 20 mm",tipo:"placa",esp:20,placa:[3000,1200],precio:85000},
-  {id:"pino",nombre:"Pino",tipo:"macizo",esp:22},
-  {id:"eucalipto",nombre:"Eucalipto",tipo:"macizo",esp:22},
-  {id:"paraiso",nombre:"Paraíso",tipo:"macizo",esp:22},
-  {id:"kiri",nombre:"Kiri",tipo:"macizo",esp:22},
-  {id:"cedro",nombre:"Cedro",tipo:"macizo",esp:22},
-  {id:"roble",nombre:"Roble",tipo:"macizo",esp:22},
-  {id:"dura",nombre:"Madera dura",tipo:"macizo",esp:22},
-  {id:"semidura",nombre:"Madera semidura",tipo:"macizo",esp:22},
-  {id:"blanda",nombre:"Madera blanda",tipo:"macizo",esp:22}
+  {id:"pino",nombre:"Pino",tipo:"macizo",esp:22,placas:[[3000,1200,20],[3000,1200,30],[3000,1200,40]]},
+  {id:"eucalipto",nombre:"Eucalipto",tipo:"macizo",esp:22,placas:TAB_MACIZO},
+  {id:"paraiso",nombre:"Paraíso",tipo:"macizo",esp:22,placas:TAB_MACIZO},
+  {id:"kiri",nombre:"Kiri",tipo:"macizo",esp:22,placas:TAB_MACIZO},
+  {id:"cedro",nombre:"Cedro",tipo:"macizo",esp:22,placas:TAB_MACIZO},
+  {id:"roble",nombre:"Roble",tipo:"macizo",esp:22,placas:TAB_MACIZO},
+  {id:"dura",nombre:"Otra madera dura",tipo:"macizo",esp:22,placas:TAB_MACIZO},
+  {id:"semidura",nombre:"Otra madera semidura",tipo:"macizo",esp:22,placas:TAB_MACIZO},
+  {id:"blanda",nombre:"Otra madera blanda",tipo:"macizo",esp:22,placas:TAB_MACIZO},
+  {id:"fenolico",nombre:"Fenólico",tipo:"placa",esp:18,placas:[[2440,1220,18],[2440,1220,15],[2440,1220,12]]},
+  {id:"agl_crudo",nombre:"Aglomerado",tipo:"placa",esp:18,placas:[[2600,1830,18],[2750,1830,18],[2600,1830,15]]},
+  {id:"agl_mel",nombre:"Melamina sobre aglomerado",tipo:"placa",esp:18,servicio:true,placas:[[2600,1830,18],[2750,1830,18],[2600,1830,15]]},
+  {id:"mdf_mel",nombre:"Melamina sobre MDF",tipo:"placa",esp:18,servicio:true,placas:[[2600,1830,18,99331],[2750,1830,18],[2600,1830,15]]},
+  {id:"mdf_crudo",nombre:"MDF",tipo:"placa",esp:18,placas:[[2600,1830,18],[2600,1830,15],[2600,1830,9],[2600,1830,5.5]]}
 ];
+// Referencia Maderera Topic (oct-2026), tablero de pino natural 1200 × 3000: solo se muestra, no se suma sola
+const REF_TAB_PINO={20:113187,30:172216,40:237930};
 const NOM={"1":20,"1.5":30,"2":40,"3":65,"4":90,"6":140,"8":185,"10":235,"12":285}; // medida real (INTI)
 const real=n=>NOM[String(n)]||Math.round(n*25.4*0.8);
 const SECCIONES=["1x4","1x6","1x8","1x10","1x12","1.5x6","2x2","2x3","2x4","2x6","3x3","3x6"];
@@ -174,24 +184,26 @@ const REF_TOPIC={"1x6|3.05":11000,"1x8|3.05":15100,"2x2|3.05":7700,"2x4|3.05":15
 const MEM_KEY="encastre_pres_simple";
 let MEM={};try{MEM=JSON.parse(localStorage.getItem(MEM_KEY)||"{}")}catch(e){}
 const guardarMem=()=>{try{localStorage.setItem(MEM_KEY,JSON.stringify(MEM))}catch(e){}};
-const precioKey=()=>`${S.material}|${S.unidad}|${S.unidad==="pieza"?S.seccion+"|"+S.largo:""}`;
+const precioKey=()=>`${S.material}|${S.unidad}|${S.unidad==="pieza"?S.seccion+"|"+S.largo:S.unidad==="placa"?S.placa.l+"x"+S.placa.a+"x"+S.placa.e:""}`;
 
 /* ---------- estado ---------- */
 const S={tipo:"caja",alto:170,ancho:230,prof:30,puertas:2,cajones:0,estantes:4,casilleros:25,instala:true,termina:false,
-  material:"mdf_mel",unidad:"placa",seccion:"1x6",largo:3.05,precio:99331,
+  material:"mdf_mel",unidad:"placa",seccion:"1x6",largo:3.05,precio:99331,placa:{l:2600,a:1830,e:18},
   valorHora:MEM.valorHora||7100,ganancia:MEM.ganancia??30,horasDia:MEM.horasDia||3.5,
   herr:{bisagra:MEM.bisagra??HERR.bisagra,manija:MEM.manija??HERR.manija,corredera:MEM.corredera??0},
   litro:MEM.litro??0, montos:{}};
 const matSel=()=>MATS.find(m=>m.id===S.material)||MATS[0];
+const placaInicial=m=>{const p=(m.placas||[[2600,1830,18]])[0];return {l:p[0],a:p[1],e:p[2]}};
 
 /* ---------- cálculo ---------- */
 function calcular(){
   const m=matSel(),macizo=m.tipo==="macizo";
-  const e=S.unidad==="pieza"?real(S.seccion.split("x")[0]):m.esp;
+  const e=S.unidad==="pieza"?real(S.seccion.split("x")[0]):S.unidad==="placa"?(num(S.placa.e)||m.esp):m.esp;
+  let maxLargo=0;
   const H=S.alto*10,W=S.ancho*10,D=S.prof*10;
   let area=0,vol=0,piezas=0,canto=0,horas=0,horasInst=0,termM2=0;
   const herr={bisagras:0,manijas:0,correderas:0,soportes:0},det=[];
-  const pieza=(cant,a,b,esp,lados)=>{if(cant<=0||a<=0||b<=0)return;const ar=cant*a*b/1e6;area+=ar;vol+=ar*esp/1000;piezas+=cant;canto+=lados===4?cant*2*(a+b)/1000:lados===1?cant*Math.max(a,b)/1000:0;termM2+=ar*1.5};
+  const pieza=(cant,a,b,esp,lados)=>{if(cant<=0||a<=0||b<=0)return;maxLargo=Math.max(maxLargo,Math.max(a,b));const ar=cant*a*b/1e6;area+=ar;vol+=ar*esp/1000;piezas+=cant;canto+=lados===4?cant*2*(a+b)/1000:lados===1?cant*Math.max(a,b)/1000:0;termM2+=ar*1.5};
   if(S.tipo==="caja"){
     const zoc=H>=800?70:0,Hc=H-zoc,Hl=Hc-2*e;
     const mods=Math.max(1,Math.ceil(S.puertas/2)+(S.cajones>0&&S.puertas>0?0:0));
@@ -228,7 +240,12 @@ function calcular(){
   if(S.termina)horas+=0.4*termM2*1.5;
   // madera a comprar
   let usa=0,uTxt="";
-  if(S.unidad==="placa"){const pl=m.placa||[2600,1830];usa=Math.ceil(area/(pl[0]*pl[1]/1e6*0.82));uTxt=usa===1?"placa":"placas"}
+  let avisoPlaca="";
+  if(S.unidad==="placa"){
+    const L=num(S.placa.l)||2600,A=num(S.placa.a)||1830;
+    usa=Math.ceil(area/(L*A/1e6*0.82));uTxt=usa===1?"placa":"placas";
+    if(maxLargo>L)avisoPlaca=`Hay piezas de ${Math.round(maxLargo)} mm, más largas que la placa (${L} mm): van a necesitar unión o una placa más grande.`;
+  }
   else if(S.unidad==="pie"){usa=Math.ceil(vol/PIE_M3*1.3);uTxt="pies"}
   else{const [a,b]=S.seccion.split("x").map(Number);usa=Math.ceil(vol*1.3/(real(a)/1000*real(b)/1000*S.largo));uTxt=usa===1?"pieza":"piezas"}
   let madera=usa*num(S.precio);
@@ -240,7 +257,7 @@ function calcular(){
   const litros=S.termina?Math.ceil(termM2*3/10):0;
   const terminacion=litros*num(S.litro);
   const g=1+num(S.ganancia)/100;
-  return {usa,uTxt,extraMadera,madera,herr,herrajes,litros,terminacion,termM2,
+  return {usa,uTxt,extraMadera,madera,avisoPlaca,herr,herrajes,litros,terminacion,termM2,
     horas:Math.round(horas*2)/2,horasInst:Math.round(horasInst*2)/2,
     mo:Math.round(horas*2)/2*num(S.valorHora)*g,inst:Math.round(horasInst*2)/2*num(S.valorHora)*g};
 }
@@ -264,7 +281,7 @@ const sub=(izq,der)=>`<div class="sub"><span>${izq}</span><span class="v">${der}
 const campo=(attr,val,pre="$",pos="",paso="")=>`<span class="mini">${pre}<input ${attr} type="number"${paso?` step="${paso}"`:""} value="${val}">${pos}</span>`;
 function detalle(k){
   const m=matSel();
-  if(k==="madera")return sub(`${m.nombre}`,`${C.usa} ${C.uTxt}`)
+  if(k==="madera")return sub(`${m.nombre}`,`${C.usa} ${C.uTxt}`+(S.unidad==="placa"?` de ${S.placa.l} × ${S.placa.a} × ${coma(S.placa.e)} mm`:""))
     +sub("Precio",num(S.precio)?`${fmt(S.precio)} c/u`:`<b style="color:var(--warn)">Cargalo en el paso 2</b>`)
     +(C.extraMadera?sub("Además",C.extraMadera.replace(/^\s*\+\s*/,"").split(" + ").join("<br>")):"")
     +sub("Incluye","cola, lijas y tornillería");
@@ -289,6 +306,7 @@ function detalle(k){
 }
 function pintarPresupuesto(){
   C=calcular();
+  $("avisoPlaca").textContent=C.avisoPlaca||"";$("avisoPlaca").classList.toggle("oculto",!C.avisoPlaca);
   $("estadoCargar").textContent="";
   const vis=visibles();
   $("renglones").innerHTML=vis.map(r=>`<div class="renglon" data-k="${r.k}"><span class="nom">${r.nom}</span><input class="monto" type="number" step="1000" value="${monto(r.k)}" aria-label="Monto ${r.nom}"><span class="det">${detalle(r.k)}</span></div>`).join("");
@@ -322,23 +340,44 @@ function pintarMadera(){
   const m=matSel();
   $("material").value=S.material;$("unidad").value=S.unidad;$("seccion").value=S.seccion;$("largo").value=String(S.largo);$("precio").value=S.precio||"";
   $("lSeccion").classList.toggle("oculto",S.unidad!=="pieza");$("lLargo").classList.toggle("oculto",S.unidad!=="pieza");
-  const ref=m.id==="pino"&&S.unidad==="pieza"?REF_TOPIC[S.seccion+"|"+S.largo]:m.id==="pino"&&S.unidad==="pie"?2200:0;
-  $("notaMadera").innerHTML=(m.tipo==="placa"&&S.unidad==="placa"?`Placa de ${(m.placa||[]).join(" × ")} mm. `:"")+
-    (ref?`Referencia Maderera Topic (oct-2026): ${fmt(ref)}${S.unidad==="pie"?" el pie":" la pieza"}. `:"")+
+  // Una placa (MDF, aglomerado, melamina, fenólico) solo se compra por placa; la madera maciza, por placa (tablero), pie o pieza
+  [...$("unidad").options].forEach(o=>{o.disabled=m.tipo==="placa"&&o.value!=="placa"});
+  document.querySelectorAll(".sPlaca").forEach(x=>x.classList.toggle("oculto",S.unidad!=="placa"));
+  const pres=m.placas||[];
+  const clave=`${S.placa.l}x${S.placa.a}x${S.placa.e}`;
+  $("placaMedida").innerHTML=pres.map(p=>`<option value="${p[0]}x${p[1]}x${p[2]}">${p[0]} × ${p[1]} mm · ${coma(p[2])} mm</option>`).join("")+`<option value="otra">Otra medida</option>`;
+  $("placaMedida").value=pres.some(p=>`${p[0]}x${p[1]}x${p[2]}`===clave)?clave:"otra";
+  $("placaL").value=S.placa.l||"";$("placaA").value=S.placa.a||"";$("placaE").value=S.placa.e||"";
+  const ref=m.id==="pino"&&S.unidad==="pieza"?REF_TOPIC[S.seccion+"|"+S.largo]:m.id==="pino"&&S.unidad==="pie"?2200:m.id==="pino"&&S.unidad==="placa"&&num(S.placa.l)===3000&&num(S.placa.a)===1200?REF_TAB_PINO[num(S.placa.e)]||0:0;
+  $("notaMadera").innerHTML=(S.unidad==="placa"?`Placa de ${S.placa.l} × ${S.placa.a} mm, ${coma(S.placa.e)} mm de espesor${m.tipo==="macizo"?" (tablero de "+m.nombre.toLowerCase().replace(/^otra /,"")+")":""}. El precio es por placa entera. `:"")+
+    (ref?`Referencia Maderera Topic (oct-2026): ${fmt(ref)}${S.unidad==="pie"?" el pie":S.unidad==="placa"?" la placa":" la pieza"}. `:"")+
+
     (num(S.precio)?"":"<b style=\"color:var(--warn)\">Falta el precio.</b>");
 }
 function todo(){pintarMueble();pintarMadera();pintarPresupuesto()}
 
-$("material").innerHTML=MATS.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join("");
+$("material").innerHTML=`<optgroup label="Madera">${MATS.filter(m=>m.tipo==="macizo").map(m=>`<option value="${m.id}">${m.nombre}</option>`).join("")}</optgroup><optgroup label="Placas">${MATS.filter(m=>m.tipo==="placa").map(m=>`<option value="${m.id}">${m.nombre}</option>`).join("")}</optgroup>`;
 $("seccion").innerHTML=SECCIONES.map(s=>{const [a,b]=s.split("x");return `<option value="${s}">${a} × ${b}" (${real(a)} × ${real(b)} mm)</option>`}).join("");
 $("largo").innerHTML=LARGOS.map(l=>`<option value="${l}">${coma(l)} m</option>`).join("");
-function precioRecordado(){const k=precioKey();const m=matSel();return MEM["p|"+k]??(S.unidad==="placa"?m.precio||0:0)}
+function precioRecordado(){
+  const k=precioKey(),m=matSel();
+  if(MEM["p|"+k]!=null)return MEM["p|"+k];
+  if(S.unidad!=="placa")return 0;
+  const p=(m.placas||[]).find(x=>x[0]===num(S.placa.l)&&x[1]===num(S.placa.a)&&x[2]===num(S.placa.e));
+  // precio guardado antes de que existieran las medidas de placa (vale para la medida más común)
+  const viejo=p&&p===(m.placas||[])[0]?MEM["p|"+S.material+"|placa|"]:null;
+  return viejo??(p&&p[3])??0;
+}
 ["alto","ancho","prof","puertas","cajones","estantes","casilleros"].forEach(k=>$(k).addEventListener("change",()=>{S[k]=Math.max(0,num($(k).value));S.montos={};pintarPresupuesto()}));
 $("instala").addEventListener("change",()=>{S.instala=$("instala").checked;pintarPresupuesto()});
 $("termina").addEventListener("change",()=>{S.termina=$("termina").checked;delete S.montos.mo;pintarPresupuesto()});
 document.querySelectorAll('input[name="tipo"]').forEach(r=>r.addEventListener("change",()=>{S.tipo=r.value;S.montos={};pintarMueble();pintarPresupuesto()}));
-$("material").addEventListener("change",()=>{S.material=$("material").value;S.unidad=matSel().tipo==="placa"?"placa":"pie";S.precio=precioRecordado();S.montos={};pintarMadera();pintarPresupuesto()});
-["unidad","seccion","largo"].forEach(k=>$(k).addEventListener("change",()=>{S[k]=k==="largo"?num($(k).value):$(k).value;S.precio=precioRecordado();delete S.montos.madera;pintarMadera();pintarPresupuesto()}));
+$("material").addEventListener("change",()=>{S.material=$("material").value;S.unidad=matSel().tipo==="placa"?"placa":"pie";S.placa=placaInicial(matSel());S.precio=precioRecordado();S.montos={};pintarMadera();pintarPresupuesto()});
+$("placaMedida").addEventListener("change",()=>{const v=$("placaMedida").value;if(v!=="otra"){const [l,a,e]=v.split("x").map(Number);S.placa={l,a,e}}S.precio=precioRecordado();delete S.montos.madera;pintarMadera();pintarPresupuesto()});
+[["placaL","l"],["placaA","a"],["placaE","e"]].forEach(([id,k])=>$(id).addEventListener("change",()=>{S.placa={...S.placa,[k]:num($(id).value)};S.precio=precioRecordado();delete S.montos.madera;pintarMadera();pintarPresupuesto()}));
+["unidad","seccion","largo"].forEach(k=>$(k).addEventListener("change",()=>{S[k]=k==="largo"?num($(k).value):$(k).value;
+  if(k==="unidad"&&S.unidad==="placa"&&!(matSel().placas||[]).some(p=>p[0]===S.placa.l&&p[1]===S.placa.a&&p[2]===S.placa.e))S.placa=placaInicial(matSel());
+  S.precio=precioRecordado();delete S.montos.madera;pintarMadera();pintarPresupuesto()}));
 $("precio").addEventListener("change",()=>{S.precio=num($("precio").value);MEM["p|"+precioKey()]=S.precio;guardarMem();delete S.montos.madera;pintarMadera();pintarPresupuesto()});
 
 /* ---------- conexión con Encastre ---------- */
@@ -409,7 +448,7 @@ function prompt(texto){
 - Medidas en centímetros. Si faltan: mesa de comedor 75 de alto y 60 cm por persona (para 6: 150×100); escritorio 75×120×60; bajo mesada 90×60 de profundidad; alacena 70×30; placard 60 de profundidad; cómoda 80×45; estante de pared 25 de profundidad.
 - Puertas, cajones, estantes y casilleros: solo los que el pedido dice o los que ese mueble lleva siempre; si no, 0. Mesa de luz o mesita de noche: sin puertas ni casilleros salvo que lo pida.
 - "instala": true si se amura, se cuelga o se coloca en el lugar. "termina": true si lleva barniz, laca, pintura o aceite.
-- Si no dicen material, pino. Melamina o MDF blanco = "mdf_mel".
+- Si no dicen material, pino. Melamina o MDF blanco = "mdf_mel". Tablero de pino = "pino".
 - En "dudas", una frase con lo que supusiste. No inventes precios.
 
 Pedido: """${texto.slice(0,1500)}"""`;
@@ -457,6 +496,7 @@ function aplicar(r,it){
   }
   if(matSel().tipo==="placa"&&S.tipo==="caja")S.termina=S.termina&&!/mel/.test(S.material);
   S.unidad=matSel().tipo==="placa"?"placa":"pie";
+  S.placa=placaInicial(matSel());
   S.precio=precioRecordado();S.montos={};
   todo();
 }
@@ -487,7 +527,7 @@ $("btnCargar").addEventListener("click",()=>{
   const mo=items.find(x=>/Mano de obra$/.test(x.descripcion));if(mo)mo.precio+=dif;
   const calculo={version:"simple-1",fecha:new Date().toISOString(),mueble:it.descripcion||"",texto:$("texto").value,
     mueble_datos:{tipo:S.tipo,alto:S.alto,ancho:S.ancho,prof:S.prof,puertas:S.puertas,cajones:S.cajones,estantes:S.estantes,casilleros:S.casilleros,instala:S.instala,termina:S.termina},
-    madera:{material:matSel().nombre,unidad:S.unidad,seccion:S.unidad==="pieza"?S.seccion:null,largo:S.unidad==="pieza"?S.largo:null,precio:S.precio,cantidad:C.usa},
+    madera:{material:matSel().nombre,unidad:S.unidad,seccion:S.unidad==="pieza"?S.seccion:null,largo:S.unidad==="pieza"?S.largo:null,placa:S.unidad==="placa"?{largo_mm:S.placa.l,ancho_mm:S.placa.a,espesor_mm:S.placa.e}:null,precio:S.precio,cantidad:C.usa},
     herrajes:{cantidades:C.herr,precios:S.herr},horas:C.horas,horas_instalacion:C.horasInst,valor_hora:S.valorHora,ganancia_pct:S.ganancia,
     renglones:items,total:t};
   window.parent.postMessage({tipo:"encastre-presupuesto",accion:"cargar",pedidoId:PEDIDO_ID,mueble:it.descripcion||"",items,calculo},location.origin);
