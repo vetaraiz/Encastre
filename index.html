@@ -3464,6 +3464,70 @@ function calcularPresup(items, opts) {
   }
   return calcularPresupSimple(items, opts);
 }
+// Totales del formulario: uno por opción, cada uno independiente (nunca un total general)
+function bloquesTotales(calc, f) {
+  const lista = calc.multi ? calc.opciones.map(o => ({
+    key: o.n,
+    titulo: "TOTAL",
+    c: o.calc
+  })) : [{
+    key: 0,
+    titulo: "TOTAL",
+    c: calc
+  }];
+  const fila = (txt, val, extra) => /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      marginBottom: 6,
+      fontSize: 16,
+      ...extra
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: extra && extra.color ? extra.color : C.textoSuave
+    }
+  }, txt), /*#__PURE__*/React.createElement("b", null, val));
+  return lista.map((x, idx) => /*#__PURE__*/React.createElement("div", {
+    key: "tot" + x.key,
+    style: {
+      marginTop: idx ? 14 : 0,
+      paddingTop: idx ? 12 : 0,
+      borderTop: idx ? `1px dashed ${C.borde}` : "none"
+    }
+  }, calc.multi && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 800,
+      color: C.marron,
+      fontSize: 16,
+      marginBottom: 6
+    }
+  }, etiquetaOpcion(x.key, (calc.opciones.find(o => o.n === x.key) || {}).nombre)), fila("Subtotal", fmtPeso(x.c.subtotal)), f.usarDesc && x.c.descuento > 0 && fila("Descuento" + (f.descTipo === "porcentaje" ? ` (${nmb(f.descValor)}%)` : ""), "− " + fmtPeso(x.c.descuento), {
+    color: C.error
+  }), f.usarIva && fila(`IVA (${nmb(f.ivaPct)}%)`, fmtPeso(x.c.iva)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      gap: 8,
+      borderTop: `2px solid ${C.verde}`,
+      paddingTop: 8,
+      marginTop: 4
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 800,
+      fontSize: 19,
+      color: C.marron
+    }
+  }, x.titulo), /*#__PURE__*/React.createElement("b", {
+    style: {
+      fontWeight: 800,
+      fontSize: 22,
+      color: C.verde,
+      whiteSpace: "nowrap"
+    }
+  }, fmtPeso(x.c.total)))));
+}
 function calcularPresupSimple(items, opts) {
   const filas = (items || []).map(it => ({
     ...it,
@@ -5490,7 +5554,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-11-07.2";
+const VERSION_APP = "v2026-11-16.1";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -8343,6 +8407,7 @@ function VistaCarpinteria({
   const [pedidos, setPedidos] = useState([]);
   const [sel, setSel] = useNavState(null);
   const [calcAbierto, setCalcAbierto] = useState(false);
+  const [calcOpcion, setCalcOpcion] = useState(1); // a qué opción se carga el presupuesto automático
   const calcRef = useRef(null);
   const [presF, setPresF] = useState({
     items: [{
@@ -8801,12 +8866,17 @@ function VistaCarpinteria({
           await db.insert("presupuesto_items", fila);
         }
         // Desglose interno del presupuesto automático (solo lo ve esta carpintería)
-        if (calcRef.current && calcRef.current.pedidoId === sel.id && calcRef.current.calculo) {
+        const nOps = cantOpciones(presF.items || []);
+        const calcs = calcRef.current && calcRef.current.pedidoId === sel.id ? Object.entries(calcRef.current.calculos || {}).filter(([k, v]) => v && Number(k) <= nOps) : [];
+        if (calcs.length) {
           try {
             await db.insertMin("presupuesto_calculos", {
               presupuesto_id: presId,
               carpinteria_id: usuario.id,
-              calculo: calcRef.current.calculo
+              // con una sola opción se guarda igual que antes; con varias, un cálculo por opción
+              calculo: nOps < 2 ? calcs[0][1] : {
+                opciones: Object.fromEntries(calcs)
+              }
             });
           } catch {}
           calcRef.current = null;
@@ -8853,14 +8923,33 @@ function VistaCarpinteria({
   const cerrarCalc = useCallback(() => setCalcAbierto(false), []);
   const cargarDesdeCalc = useCallback(d => {
     if (!sel || d.pedidoId !== sel.id) return;
+    const op = calcOpcion || 1;
+    // El desglose interno se guarda por opción (cada opción puede tener su propio cálculo automático)
+    const prev = calcRef.current && calcRef.current.pedidoId === sel.id ? calcRef.current.calculos || {} : {};
     calcRef.current = {
       pedidoId: sel.id,
-      calculo: d.calculo || null
+      calculos: {
+        ...prev,
+        [op]: d.calculo || null
+      }
     };
     const mueble = (d.mueble || "").trim();
+    let varias = false;
     setPresF(f => {
-      // se sacan los renglones sin precio que eran del mismo mueble (o vacíos) y se suman los del cálculo
-      const quedan = (f.items || []).filter(it => {
+      // Solo se toca la opción elegida: se sacan sus renglones sin precio que eran del mismo mueble (o vacíos)
+      // y se suman los del cálculo. Las demás opciones quedan como estaban.
+      const grupos = gruposOpciones(f.items || []);
+      let g = grupos.find(x => x.n === op);
+      if (!g) {
+        g = {
+          n: op,
+          nombre: "",
+          items: []
+        };
+        grupos.push(g);
+        grupos.sort((a, b) => a.n - b.n);
+      }
+      const quedan = g.items.filter(it => {
         const sinPrecio = String(it.precio ?? "").trim() === "";
         const desc = (it.descripcion || "").trim();
         return !(sinPrecio && (!desc || !mueble || desc === mueble));
@@ -8868,16 +8957,32 @@ function VistaCarpinteria({
       const nuevos = (d.items || []).map(it => ({
         descripcion: String(it.descripcion || ""),
         precio: String(Math.round(Number(it.precio) || 0)),
-        cantidad: "1"
+        cantidad: "1",
+        opcion: op,
+        opcion_nombre: g.nombre || ""
       }));
+      g.items = [...quedan, ...nuevos];
+      if (!g.items.length) g.items = [{
+        descripcion: "",
+        precio: "",
+        cantidad: "1",
+        opcion: op,
+        opcion_nombre: g.nombre || ""
+      }];
+      varias = grupos.length > 1;
+      const items = grupos.flatMap(x => x.items.map(it => varias ? {
+        ...it,
+        opcion: x.n,
+        opcion_nombre: it.opcion_nombre || x.nombre || ""
+      } : it));
       return {
         ...f,
-        items: [...quedan, ...nuevos].length ? [...quedan, ...nuevos] : f.items
+        items
       };
     });
     setCalcAbierto(false);
-    notif("Borrador cargado. Revisalo antes de enviar.");
-  }, [sel, notif]);
+    notif(op > 1 ? `Borrador cargado en la Opción ${op}. Revisalo antes de enviar.` : "Borrador cargado. Revisalo antes de enviar.");
+  }, [sel, notif, calcOpcion]);
   const construirItemsDesdeMuebles = p => {
     const muebles = p.items && p.items.length > 0 ? p.items : [{
       descripcion: p.descripcion || ""
@@ -9249,28 +9354,28 @@ function VistaCarpinteria({
         ...f,
         items: f.items.length > 1 ? f.items.filter((_, j) => j !== i) : f.items
       }));
+      const multiOp = cantOpciones(presF.items || []) > 1;
+      const btnAuto = n => /*#__PURE__*/React.createElement("button", {
+        type: "button",
+        onClick: () => {
+          setCalcOpcion(n);
+          setCalcAbierto(true);
+        },
+        style: {
+          ...S.btn("ghost"),
+          width: "100%",
+          justifyContent: "center",
+          marginTop: 6,
+          marginBottom: multiOp ? 0 : 14
+        }
+      }, multiOp ? `🧮 Presupuesto automático para la Opción ${n}` : "\uD83E\uDDEE Armar presupuesto autom\u00E1tico");
       return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
         style: {
           fontSize: 14,
           color: C.textoSuave,
           marginBottom: 10
         }
-      }, "Agregá un renglón por cada concepto (materiales, herrajes, mano de obra, flete si lo cobrás, etc.)."), /*#__PURE__*/React.createElement("button", {
-        onClick: () => setCalcAbierto(true),
-        style: {
-          ...S.btn("ghost"),
-          width: "100%",
-          justifyContent: "center",
-          marginBottom: 6
-        }
-      }, "\uD83E\uDDEE Armar presupuesto autom\u00E1tico"), /*#__PURE__*/React.createElement("div", {
-        style: {
-          fontSize: 13,
-          color: C.textoSuave,
-          marginBottom: 12,
-          textAlign: "center"
-        }
-      }, "Arma un borrador con materiales, horas y precio a partir del pedido. Lo revis\u00E1s y lo cargás ac\u00E1."), calcAbierto && /*#__PURE__*/React.createElement(CapaPresupuestador, {
+      }, "Agregá un renglón por cada concepto (materiales, herrajes, mano de obra, flete si lo cobrás, etc.), o armalo con el presupuesto automático. Para ofrecer otra variante del mismo trabajo (por ejemplo, otra madera), sumá otra opción: cada una lleva su propio total."), calcAbierto && /*#__PURE__*/React.createElement(CapaPresupuestador, {
         pedidoId: sel.id,
         onCerrar: cerrarCalc,
         onCargar: cargarDesdeCalc
@@ -9352,7 +9457,7 @@ function VistaCarpinteria({
             minHeight: "auto"
           }
         }, "🗑️ Quitar renglón"));
-      }), /*#__PURE__*/React.createElement("button", {
+      }, btnAuto), cantOpciones(presF.items || []) < 2 && /*#__PURE__*/React.createElement("button", {
         onClick: addItem,
         style: {
           ...S.btn("ghost"),
@@ -9360,7 +9465,7 @@ function VistaCarpinteria({
           justifyContent: "center",
           marginBottom: 14
         }
-      }, "＋ Agregar renglón"), /*#__PURE__*/React.createElement(BotonOtraOpcion, {
+      }, "＋ Agregar renglón"), !multiOp && btnAuto(1), /*#__PURE__*/React.createElement(BotonOtraOpcion, {
         form: presF,
         setForm: setPresF
       }), /*#__PURE__*/React.createElement("div", {
@@ -9495,57 +9600,7 @@ function VistaCarpinteria({
           border: "none",
           marginBottom: 12
         }
-      }, /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 6,
-          fontSize: 16
-        }
-      }, /*#__PURE__*/React.createElement("span", {
-        style: {
-          color: C.textoSuave
-        }
-      }, "Subtotal"), /*#__PURE__*/React.createElement("b", null, fmtPeso(calc.subtotal))), presF.usarDesc && calc.descuento > 0 && /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 6,
-          fontSize: 16,
-          color: C.error
-        }
-      }, /*#__PURE__*/React.createElement("span", null, "Descuento", presF.descTipo === "porcentaje" ? ` (${nmb(presF.descValor)}%)` : ""), /*#__PURE__*/React.createElement("b", null, "− ", fmtPeso(calc.descuento))), presF.usarIva && /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 6,
-          fontSize: 16
-        }
-      }, /*#__PURE__*/React.createElement("span", {
-        style: {
-          color: C.textoSuave
-        }
-      }, "IVA (", nmb(presF.ivaPct), "%)"), /*#__PURE__*/React.createElement("b", null, fmtPeso(calc.iva))), /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          justifyContent: "space-between",
-          borderTop: `2px solid ${C.verde}`,
-          paddingTop: 8,
-          marginTop: 4
-        }
-      }, /*#__PURE__*/React.createElement("span", {
-        style: {
-          fontWeight: 800,
-          fontSize: 19,
-          color: C.marron
-        }
-      }, calc.multi ? "TOTAL de la opción más económica" : "TOTAL"), /*#__PURE__*/React.createElement("b", {
-        style: {
-          fontWeight: 800,
-          fontSize: 22,
-          color: C.verde
-        }
-      }, fmtPeso(calc.total)))), /*#__PURE__*/React.createElement("button", {
+      }, ...bloquesTotales(calc, presF)), /*#__PURE__*/React.createElement("button", {
         style: {
           ...S.btn("gold"),
       background: C.verde,
@@ -12274,7 +12329,7 @@ function VistaAserradero({
             minHeight: "auto"
           }
         }, "🗑️ Quitar renglón"));
-      }), /*#__PURE__*/React.createElement("button", {
+      }), cantOpciones(cotF.items || []) < 2 && /*#__PURE__*/React.createElement("button", {
         onClick: addItem,
         style: {
           ...S.btn("ghost"),
@@ -12444,57 +12499,7 @@ function VistaAserradero({
           border: "none",
           marginBottom: 12
         }
-      }, /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 6,
-          fontSize: 16
-        }
-      }, /*#__PURE__*/React.createElement("span", {
-        style: {
-          color: C.textoSuave
-        }
-      }, "Subtotal"), /*#__PURE__*/React.createElement("b", null, fmtPeso(calc.subtotal))), cotF.usarDesc && calc.descuento > 0 && /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 6,
-          fontSize: 16,
-          color: C.error
-        }
-      }, /*#__PURE__*/React.createElement("span", null, "Descuento", cotF.descTipo === "porcentaje" ? ` (${nmb(cotF.descValor)}%)` : ""), /*#__PURE__*/React.createElement("b", null, "− ", fmtPeso(calc.descuento))), cotF.usarIva && /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 6,
-          fontSize: 16
-        }
-      }, /*#__PURE__*/React.createElement("span", {
-        style: {
-          color: C.textoSuave
-        }
-      }, "IVA (", nmb(cotF.ivaPct), "%)"), /*#__PURE__*/React.createElement("b", null, fmtPeso(calc.iva))), /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          justifyContent: "space-between",
-          borderTop: `2px solid ${C.verde}`,
-          paddingTop: 8,
-          marginTop: 4
-        }
-      }, /*#__PURE__*/React.createElement("span", {
-        style: {
-          fontWeight: 800,
-          fontSize: 19,
-          color: C.marron
-        }
-      }, calc.multi ? "TOTAL de la opción más económica" : "TOTAL"), /*#__PURE__*/React.createElement("b", {
-        style: {
-          fontWeight: 800,
-          fontSize: 22,
-          color: C.verde
-        }
-      }, fmtPeso(calc.total)))), /*#__PURE__*/React.createElement("button", {
+      }, ...bloquesTotales(calc, cotF)), /*#__PURE__*/React.createElement("button", {
         style: {
           ...S.btn("gold"),
       background: C.verde,
@@ -13547,7 +13552,7 @@ function VistaFlete({
               minHeight: "auto"
             }
           }, "🗑️ Quitar renglón"));
-        }), /*#__PURE__*/React.createElement("button", {
+        }), cantOpciones(cotF.items || []) < 2 && /*#__PURE__*/React.createElement("button", {
           onClick: addItem,
           style: {
             ...S.btn("ghost"),
@@ -13713,57 +13718,7 @@ function VistaFlete({
             border: "none",
             marginBottom: 12
           }
-        }, /*#__PURE__*/React.createElement("div", {
-          style: {
-            display: "flex",
-            justifyContent: "space-between",
-            marginBottom: 6,
-            fontSize: 16
-          }
-        }, /*#__PURE__*/React.createElement("span", {
-          style: {
-            color: C.textoSuave
-          }
-        }, "Subtotal"), /*#__PURE__*/React.createElement("b", null, fmtPeso(calc.subtotal))), cotF.usarDesc && calc.descuento > 0 && /*#__PURE__*/React.createElement("div", {
-          style: {
-            display: "flex",
-            justifyContent: "space-between",
-            marginBottom: 6,
-            fontSize: 16,
-            color: C.error
-          }
-        }, /*#__PURE__*/React.createElement("span", null, "Descuento", cotF.descTipo === "porcentaje" ? ` (${nmb(cotF.descValor)}%)` : ""), /*#__PURE__*/React.createElement("b", null, "− ", fmtPeso(calc.descuento))), cotF.usarIva && /*#__PURE__*/React.createElement("div", {
-          style: {
-            display: "flex",
-            justifyContent: "space-between",
-            marginBottom: 6,
-            fontSize: 16
-          }
-        }, /*#__PURE__*/React.createElement("span", {
-          style: {
-            color: C.textoSuave
-          }
-        }, "IVA (", nmb(cotF.ivaPct), "%)"), /*#__PURE__*/React.createElement("b", null, fmtPeso(calc.iva))), /*#__PURE__*/React.createElement("div", {
-          style: {
-            display: "flex",
-            justifyContent: "space-between",
-            borderTop: `2px solid ${C.verde}`,
-            paddingTop: 8,
-            marginTop: 4
-          }
-        }, /*#__PURE__*/React.createElement("span", {
-          style: {
-            fontWeight: 800,
-            fontSize: 19,
-            color: C.marron
-          }
-        }, calc.multi ? "TOTAL de la opción más económica" : "TOTAL"), /*#__PURE__*/React.createElement("b", {
-          style: {
-            fontWeight: 800,
-            fontSize: 22,
-            color: C.verde
-          }
-        }, fmtPeso(calc.total)))), /*#__PURE__*/React.createElement("button", {
+        }, ...bloquesTotales(calc, cotF)), /*#__PURE__*/React.createElement("button", {
           style: {
             ...S.btn("gold"),
       background: C.verde,
@@ -14947,7 +14902,7 @@ function VistaFerreteria({
             minHeight: "auto"
           }
         }, "🗑️ Quitar renglón"));
-      }), /*#__PURE__*/React.createElement("button", {
+      }), cantOpciones(cotF.items || []) < 2 && /*#__PURE__*/React.createElement("button", {
         onClick: addItem,
         style: {
           ...S.btn("ghost"),
@@ -15117,57 +15072,7 @@ function VistaFerreteria({
           border: "none",
           marginBottom: 12
         }
-      }, /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 6,
-          fontSize: 16
-        }
-      }, /*#__PURE__*/React.createElement("span", {
-        style: {
-          color: C.textoSuave
-        }
-      }, "Subtotal"), /*#__PURE__*/React.createElement("b", null, fmtPeso(calc.subtotal))), cotF.usarDesc && calc.descuento > 0 && /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 6,
-          fontSize: 16,
-          color: C.error
-        }
-      }, /*#__PURE__*/React.createElement("span", null, "Descuento", cotF.descTipo === "porcentaje" ? ` (${nmb(cotF.descValor)}%)` : ""), /*#__PURE__*/React.createElement("b", null, "− ", fmtPeso(calc.descuento))), cotF.usarIva && /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 6,
-          fontSize: 16
-        }
-      }, /*#__PURE__*/React.createElement("span", {
-        style: {
-          color: C.textoSuave
-        }
-      }, "IVA (", nmb(cotF.ivaPct), "%)"), /*#__PURE__*/React.createElement("b", null, fmtPeso(calc.iva))), /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          justifyContent: "space-between",
-          borderTop: `2px solid ${C.verde}`,
-          paddingTop: 8,
-          marginTop: 4
-        }
-      }, /*#__PURE__*/React.createElement("span", {
-        style: {
-          fontWeight: 800,
-          fontSize: 19,
-          color: C.marron
-        }
-      }, calc.multi ? "TOTAL de la opción más económica" : "TOTAL"), /*#__PURE__*/React.createElement("b", {
-        style: {
-          fontWeight: 800,
-          fontSize: 22,
-          color: C.verde
-        }
-      }, fmtPeso(calc.total)))), /*#__PURE__*/React.createElement("button", {
+      }, ...bloquesTotales(calc, cotF)), /*#__PURE__*/React.createElement("button", {
         style: {
           ...S.btn("gold"),
       background: C.verde,
@@ -15840,7 +15745,7 @@ function VistaPintureria({
             minHeight: "auto"
           }
         }, "🗑️ Quitar renglón"));
-      }), /*#__PURE__*/React.createElement("button", {
+      }), cantOpciones(cotF.items || []) < 2 && /*#__PURE__*/React.createElement("button", {
         onClick: addItem,
         style: {
           ...S.btn("ghost"),
@@ -16010,57 +15915,7 @@ function VistaPintureria({
           border: "none",
           marginBottom: 12
         }
-      }, /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 6,
-          fontSize: 16
-        }
-      }, /*#__PURE__*/React.createElement("span", {
-        style: {
-          color: C.textoSuave
-        }
-      }, "Subtotal"), /*#__PURE__*/React.createElement("b", null, fmtPeso(calc.subtotal))), cotF.usarDesc && calc.descuento > 0 && /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 6,
-          fontSize: 16,
-          color: C.error
-        }
-      }, /*#__PURE__*/React.createElement("span", null, "Descuento", cotF.descTipo === "porcentaje" ? ` (${nmb(cotF.descValor)}%)` : ""), /*#__PURE__*/React.createElement("b", null, "− ", fmtPeso(calc.descuento))), cotF.usarIva && /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 6,
-          fontSize: 16
-        }
-      }, /*#__PURE__*/React.createElement("span", {
-        style: {
-          color: C.textoSuave
-        }
-      }, "IVA (", nmb(cotF.ivaPct), "%)"), /*#__PURE__*/React.createElement("b", null, fmtPeso(calc.iva))), /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          justifyContent: "space-between",
-          borderTop: `2px solid ${C.verde}`,
-          paddingTop: 8,
-          marginTop: 4
-        }
-      }, /*#__PURE__*/React.createElement("span", {
-        style: {
-          fontWeight: 800,
-          fontSize: 19,
-          color: C.marron
-        }
-      }, calc.multi ? "TOTAL de la opción más económica" : "TOTAL"), /*#__PURE__*/React.createElement("b", {
-        style: {
-          fontWeight: 800,
-          fontSize: 22,
-          color: C.verde
-        }
-      }, fmtPeso(calc.total)))), /*#__PURE__*/React.createElement("button", {
+      }, ...bloquesTotales(calc, cotF)), /*#__PURE__*/React.createElement("button", {
         style: {
           ...S.btn("gold"),
       background: C.verde,
@@ -17785,7 +17640,7 @@ function vacioComo(t) {
   if (t && "modo" in t) v.modo = "viaje";
   return v;
 }
-function mapConOpciones(form, setForm, cb) {
+function mapConOpciones(form, setForm, cb, pieOpcion) {
   const items = form.items || [];
   const norm = normalizarOpciones(items);
   const multi = cantOpciones(items) > 1;
@@ -17867,7 +17722,7 @@ function mapConOpciones(form, setForm, cb) {
         }
       }, "Quitar opción")));
     }
-    out.push(cb(items[i], i));
+    out.push(cb(norm[i], i));
     if (multi && ultimo) {
       out.push( /*#__PURE__*/React.createElement("button", {
         key: "f" + i,
@@ -17892,6 +17747,9 @@ function mapConOpciones(form, setForm, cb) {
           marginTop: 8
         }
       }, "＋ Agregar renglón a la Opción ", n));
+      if (pieOpcion) out.push( /*#__PURE__*/React.createElement(React.Fragment, {
+        key: "p" + i
+      }, pieOpcion(n)));
     }
   });
   return out;
@@ -17901,7 +17759,7 @@ function BotonOtraOpcion({
   setForm
 }) {
   const n = cantOpciones(form.items || []);
-  if (n >= 3) return null;
+  if (n >= 5) return null;
   return /*#__PURE__*/React.createElement("button", {
     type: "button",
     onClick: () => setForm(f => {
