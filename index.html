@@ -1631,6 +1631,18 @@ const COBRO_ACTIVO = new Date() >= COBRO_LIBRE_HASTA;
     }
   } catch {}
 })();
+// ¿Se abrió desde la app de Google Play? (la app de Play abre la web con referrer android-app://ar.com.encastre.app)
+// Dentro de la app de Play no se muestra ningún botón ni link de pago: la política de pagos de Google
+// no permite cobrar suscripciones digitales por fuera de su sistema. En la web (navegador) todo sigue igual.
+const EN_APP_PLAY = (function () {
+  try {
+    if ((document.referrer || "").startsWith("android-app://ar.com.encastre.app")) sessionStorage.setItem("encastre_play", "1");
+    if (new URLSearchParams(window.location.search).get("origen") === "play") sessionStorage.setItem("encastre_play", "1");
+    return sessionStorage.getItem("encastre_play") === "1";
+  } catch {
+    return false;
+  }
+})();
 function pagarPendiente() {
   try {
     return sessionStorage.getItem("encastre_pagar") === "1";
@@ -5554,7 +5566,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-11-16.2";
+const VERSION_APP = "v2026-11-16.3";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -21883,7 +21895,7 @@ function MiCuenta({
     if (!abrirPrecio || esCliente) return;
     if (onPrecioAbierto) onPrecioAbierto();
     setSolapa("suscripcion");
-    verPrecio();
+    if (!EN_APP_PLAY) verPrecio();
   }, [abrirPrecio]);
   const pagar = async () => {
     setPagando(true);
@@ -22773,7 +22785,7 @@ function MiCuenta({
       color: C.error,
       marginBottom: 14
     }
-  }, usuario.tipo === "carpinteria" ? "Sin una suscripción activa no podés ver ni cotizar pedidos de clientes nuevos. El resto de Encastre lo podés seguir usando con normalidad." : "Sin una suscripción activa no podés usar Encastre como proveedor."), msg(errSusc, "err"), !confirmarPago ? /*#__PURE__*/React.createElement("button", {
+  }, usuario.tipo === "carpinteria" ? "Sin una suscripción activa no podés ver ni cotizar pedidos de clientes nuevos. El resto de Encastre lo podés seguir usando con normalidad." : "Sin una suscripción activa no podés usar Encastre como proveedor."), msg(errSusc, "err"), EN_APP_PLAY ? null : !confirmarPago ? /*#__PURE__*/React.createElement("button", {
     style: {
       ...S.btn("gold"),
       width: "100%",
@@ -22941,7 +22953,7 @@ function AvisoDiasRestantes({
       color: C.error,
       marginBottom: 14
     }
-  }, err), !confirmar ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
+  }, err), !confirmar ? /*#__PURE__*/React.createElement(React.Fragment, null, !EN_APP_PLAY && /*#__PURE__*/React.createElement("button", {
     style: {
       ...S.btn("gold"),
       maxWidth: 340,
