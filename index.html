@@ -1617,8 +1617,11 @@ const DIAS_PRUEBA = 45;
 // Cobro liberado TEMPORALMENTE (Ana, 07-nov-2026): durante la segunda ronda de verificación de Google Play
 // nadie queda bloqueado por falta de pago y no aparece la pantalla de "te quedan X días".
 // Las fechas de vencimiento se siguen guardando igual. El cobro vuelve SOLO a partir de COBRO_LIBRE_HASTA.
-const COBRO_LIBRE_HASTA = new Date("2026-12-01T00:00:00-03:00");
+const COBRO_LIBRE_HASTA = new Date("2099-01-01T00:00:00-03:00");
+const COBRO_SIN_FECHA = COBRO_LIBRE_HASTA.getFullYear() >= 2090;
 const COBRO_ACTIVO = new Date() >= COBRO_LIBRE_HASTA;
+// La solapa/menú "Suscripción" solo se muestra cuando el cobro está activo.
+const MOSTRAR_SUSCRIPCION = COBRO_ACTIVO;
 // Link del mail de vencimiento (https://encastre.com.ar/?pagar=1): se guarda para abrir Mi cuenta → Suscripción
 // con el precio a la vista (también si primero tiene que ingresar) y se saca de la dirección.
 (function () {
@@ -4411,8 +4414,8 @@ const TERMINOS_CLAUSULAS = [{
   t: "8. Recomendaciones de seguridad antes de pagar o transferir",
   d: "Antes de realizar una seña, pago o transferencia a otro usuario, se recomienda verificar razonablemente su identidad y seriedad: confirmar que el nombre del titular de la cuenta o alias bancario coincida con el nombre del perfil en Encastre; revisar las fotos de trabajos realizados y las calificaciones de otros usuarios en su perfil; realizar una llamada telefónica antes de pagar cualquier seña; cuando el monto lo amerite, visitar el local o taller antes de contratar; buscar al negocio en internet o redes sociales para confirmar que tiene presencia real; desconfiar de quien solicite el pago total por adelantado sin entrega ni avance de obra a cambio; mantener la comunicación inicial dentro del chat de Encastre; pedir comprobante de cualquier pago realizado; y no compartir nunca códigos de verificación bancarios o de Mercado Pago con otro usuario. Estas son recomendaciones orientativas: Encastre no garantiza la identidad ni la solvencia de los usuarios y no será responsable por los perjuicios que resulten de no seguirlas (ver cláusula 11)."
 }, {
-  t: "9. Suscripción de proveedores y pagos entre usuarios",
-  d: "Los proveedores (carpintería, aserradero, ferretería, pinturería y flete) " + (EN_APP_PLAY ? "necesitan una suscripción activa en Encastre para operar en la plataforma." : "abonan una suscripción mensual a Encastre para operar en la plataforma, procesada a través de Mercado Pago.") + " El primer mes tiene un valor promocional; los valores siguientes pueden ajustarse, y Encastre avisa dentro de la plataforma antes de aplicar cualquier cambio. El proveedor puede dar de baja su suscripción cuando quiera. Por otro lado, Encastre no procesa ni cobra comisión sobre los pagos que los usuarios se hacen entre sí por el trabajo, los materiales o el flete contratado: esos pagos se realizan por fuera de la plataforma, bajo exclusiva responsabilidad de las partes."
+  t: "9. Gratuidad, eventual suscripción de proveedores y pagos entre usuarios",
+  d: "Por el momento, el uso de Encastre es gratuito para todos los usuarios y no hay fecha de cobro definida. Encastre podrá incorporar más adelante una suscripción mensual para los proveedores (carpintería, aserradero, ferretería, pinturería y flete); en ese caso avisará dentro de la plataforma y por correo, con anticipación, el monto y la fecha desde la que se aplica, y no cobrará nada sin que el proveedor lo confirme antes. El consumidor final y los trabajadores no abonan suscripción. Por otro lado, Encastre no procesa ni cobra comisión sobre los pagos que los usuarios se hacen entre sí por el trabajo, los materiales o el flete contratado: esos pagos se realizan por fuera de la plataforma, bajo exclusiva responsabilidad de las partes."
 }, {
   t: "10. Contenido publicado",
   d: "El usuario es el único responsable de la información, imágenes y croquis que publica, y garantiza contar con los derechos para hacerlo. Encastre podrá remover contenido que infrinja estos términos o la ley."
@@ -4446,10 +4449,10 @@ const PRIVACIDAD_CLAUSULAS = [{
   d: "Los datos que ingresás al registrarte y usar la app: nombre o razón social, correo electrónico, ciudad, tipo de usuario, número de documento (CUIT en el caso de empresas o DNI en el caso de personas) y el contenido de tus pedidos, presupuestos, mensajes y croquis (incluidas las fotos que adjuntes). El número de documento se solicita a fines de identificación y es de uso interno: solo accede a él la administración y nunca se muestra a otros usuarios. Si sos proveedor (carpintería, aserradero, ferretería, pinturería o flete), también registramos el historial de tus pagos de suscripción: fecha, monto y estado de cada pago. No solicitamos ni almacenamos datos de tarjetas ni información bancaria — eso lo procesa directamente Mercado Pago."
 }, {
   t: "3. Finalidad del uso",
-  d: "Usamos tus datos exclusivamente para el funcionamiento de la plataforma: crear y mostrar tu perfil, gestionar pedidos y presupuestos, permitir la comunicación entre usuarios, procesar el cobro de la suscripción si sos proveedor, y mejorar el servicio."
+  d: "Usamos tus datos exclusivamente para el funcionamiento de la plataforma: crear y mostrar tu perfil, gestionar pedidos y presupuestos, permitir la comunicación entre usuarios, procesar el cobro de la suscripción si más adelante se aplica a proveedores, y mejorar el servicio."
 }, {
   t: "4. Base del tratamiento",
-  d: "Tratamos tus datos sobre la base del consentimiento que otorgás al registrarte y de la necesidad de prestar el servicio que solicitás, incluido el cobro de la suscripción cuando corresponde."
+  d: "Tratamos tus datos sobre la base del consentimiento que otorgás al registrarte y de la necesidad de prestar el servicio que solicitás, incluido el cobro de la suscripción, si más adelante corresponde."
 }, {
   t: "5. Con quién se comparte",
   d: "No vendemos ni cedemos tus datos a terceros con fines comerciales. Otros usuarios solo ven la información necesaria para operar (por ejemplo, nombre, ciudad, tipo de usuario y el contenido de los pedidos o presupuestos que compartís con ellos). Si sos proveedor y pagás tu suscripción, compartimos con Mercado Pago los datos mínimos necesarios para procesar ese pago (nombre y correo electrónico); Mercado Pago procesa el pago bajo su propia política de privacidad."
@@ -4458,7 +4461,7 @@ const PRIVACIDAD_CLAUSULAS = [{
   d: "La información se almacena en servidores de Supabase, proveedor de infraestructura que aplica medidas de seguridad estándar de la industria." + (EN_APP_PLAY ? "" : " El cobro de suscripciones se procesa a través de Mercado Pago.") + " Las contraseñas se guardan cifradas y nunca en texto plano."
 }, {
   t: "7. Conservación de los datos",
-  d: "Conservamos tus datos mientras tu cuenta esté activa. Si solicitás la baja, los eliminamos, salvo aquellos que debamos conservar por obligaciones legales o fiscales — entre ellos, el historial de pagos de suscripción, que se conserva por esas obligaciones aunque la cuenta esté dada de baja."
+  d: "Conservamos tus datos mientras tu cuenta esté activa. Si solicitás la baja, los eliminamos, salvo aquellos que debamos conservar por obligaciones legales o fiscales — entre ellos, el historial de pagos, si lo hubiera, que se conserva por esas obligaciones aunque la cuenta esté dada de baja."
 }, {
   t: "8. Tus derechos",
   d: "Como titular de los datos tenés derecho a acceder, rectificar, actualizar y solicitar la supresión de tu información. Podés dar de baja tu cuenta en cualquier momento desde la propia app (botón al pie de la pantalla principal), o escribirnos a administracion@encastre.com.ar para ejercer cualquiera de estos derechos."
@@ -5583,7 +5586,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-11-16.4";
+const VERSION_APP = "v2026-11-20.4";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -8231,7 +8234,7 @@ function PantallaInicio({
     trabajador: [["principal", "🧰", "Bolsa de trabajo", "Tu perfil y las búsquedas"], ["cuenta", "👤", "Mi cuenta", "Tus datos"]]
   };
   const proveedor = [["principal", "📥", "Pedidos para cotizar", "Lo que piden las carpinterías", nPed], ["flete", "🚚", "Mis fletes", "Pedí un flete para tus entregas", b.flete], ["bolsa", "🧰", "Bolsa de trabajo", "Encontrá gente para tu negocio"], ["cuenta", "👤", "Mi cuenta", "Tus datos, tu logo y tu suscripción"]];
-  const lista = OPC[t] || proveedor;
+  const lista = (OPC[t] || proveedor).filter(x => MOSTRAR_SUSCRIPCION || x[0] !== "suscripcion");
   return /*#__PURE__*/React.createElement("div", {
     style: {
       maxWidth: 520,
@@ -16381,7 +16384,7 @@ function PantallaBienvenida({
       color: manualTab === "pagos" ? C.marron : C.textoSuave
     },
     onClick: () => setManualTab("pagos")
-  }, EN_APP_PLAY ? "📝 Inscripción" : "💳 Inscripción y pagos")), manualTab === "pagos" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(FlowStep, {
+  }, "📝 Inscripción")), manualTab === "pagos" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(FlowStep, {
     n: 1,
     icon: "📝",
     title: "Te registrás",
@@ -16397,17 +16400,17 @@ function PantallaBienvenida({
       icon: "🔨",
       title: "Carpintería",
       color: C.medio,
-      lines: ["Usás Encastre gratis, sin límite de tiempo, para pedir a aserradero/ferretería/pinturería y todo lo demás.", "Si querés ver y cotizar pedidos de consumidor final, pagás $10.000 por mes — cuando quieras, no hay plazo.", "Antes de cada pago te mostramos el monto exacto y podés elegir «Continuar y pagar» o «Dar de baja» — te podés dar de baja cuando quieras, sin trámites."]
+      lines: ["Por ahora usás Encastre gratis, con todo incluido: pedidos de clientes, pedidos a aserradero/ferretería/pinturería y chat.", "No hay fecha de cobro. Si más adelante se cobra una suscripción, te avisamos con tiempo.", "Te podés dar de baja cuando quieras, sin trámites."]
     }, {
       icon: "🌲🖌️🔩",
       title: "Aserradero, ferretería y pinturería",
       color: C.medio,
-      lines: ["45 días gratis desde que te registrás.", "Después, $10.000 por mes."]
+      lines: ["Por ahora Encastre es gratis para vos.", "No hay fecha de cobro. Si más adelante se cobra una suscripción, te avisamos con tiempo."]
     }, {
       icon: "🚚",
       title: "Flete",
       color: C.medio,
-      lines: ["45 días gratis desde que te registrás.", "Después, $7.000 por mes."]
+      lines: ["Por ahora Encastre es gratis para vos.", "No hay fecha de cobro. Si más adelante se cobra una suscripción, te avisamos con tiempo."]
     }, {
       icon: "🧰",
       title: "Trabajador/a",
@@ -16670,7 +16673,36 @@ function PantallaBienvenida({
       color: C.acentoOsc,
       marginTop: 8
     }
-  }, "Sumate a la comunidad.")), /*#__PURE__*/React.createElement("div", {
+  }, "Sumate a la comunidad."), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "inline-block",
+      marginTop: 18,
+      padding: "6px 22px 7px",
+      border: `3px solid ${C.rojo}`,
+      borderRadius: 8,
+      boxShadow: `inset 0 0 0 2px #fff, inset 0 0 0 4px ${C.rojo}`,
+      color: C.rojo,
+      transform: "rotate(-4deg)",
+      textAlign: "center",
+      fontFamily: "'Stardos Stencil','Playfair Display',serif",
+      opacity: 0.95
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 30,
+      fontWeight: 800,
+      letterSpacing: 5,
+      lineHeight: 1.1
+    }
+  }, "GRATIS"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      letterSpacing: 2,
+      textTransform: "uppercase",
+      fontFamily: "'Lato',sans-serif",
+      fontWeight: 700
+    }
+  }, "por ahora · sin costo"))), /*#__PURE__*/React.createElement("div", {
     style: {
       maxWidth: 400,
       width: "100%",
@@ -18474,7 +18506,7 @@ const FLUJOS = {
       t: "Los tres puntitos arriba a la derecha: ahí está el menú."
     }],
     pagos: {
-      titulo: "Inscripción y pagos",
+      titulo: "Inscripción",
       pasos: [{
         type: "step",
         n: 1,
@@ -18483,13 +18515,13 @@ const FLUJOS = {
         lines: ["Elegiste «Carpintería» como tipo de usuario.", "Completaste nombre, email, teléfono y contraseña.", "Cargaste tu provincia y tu localidad."]
       }, {
         type: "arrow",
-        label: "45 días gratis"
+        label: "Gratis"
       }, {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "45 días gratis",
-        lines: ["Tenés 45 días de prueba sin costo, contados desde el día en que te registraste.", "Durante esos 45 días usás todo sin restricciones: pedidos de clientes, pedidos a aserradero/ferretería/pinturería, chat, etc."]
+        title: "Gratis por ahora",
+        lines: ["Por ahora usás Encastre gratis, sin costo y sin restricciones: pedidos de clientes, pedidos a aserradero/ferretería/pinturería, chat, etc.", "No hay fecha de cobro. Si más adelante se cobra algo, te avisamos con tiempo."]
       }, {
         type: "arrow"
       }, {
@@ -18504,8 +18536,8 @@ const FLUJOS = {
         type: "step",
         n: 4,
         icon: "💳",
-        title: "Después de los 45 días",
-        lines: ["La suscripción mensual cuesta $10.000 fijos.", "Si no pagás, seguís usando Encastre con normalidad — pedir a aserradero, ferretería, pinturería, chat, etc. Lo único que se bloquea es «Pedidos de clientes»: los pedidos nuevos siguen apareciendo en tu lista, pero no podés abrirlos ni cotizarlos hasta pagar.", "Apenas pagás, se desbloquea automáticamente.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja mi cuenta».", "Te podés dar de baja cuando quieras, sin trámites: menú (⋮) → «Mi cuenta» → «Dar de baja»."]
+        title: "Más adelante",
+        lines: ["Hoy no se cobra nada. Si más adelante se empieza a cobrar una suscripción mensual, te avisamos con tiempo, dentro de la app y por mail.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja mi cuenta».", "Te podés dar de baja cuando quieras, sin trámites: menú (⋮) → «Mi cuenta» → «Dar de baja»."]
       }]
     },
     practico: {
@@ -18759,13 +18791,13 @@ const FLUJOS = {
         lines: ["Elegiste «Aserradero» como tipo de usuario.", "Completaste nombre, email, teléfono y contraseña.", "Cargaste tu provincia y tu localidad."]
       }, {
         type: "arrow",
-        label: "45 días gratis"
+        label: "Gratis"
       }, {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "45 días gratis",
-        lines: ["Durante los 45 días siguientes a tu registro usás Encastre sin costo."]
+        title: "Gratis por ahora",
+        lines: ["Por ahora usás Encastre gratis, sin costo y sin restricciones.", "No hay fecha de cobro. Si más adelante se cobra algo, te avisamos con tiempo."]
       }, {
         type: "arrow"
       }, {
@@ -18780,8 +18812,8 @@ const FLUJOS = {
         type: "step",
         n: 4,
         icon: "💳",
-        title: "Después de los 45 días",
-        lines: ["La suscripción mensual cuesta $10.000 fijos.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».", "Sin suscripción activa, no podés recibir ni cotizar pedidos nuevos hasta que pagues. El resto de Encastre lo seguís usando igual."]
+        title: "Más adelante",
+        lines: ["Hoy no se cobra nada. Si más adelante se empieza a cobrar una suscripción mensual, te avisamos con tiempo, dentro de la app y por mail.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja»."]
       }]
     },
     practico: {
@@ -18875,13 +18907,13 @@ const FLUJOS = {
         lines: ["Elegiste «Ferretería» como tipo de usuario.", "Completaste nombre, email, teléfono y contraseña.", "Cargaste tu provincia y tu localidad."]
       }, {
         type: "arrow",
-        label: "45 días gratis"
+        label: "Gratis"
       }, {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "45 días gratis",
-        lines: ["Durante los 45 días siguientes a tu registro usás Encastre sin costo."]
+        title: "Gratis por ahora",
+        lines: ["Por ahora usás Encastre gratis, sin costo y sin restricciones.", "No hay fecha de cobro. Si más adelante se cobra algo, te avisamos con tiempo."]
       }, {
         type: "arrow"
       }, {
@@ -18896,8 +18928,8 @@ const FLUJOS = {
         type: "step",
         n: 4,
         icon: "💳",
-        title: "Después de los 45 días",
-        lines: ["La suscripción mensual cuesta $10.000 fijos.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».", "Sin suscripción activa, no podés recibir ni cotizar pedidos nuevos hasta que pagues. El resto de Encastre lo seguís usando igual."]
+        title: "Más adelante",
+        lines: ["Hoy no se cobra nada. Si más adelante se empieza a cobrar una suscripción mensual, te avisamos con tiempo, dentro de la app y por mail.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja»."]
       }]
     },
     practico: {
@@ -18991,13 +19023,13 @@ const FLUJOS = {
         lines: ["Elegiste «Pinturería» como tipo de usuario.", "Completaste nombre, email, teléfono y contraseña.", "Cargaste tu provincia y tu localidad."]
       }, {
         type: "arrow",
-        label: "45 días gratis"
+        label: "Gratis"
       }, {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "45 días gratis",
-        lines: ["Durante los 45 días siguientes a tu registro usás Encastre sin costo."]
+        title: "Gratis por ahora",
+        lines: ["Por ahora usás Encastre gratis, sin costo y sin restricciones.", "No hay fecha de cobro. Si más adelante se cobra algo, te avisamos con tiempo."]
       }, {
         type: "arrow"
       }, {
@@ -19012,8 +19044,8 @@ const FLUJOS = {
         type: "step",
         n: 4,
         icon: "💳",
-        title: "Después de los 45 días",
-        lines: ["La suscripción mensual cuesta $10.000 fijos.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».", "Sin suscripción activa, no podés recibir ni cotizar pedidos nuevos hasta que pagues. El resto de Encastre lo seguís usando igual."]
+        title: "Más adelante",
+        lines: ["Hoy no se cobra nada. Si más adelante se empieza a cobrar una suscripción mensual, te avisamos con tiempo, dentro de la app y por mail.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja»."]
       }]
     },
     practico: {
@@ -19107,13 +19139,13 @@ const FLUJOS = {
         lines: ["Elegiste «Flete» como tipo de usuario.", "Completaste nombre, email, teléfono y contraseña.", "Cargaste tu provincia y tu localidad."]
       }, {
         type: "arrow",
-        label: "45 días gratis"
+        label: "Gratis"
       }, {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "45 días gratis",
-        lines: ["Durante los 45 días siguientes a tu registro usás Encastre sin costo."]
+        title: "Gratis por ahora",
+        lines: ["Por ahora usás Encastre gratis, sin costo y sin restricciones.", "No hay fecha de cobro. Si más adelante se cobra algo, te avisamos con tiempo."]
       }, {
         type: "arrow"
       }, {
@@ -19128,8 +19160,8 @@ const FLUJOS = {
         type: "step",
         n: 4,
         icon: "💳",
-        title: "Después de los 45 días",
-        lines: ["La suscripción mensual cuesta $7.000 fijos.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja».", "Sin suscripción activa, no podés recibir ni cotizar pedidos nuevos hasta que pagues. El resto de Encastre lo seguís usando igual."]
+        title: "Más adelante",
+        lines: ["Hoy no se cobra nada. Si más adelante se empieza a cobrar una suscripción mensual, te avisamos con tiempo, dentro de la app y por mail.", "Antes de cobrarte, la app te muestra el monto exacto y elegís «Continuar y pagar» o «Dar de baja»."]
       }]
     },
     practico: {
@@ -19384,7 +19416,7 @@ function ManualUsuario({
       color: tab === "pagos" ? C.marron : C.textoSuave
     },
     onClick: () => setTab("pagos")
-  }, EN_APP_PLAY ? "📝 Inscripción" : "💳 " + f.pagos.titulo)), pasosManual(seccion.pasos).map((p, i) => {
+  }, "📝 Inscripción")), pasosManual(seccion.pasos).map((p, i) => {
     if (p.type === "step") return /*#__PURE__*/React.createElement(FlowStep, {
       key: i,
       n: p.n,
@@ -21825,11 +21857,34 @@ function MiCuenta({
   onCerrar,
   onActualizar,
   onDarDeBaja,
+  cortesia,
   tabInicial,
   abrirPrecio,
   onPrecioAbierto
 }) {
   const esCliente = usuario.tipo === "cliente";
+  const [tipoNuevo, setTipoNuevo] = useState("");
+  const [cambiandoTipo, setCambiandoTipo] = useState(false);
+  const [errTipo, setErrTipo] = useState("");
+  const cambiarTipoUsuario = async () => {
+    setErrTipo("");
+    if (!tipoNuevo || tipoNuevo === usuario.tipo) return;
+    if (!window.confirm("¿Cambiar tu cuenta a " + (ROLES[tipoNuevo] || tipoNuevo) + "? Cambian las pantallas y los pedidos que ves. Tus datos personales se mantienen.")) return;
+    setCambiandoTipo(true);
+    try {
+      await db.rpc("cambiar_tipo_usuario", {
+        nuevo: tipoNuevo
+      });
+      parchearSesion({
+        tipo: tipoNuevo
+      });
+      setTipoNuevo("");
+      alert("Listo: tu cuenta ahora es de " + (ROLES[tipoNuevo] || tipoNuevo) + ".");
+    } catch (e) {
+      setErrTipo("No se pudo cambiar el tipo: " + (e.message || "revisá tu conexión"));
+    }
+    setCambiandoTipo(false);
+  };
   const [solapa, setSolapa] = useState(tabInicial || "privado");
 
   // ── PRIVADO ──
@@ -21909,7 +21964,7 @@ function MiCuenta({
   };
   // Vino del link del mail (?pagar=1): abre la solapa de suscripción con el precio a la vista
   useEffect(() => {
-    if (!abrirPrecio || esCliente) return;
+    if (!abrirPrecio || esCliente || !MOSTRAR_SUSCRIPCION) return;
     if (onPrecioAbierto) onPrecioAbierto();
     setSolapa("suscripcion");
     if (!EN_APP_PLAY) verPrecio();
@@ -22165,7 +22220,7 @@ function MiCuenta({
   }, "🔒 Privado"), !esCliente && /*#__PURE__*/React.createElement("button", {
     style: solapaBtn("publico", "🌐 Público"),
     onClick: () => setSolapa("publico")
-  }, "🌐 Público"), !esCliente && /*#__PURE__*/React.createElement("button", {
+  }, "🌐 Público"), !esCliente && MOSTRAR_SUSCRIPCION && /*#__PURE__*/React.createElement("button", {
     style: solapaBtn("suscripcion", "💳 Suscripción"),
     onClick: () => setSolapa("suscripcion")
   }, "💳 Suscripción")), solapa === "privado" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
@@ -22455,7 +22510,43 @@ function MiCuenta({
     },
     onClick: cambiarPass,
     disabled: guardandoPass
-  }, guardandoPass ? "Guardando..." : "Cambiar contraseña")), /*#__PURE__*/React.createElement("div", {
+  }, guardandoPass ? "Guardando..." : "Cambiar contraseña")), cortesia === true && /*#__PURE__*/React.createElement("div", {
+    style: S.card
+  }, /*#__PURE__*/React.createElement("div", {
+    style: S.cardTitle
+  }, "🔄 Cambiar tipo de usuario"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      color: C.textoSuave,
+      marginBottom: 14
+    }
+  }, "Tu cuenta es de cortesía: usás Encastre gratis y podés probar cualquier tipo de usuario. Hoy sos ", ROLES[usuario.tipo] || usuario.tipo, "."), /*#__PURE__*/React.createElement("select", {
+    style: {
+      ...S.input,
+      marginBottom: 12
+    },
+    value: tipoNuevo,
+    onChange: e => setTipoNuevo(e.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Elegí el tipo..."), ["cliente", "carpinteria", "aserradero", "ferreteria", "pintureria", "flete", "trabajador"].filter(t => t !== usuario.tipo).map(t => /*#__PURE__*/React.createElement("option", {
+    key: t,
+    value: t
+  }, ROLES[t]))), errTipo && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      color: C.error,
+      marginBottom: 10
+    }
+  }, errTipo), /*#__PURE__*/React.createElement("button", {
+    style: {
+      ...S.btn("dark"),
+      width: "100%",
+      justifyContent: "center"
+    },
+    onClick: cambiarTipoUsuario,
+    disabled: cambiandoTipo || !tipoNuevo
+  }, cambiandoTipo ? "Cambiando..." : "Cambiar tipo")), /*#__PURE__*/React.createElement("div", {
     style: {
       ...S.card,
       borderColor: C.error + "55"
@@ -22471,7 +22562,7 @@ function MiCuenta({
       color: C.textoSuave,
       marginBottom: 14
     }
-  }, "Al dar de baja tu cuenta no vas a poder volver a ingresar con ella. Solo la administración puede reactivarla."), /*#__PURE__*/React.createElement("button", {
+  }, "Al dar de baja se borran tu cuenta y tus datos personales, y no se puede deshacer. Si más adelante querés volver, te podés registrar de nuevo con el mismo mail."), /*#__PURE__*/React.createElement("button", {
     style: {
       ...S.btn("ghost"),
       width: "100%",
@@ -22766,7 +22857,7 @@ function MiCuenta({
       elegirFotoTrabajo(e.target.files[0]);
       e.target.value = "";
     }
-  })))))), solapa === "suscripcion" && !esCliente && /*#__PURE__*/React.createElement("div", {
+  })))))), solapa === "suscripcion" && !esCliente && MOSTRAR_SUSCRIPCION && /*#__PURE__*/React.createElement("div", {
     style: S.card
   }, /*#__PURE__*/React.createElement("div", {
     style: S.cardTitle
@@ -22775,13 +22866,19 @@ function MiCuenta({
       fontSize: 15,
       color: C.textoSuave
     }
-  }, "Cargando...") : /*#__PURE__*/React.createElement("div", null, !COBRO_ACTIVO && /*#__PURE__*/React.createElement("div", {
+  }, "Cargando...") : /*#__PURE__*/React.createElement("div", null, cortesia === true && /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 16,
       color: C.exito,
       marginBottom: 14
     }
-  }, "🎁 Hasta el ", new Date(COBRO_LIBRE_HASTA - 86400000).toLocaleDateString("es-AR"), " usás Encastre gratis, sin bloqueos."), COBRO_ACTIVO && susc && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, "🎁 Tu cuenta es de cortesía: usás Encastre gratis, sin vencimiento."), !COBRO_ACTIVO && cortesia !== true && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 16,
+      color: C.exito,
+      marginBottom: 14
+    }
+  }, COBRO_SIN_FECHA ? "🎁 Por ahora usás Encastre gratis, sin bloqueos. Te avisamos con tiempo antes de que cambie." : "🎁 Hasta el " + new Date(COBRO_LIBRE_HASTA - 86400000).toLocaleDateString("es-AR") + " usás Encastre gratis, sin bloqueos."), COBRO_ACTIVO && cortesia !== true && susc && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 16,
       marginBottom: 6
@@ -22796,7 +22893,7 @@ function MiCuenta({
       color: C.textoSuave,
       marginBottom: 16
     }
-  }, vencidaSusc ? "Venció el " : "Vence el ", new Date(susc.fecha_vencimiento).toLocaleDateString("es-AR"))), COBRO_ACTIVO && (!susc || vencidaSusc) && /*#__PURE__*/React.createElement("div", {
+  }, vencidaSusc ? "Venció el " : "Vence el ", new Date(susc.fecha_vencimiento).toLocaleDateString("es-AR"))), COBRO_ACTIVO && cortesia !== true && (!susc || vencidaSusc) && /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 14,
       color: C.error,
@@ -23797,6 +23894,8 @@ function App() {
     vencida: false
   });
   const [cuentaTab, setCuentaTab] = useState("privado");
+  // Cuenta de cortesía (verificadoras): suscripción activa siempre y puede cambiar de tipo de usuario. null = todavía no se sabe.
+  const [cortesia, setCortesia] = useState(null);
   const [idxPantalla, setIdxPantalla] = useState(0);
   const [maxIdxPantalla, setMaxIdxPantalla] = useState(0);
   // Pedido de cliente armado sin cuenta: se guarda hasta que crea la cuenta o ingresa
@@ -23934,8 +24033,41 @@ function App() {
     return () => window.removeEventListener("encastre:nav", h);
   }, []);
   useEffect(() => {
+    const uid = sesion?.usuario?.id;
+    if (!uid) {
+      setCortesia(null);
+      return;
+    }
+    let cancelado = false;
+    setCortesia(null);
+    (async () => {
+      let r = false;
+      try {
+        r = (await db.rpc("es_cortesia")) === true;
+      } catch {}
+      if (!cancelado) setCortesia(r);
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, [sesion?.usuario?.id]);
+  useEffect(() => {
     const usu = sesion?.usuario;
     const GRUPO_PAGA_LUEGO = ["aserradero", "ferreteria", "pintureria", "flete"];
+    if (usu && cortesia === null) {
+      setSuscInfo({
+        cargando: true,
+        vencida: false
+      });
+      return;
+    }
+    if (usu && cortesia === true) {
+      setSuscInfo({
+        cargando: false,
+        vencida: false
+      });
+      return;
+    }
     const esProveedorPago = usu && (usu.tipo === "carpinteria" || GRUPO_PAGA_LUEGO.includes(usu.tipo));
     if (!usu || !esProveedorPago || !COBRO_ACTIVO) {
       setSuscInfo({
@@ -23975,7 +24107,7 @@ function App() {
     return () => {
       cancelado = true;
     };
-  }, [sesion?.usuario?.id, sesion?.usuario?.tipo]);
+  }, [sesion?.usuario?.id, sesion?.usuario?.tipo, cortesia]);
   const [avisoDiasCerrado, setAvisoDiasCerrado] = useState(false);
   useEffect(() => {
     const usu = sesion?.usuario;
@@ -24164,18 +24296,16 @@ function App() {
     if (enviado) setTimeout(() => setNotifMsg("✅ ¡Tu pedido fue enviado a todas las carpinterías! Lo ves en \"Mis pedidos\"."), 300);
   };
   const darDeBaja = async () => {
-    if (!window.confirm("¿Seguro que querés dar de baja tu cuenta? No vas a poder volver a ingresar con ella. Solo la administración puede reactivarla.")) return;
+    if (!window.confirm("¿Seguro que querés dar de baja tu cuenta? Se borran tu cuenta y tus datos personales, y no se puede deshacer. Si más adelante querés volver, te podés registrar de nuevo con el mismo mail.")) return;
     try {
-      await db.update("usuarios", {
-        activo: false
-      }, `id=eq.${sesion?.usuario?.id}`);
+      await db.rpc("borrar_mi_cuenta");
     } catch (e) {
       alert("No se pudo dar de baja: " + (e.message || "revisá tu conexión"));
       return;
     }
     await cerrar();
     setMostrarBienvenida(true);
-    alert("Tu cuenta fue dada de baja. ¡Gracias por haber sido parte de Encastre! Te esperamos, que vuelvas pronto.");
+    alert("Tu cuenta y tus datos fueron borrados. ¡Gracias por haber sido parte de Encastre! Te esperamos, que vuelvas pronto.");
   };
   if (!sesion && pedidoPend) return /*#__PURE__*/React.createElement(AuthScreen, {
     onAuth: handleAuth,
@@ -24748,7 +24878,7 @@ function App() {
       enMiCuenta: true,
       cuentaTab: "privado"
     })
-  }, "👤 Mi cuenta"), usuario.tipo !== "admin" && usuario.tipo !== "cliente" && usuario.tipo !== "trabajador" && /*#__PURE__*/React.createElement("button", {
+  }, "👤 Mi cuenta"), MOSTRAR_SUSCRIPCION && usuario.tipo !== "admin" && usuario.tipo !== "cliente" && usuario.tipo !== "trabajador" && /*#__PURE__*/React.createElement("button", {
     style: {
       display: "block",
       width: "100%",
@@ -24876,6 +25006,7 @@ function App() {
     onCerrar: () => window.history.back(),
     onActualizar: actualizarUsuario,
     onDarDeBaja: darDeBaja,
+    cortesia: cortesia,
     tabInicial: cuentaTab,
     abrirPrecio: abrirPrecio,
     onPrecioAbierto: () => setAbrirPrecio(false)
