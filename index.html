@@ -5586,7 +5586,7 @@ function navReset() {
   NAV.ptr = 0;
   navAvisar();
 }
-const VERSION_APP = "v2026-11-20.4";
+const VERSION_APP = "v2026-11-24.1";
 const navClave = x => x && typeof x === "object" ? x.id ?? x : x;
 // ─── AVISO DE COSAS SIN CONFIRMAR (pedidos, presupuestos, cotizaciones a medio cargar) ───
 const PENDIENTES = new Map();
@@ -16400,17 +16400,17 @@ function PantallaBienvenida({
       icon: "🔨",
       title: "Carpintería",
       color: C.medio,
-      lines: ["Por ahora usás Encastre gratis, con todo incluido: pedidos de clientes, pedidos a aserradero/ferretería/pinturería y chat.", "No hay fecha de cobro. Si más adelante se cobra una suscripción, te avisamos con tiempo.", "Te podés dar de baja cuando quieras, sin trámites."]
+      lines: ["Tenés los primeros 6 meses gratis, con todo incluido: pedidos de clientes, pedidos a aserradero/ferretería/pinturería y chat.", "Sin obligación de compra. Te avisamos con tiempo antes de que termine el período gratis.", "Cancelación fácil: te podés dar de baja cuando quieras, sin trámites."]
     }, {
       icon: "🌲🖌️🔩",
       title: "Aserradero, ferretería y pinturería",
       color: C.medio,
-      lines: ["Por ahora Encastre es gratis para vos.", "No hay fecha de cobro. Si más adelante se cobra una suscripción, te avisamos con tiempo."]
+      lines: ["Tenés los primeros 6 meses gratis.", "Sin obligación de compra y cancelación fácil. Te avisamos con tiempo antes de que termine el período gratis."]
     }, {
       icon: "🚚",
       title: "Flete",
       color: C.medio,
-      lines: ["Por ahora Encastre es gratis para vos.", "No hay fecha de cobro. Si más adelante se cobra una suscripción, te avisamos con tiempo."]
+      lines: ["Tenés los primeros 6 meses gratis.", "Sin obligación de compra y cancelación fácil. Te avisamos con tiempo antes de que termine el período gratis."]
     }, {
       icon: "🧰",
       title: "Trabajador/a",
@@ -16702,7 +16702,7 @@ function PantallaBienvenida({
       fontFamily: "'Lato',sans-serif",
       fontWeight: 700
     }
-  }, "por ahora · sin costo"))), /*#__PURE__*/React.createElement("div", {
+  }, "los primeros 6 meses"))), /*#__PURE__*/React.createElement("div", {
     style: {
       maxWidth: 400,
       width: "100%",
@@ -18520,8 +18520,8 @@ const FLUJOS = {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "Gratis por ahora",
-        lines: ["Por ahora usás Encastre gratis, sin costo y sin restricciones: pedidos de clientes, pedidos a aserradero/ferretería/pinturería, chat, etc.", "No hay fecha de cobro. Si más adelante se cobra algo, te avisamos con tiempo."]
+        title: "Gratis los primeros 6 meses",
+        lines: ["Tenés los primeros 6 meses gratis, sin restricciones: pedidos de clientes, pedidos a aserradero/ferretería/pinturería, chat, etc.", "Sin obligación de compra y cancelación fácil. Te avisamos con tiempo antes de que termine el período gratis."]
       }, {
         type: "arrow"
       }, {
@@ -18796,8 +18796,8 @@ const FLUJOS = {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "Gratis por ahora",
-        lines: ["Por ahora usás Encastre gratis, sin costo y sin restricciones.", "No hay fecha de cobro. Si más adelante se cobra algo, te avisamos con tiempo."]
+        title: "Gratis los primeros 6 meses",
+        lines: ["Tenés los primeros 6 meses gratis, sin restricciones.", "Sin obligación de compra y cancelación fácil. Te avisamos con tiempo antes de que termine el período gratis."]
       }, {
         type: "arrow"
       }, {
@@ -18912,8 +18912,8 @@ const FLUJOS = {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "Gratis por ahora",
-        lines: ["Por ahora usás Encastre gratis, sin costo y sin restricciones.", "No hay fecha de cobro. Si más adelante se cobra algo, te avisamos con tiempo."]
+        title: "Gratis los primeros 6 meses",
+        lines: ["Tenés los primeros 6 meses gratis, sin restricciones.", "Sin obligación de compra y cancelación fácil. Te avisamos con tiempo antes de que termine el período gratis."]
       }, {
         type: "arrow"
       }, {
@@ -19028,8 +19028,8 @@ const FLUJOS = {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "Gratis por ahora",
-        lines: ["Por ahora usás Encastre gratis, sin costo y sin restricciones.", "No hay fecha de cobro. Si más adelante se cobra algo, te avisamos con tiempo."]
+        title: "Gratis los primeros 6 meses",
+        lines: ["Tenés los primeros 6 meses gratis, sin restricciones.", "Sin obligación de compra y cancelación fácil. Te avisamos con tiempo antes de que termine el período gratis."]
       }, {
         type: "arrow"
       }, {
@@ -19144,8 +19144,8 @@ const FLUJOS = {
         type: "step",
         n: 2,
         icon: "🎁",
-        title: "Gratis por ahora",
-        lines: ["Por ahora usás Encastre gratis, sin costo y sin restricciones.", "No hay fecha de cobro. Si más adelante se cobra algo, te avisamos con tiempo."]
+        title: "Gratis los primeros 6 meses",
+        lines: ["Tenés los primeros 6 meses gratis, sin restricciones.", "Sin obligación de compra y cancelación fácil. Te avisamos con tiempo antes de que termine el período gratis."]
       }, {
         type: "arrow"
       }, {
@@ -22878,7 +22878,7 @@ function MiCuenta({
       color: C.exito,
       marginBottom: 14
     }
-  }, COBRO_SIN_FECHA ? "🎁 Por ahora usás Encastre gratis, sin bloqueos. Te avisamos con tiempo antes de que cambie." : "🎁 Hasta el " + new Date(COBRO_LIBRE_HASTA - 86400000).toLocaleDateString("es-AR") + " usás Encastre gratis, sin bloqueos."), COBRO_ACTIVO && cortesia !== true && susc && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, COBRO_SIN_FECHA ? "🎁 Tenés los primeros 6 meses gratis, sin obligación de compra y con cancelación fácil." : "🎁 Hasta el " + new Date(COBRO_LIBRE_HASTA - 86400000).toLocaleDateString("es-AR") + " usás Encastre gratis, sin bloqueos."), COBRO_ACTIVO && cortesia !== true && susc && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 16,
       marginBottom: 6
